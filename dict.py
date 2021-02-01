@@ -40,10 +40,12 @@ class Dict (dict):
 
     def __dir__(self):
         return super().__dir__() + [str(k) for k in self.keys()]
-    
-    def __repr__(self): 
+   
+    def __str__(self): 
         s = "{\n"
-        for v, k in self: 
-            sv = str(v).replace("\n", "\n    ")
-            s += f"    {k}\t: {sv},\n"
-        return s[:-2]+ "\n}"
+        for v, k in self:
+            s += f"{k} :\n {v}\n\n"
+        return s + "}"
+
+    def __repr__(self): 
+        return f"Dict {self}"

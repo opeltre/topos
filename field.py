@@ -20,6 +20,27 @@ class Field ():
                 values = {a: 0 for a in K[n]}
         self.values = Dict(values)
 
+    def diff (self):
+        n = self.degree
+        fmap = self.complex.project
+
+        def df (_, a): 
+            faces = ((i, a.face(i)) for i in range(n + 2)) 
+            df_i = (fmap(a, b)(self[b]) for i, b in faces)
+            return sum(((-1)**i * df_i for i, b in faces))
+
+        return self.complex.field(n + 1).map(df)
+    
+    def codiff(self): 
+        n = self.degree 
+        fmap = self.complex.extend
+        cofaces = self.complex.cofaces(n - 1)
+
+        def delta_f(_, b):
+            delta_i = lambda i : \
+                sum((fmap(a, b)(self[b]) for a in cofaces[i][b])
+            return sum((delta_i(i) for i in range(len(cofaces))))
+
     def __add__(self, other):
         if type(other) in (int, float):
             return self.map(lambda vk, k: vk + other)
@@ -53,5 +74,8 @@ class Field ():
         torch.cuda.synchronise()
         return out
 
+    def __getitem__(self, face): 
+        return self.values[face]
+
     def __repr__(self): 
-        return f"{self.degree}-Field\n {self.values}"
+        return f"{self.degree}-Field {self.values}"
