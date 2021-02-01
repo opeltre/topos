@@ -4,7 +4,7 @@
 from system import System
 from field import Field
 
-K = Hypergraph(('i:j:k', 'i:k:l', 'j:k:l'))
+K = System(('i:j:k', 'i:k:l', 'j:k:l'), shape=2)
 
 # Degree-0 field: tensors indexed by faces a
 f = Field(K, 0, "gaussian") 
