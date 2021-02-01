@@ -21,7 +21,7 @@ class Hypergraph (Set):
     def add(self, elem): 
         super().add(Set((elem)))
 
-    def close (self): 
+    def closure (self): 
         C = set()
         for a in self:
             for b in self: 
@@ -33,6 +33,18 @@ class Hypergraph (Set):
         else:
             C = Hypergraph(C).close()
             return Hypergraph(self | C)
+
+    def close(self): 
+        if not len(self): 
+            return self
+        C = Hypergraph(())
+        for a in self:
+            for b in self: 
+                c = Set(a & b)
+                if c not in self:
+                    C.add(c)
+        self |= C.close()
+        return self
 
     def below (self, a):
         cone = set()
@@ -68,8 +80,6 @@ class Hypergraph (Set):
         N = [] 
         for c in self.nerve(n-1):
             cofaces = [Simplex([a] + c[:]) for a in self.above(c[0])]
-            #for f in cofaces:
-            #    print(f)
             N += cofaces
         return N
 
@@ -77,3 +87,6 @@ class Hypergraph (Set):
         elems = [str(e) for e in self]
         s = ' '.join(elems)
         return f"Hypergraph {s}"
+
+    def item(self, other):
+        return Set(other, self.sep)

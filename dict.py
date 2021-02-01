@@ -40,7 +40,7 @@ class Dict (dict):
 
     def __dir__(self):
         return super().__dir__() + [str(k) for k in self.keys()]
-
+    
     def __repr__(self): 
         s = "{\n"
         for v, k in self: 
