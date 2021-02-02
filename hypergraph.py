@@ -1,4 +1,5 @@
 from set import Set
+from dict import Dict
 from simplex import Simplex
 
 class Hypergraph (Set): 
@@ -11,6 +12,9 @@ class Hypergraph (Set):
         elems = (Set(e) for e in elems)
         super().__init__(elems, sep)
 
+        self._below = self.relate(lambda a, b: a > b)
+        self._above = self.relate(lambda b, a: a > b)
+
     def vertices(self): 
         vertices = Set()
         for face in self:
@@ -18,50 +22,29 @@ class Hypergraph (Set):
                 vertices.add(vertex)
         return vertices
 
-    def add(self, elem): 
-        super().add(Set((elem)))
-
-    def closure (self): 
-        C = set()
-        for a in self:
-            for b in self: 
-                c = Set(a & b)
-                if c not in self:
-                    C.add(c)
-        if len(C) == 0:
-            return self
-        else:
-            C = Hypergraph(C).close()
-            return Hypergraph(self | C)
-
-    def close(self): 
-        if not len(self): 
-            return self
-        C = Hypergraph(())
-        for a in self:
-            for b in self: 
-                c = Set(a & b)
-                if c not in self:
-                    C.add(c)
-        self |= C.close()
-        return self
-
-    def below (self, a):
+    def below (self, a, strict=1):
         cone = set()
         for b in self: 
             if a > b: 
                 cone.add(b)
-        return Hypergraph(cone)
+        return Hypergraph(cone | a if not strict else cone)
 
-    def above (self, b):
+    def above (self, b, strict=1):
         cone = set()
         for a in self: 
             if a > b: 
                 cone.add(a)
-        return Hypergraph(cone)
+        return Hypergraph(cone | a if not strict else cone)
 
     def between (self, a, c): 
         return self.below(a).above(c)
+
+    def intercone (self, a, b, strict=1):
+        icone = self.below(a, strict).difference(self.below(b))
+        return Hypergraph(icone)
+
+    def add(self, elem): 
+        super().add(Set((elem)))
 
     def __lt__(self, other): 
         for a in self:
@@ -82,6 +65,24 @@ class Hypergraph (Set):
             cofaces = [Simplex([a] + c[:]) for a in self.above(c[0])]
             N += cofaces
         return N
+
+    def close(self): 
+        """ /!\ mutable """
+        self |= self.closure()
+        return self
+
+    def closure (self): 
+        C = set()
+        for a in self:
+            for b in self: 
+                c = Set(a & b)
+                if c not in self:
+                    C.add(c)
+        if len(C) == 0:
+            return self
+        else:
+            C = Hypergraph(C).closure()
+            return Hypergraph(self | C)
 
     def __repr__(self): 
         elems = [str(e) for e in self]

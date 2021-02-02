@@ -1,7 +1,10 @@
 import torch
+import itertools 
+
 
 from dict import Dict
 from hypergraph import Hypergraph
+from simplex import Simplex
 
 class Field ():
 
@@ -39,24 +42,21 @@ class Field ():
             sum(((-1)**i * dfi(b, i) for i in range(len(cofaces))))
         return self.field(n - 1).map(df)
 
-    def __add__(self, other):
-        if type(other) in (int, float):
-            return self.map(lambda vk, k: vk + other)
-        return self.map(lambda vk, k: vk + other[k])
+    def zeta (self):
+        n = self.degree
+        fmap = self.complex.extend 
+        product = itertools.product
+        icones = lambda a: (
+            *(self.complex.intercone(a[i], a[i+1]) for i in range(n)),
+            self.complex.below(a[n]))
+        zfaces = lambda a: (Simplex(b) for b in product(*icones(a)))
+        zf = lambda _, a: \
+            sum(fmap(a[-1], b[-1])(self[b]) for b in zfaces(a))
+        return self.field(n).map(zf)
 
-    def __sub__(self, other): 
-        return self.__add__(-1 * other)
-
-    def __radd__(self, other):
-        return self.__add__(other)
-
-    def __mul__(self, other):
-        if type(other) in (int, float):
-            return self.map(lambda vk, k: vk * other)
-        return self.map(lambda vk, k: vk * other[k])
-    
-    def __rmul__(self, other):
-        return self.__mul__(other)
+    def __matmul__(self, other): 
+        prod = lambda _, a: torch.sum(self[a] * other[a])
+        return sum(pa for pa, a in self.map(prod))
 
     def map(self, f): 
         values = self.values.map(f)
@@ -78,8 +78,36 @@ class Field ():
     def field(self, degree): 
         return Field(self.complex, degree)
 
-    def __getitem__(self, face): 
+    def __add__(self, other):
+        if type(other) in (int, float):
+            return self.map(lambda vk, k: vk + other)
+        return self.map(lambda vk, k: vk + other[k])
+
+    def __sub__(self, other): 
+        return self.__add__(-1 * other)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __mul__(self, other):
+        if type(other) in (int, float):
+            return self.map(lambda vk, k: vk * other)
+        return self.map(lambda vk, k: vk * other[k])
+    
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __getitem__(self, face):
+        if type(face) == tuple: 
+            return self[face[0]][face[1:]]
+        elif face == slice(None):
+            return self
+        if type(face) == str:
+            face = Simplex(face)
         return self.values[face]
+
+    def __iter__(self): 
+        return self.values.__iter__()
 
     def __repr__(self): 
         return f"{self.degree}-Field {self.values}"

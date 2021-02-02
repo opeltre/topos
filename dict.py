@@ -3,6 +3,9 @@ class Dict (dict):
     def map(self, f): 
         return Dict({k: f(v, k) for v, k in self})
 
+    def fmap(self, f): 
+        return Dict({k: f(v) for v, k in self})
+
     def map_(self, f):
         for v, k in self:
             self[k] = f(v, k)
@@ -28,7 +31,7 @@ class Dict (dict):
         for v, k in self:
             acc = f(acc, v, k)
         return acc
-
+    
     def __iter__(self): 
         return ((self[k], k) for k in super().__iter__())
 

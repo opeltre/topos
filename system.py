@@ -8,8 +8,8 @@ from field import Field
 class System (Hypergraph):
 
     def __init__(self, hypergraph, shape=2, free="True"): 
-        super().__init__(hypergraph)
-        self.close()
+        K = Hypergraph(hypergraph).closure()
+        super().__init__(K)
         if type(shape) == int: 
             Ni = shape
             shape = {a: [Ni for i in a] for a in self}
@@ -26,6 +26,7 @@ class System (Hypergraph):
             b = a.face(i)
             cofaces[b] += [a]
         return cofaces
+
 
     def field(self, *args, **kwargs):
         return Field(self, *args, **kwargs)
