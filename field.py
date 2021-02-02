@@ -23,23 +23,29 @@ class Field ():
     def diff (self):
         n = self.degree
         fmap = self.complex.project
-
-        def df (_, a): 
-            faces = ((i, a.face(i)) for i in range(n + 2)) 
-            df_i = (fmap(a, b)(self[b]) for i, b in faces)
-            return sum(((-1)**i * df_i for i, b in faces))
-
-        return self.complex.field(n + 1).map(df)
+        faces = lambda a: enumerate(a.faces())
+        dfi = lambda a, b: fmap(b[-1], a[-1])(self[b])
+        df = lambda _, a: \
+            sum(((-1)**i * dfi(a, b) for i, b in faces(a)))
+        return self.field(n + 1).map(df)
     
     def codiff(self): 
         n = self.degree 
         fmap = self.complex.extend
         cofaces = self.complex.cofaces(n - 1)
+        dfi = lambda b, i: \
+            sum((fmap(a[-1], b[-1])(self[a]) for a in cofaces[i][b]))
+        df = lambda _, b: \
+            sum(((-1)**i * dfi(b, i) for i in range(len(cofaces))))
+        return self.field(n - 1).map(df)
+
 
         def delta_f(_, b):
             delta_i = lambda i : \
-                sum((fmap(a, b)(self[b]) for a in cofaces[i][b])
+                sum((fmap(a, b)(self[b]) for a in cofaces[i][b]))
             return sum((delta_i(i) for i in range(len(cofaces))))
+
+        return self.complex.field(n - 1).map(df)
 
     def __add__(self, other):
         if type(other) in (int, float):
@@ -73,6 +79,9 @@ class Field ():
                 out[k] = f(self[k], k)
         torch.cuda.synchronise()
         return out
+
+    def field(self, degree): 
+        return Field(self.complex, degree)
 
     def __getitem__(self, face): 
         return self.values[face]

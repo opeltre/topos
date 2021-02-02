@@ -18,13 +18,13 @@ class System (Hypergraph):
         self.shape = shape 
     
     def cofaces(self, n): 
-        return [self.cofaces(n, i) for i in range(n + 2)]
+        return [self.coface(n, i) for i in range(n + 2)]
 
     def coface(self, n, i): 
         cofaces = {b: [] for b in self[n]}
         for a in self[n + 1]:
             b = a.face(i)
-            cofaces[b] += a
+            cofaces[b] += [a]
         return cofaces
 
     def field(self, *args, **kwargs):
