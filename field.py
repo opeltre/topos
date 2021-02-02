@@ -39,18 +39,13 @@ class Field ():
             sum(((-1)**i * dfi(b, i) for i in range(len(cofaces))))
         return self.field(n - 1).map(df)
 
-
-        def delta_f(_, b):
-            delta_i = lambda i : \
-                sum((fmap(a, b)(self[b]) for a in cofaces[i][b]))
-            return sum((delta_i(i) for i in range(len(cofaces))))
-
-        return self.complex.field(n - 1).map(df)
-
     def __add__(self, other):
         if type(other) in (int, float):
             return self.map(lambda vk, k: vk + other)
         return self.map(lambda vk, k: vk + other[k])
+
+    def __sub__(self, other): 
+        return self.__add__(-1 * other)
 
     def __radd__(self, other):
         return self.__add__(other)
