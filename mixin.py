@@ -1,4 +1,4 @@
-from itertools import product
+from itertools import product, chain
 
 from dict import Dict
 
@@ -22,14 +22,13 @@ class Mappable:
             F[y] = F[y] + [x] if y in F else [x]
         return Dict(F).fmap(self.__class__)
 
+    def __add__(self, other): 
+        a = ((0, x) for x in self)
+        b = ((1, y) for y in other)
+        return self.__class__(s for s in chain(a, b))
+
     def __mul__(self, other): 
         return self.__class__(p for p in product(self, other))
 
-    def __pow__(self, other):
-        if type(other) == int:
-            return self.__class__(p for p in product(self, repeat=other))
-        src = enumerate([x for x in other])
-        functions = product((self for x in src))
-        return self.__class__(
-            (Dict({x: f[i] for i, x in src }) for f in functions))
-            
+    def __pow__(self, exp):
+        return self.__class__(p for p in product(self, repeat=exp))
