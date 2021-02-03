@@ -1,3 +1,5 @@
+from mixin import Hashable, Mappable
+
 class Dict (dict): 
 
     def pull(self, other):
