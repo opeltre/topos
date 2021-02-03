@@ -55,8 +55,7 @@ class Field ():
         return self.field(n).map(zf)
 
     def __matmul__(self, other): 
-        prod = lambda _, a: torch.sum(self[a] * other[a])
-        return sum(pa for pa, a in self.map(prod))
+        da, db = self.degree, other.degree
 
     def map(self, f): 
         values = self.values.map(f)

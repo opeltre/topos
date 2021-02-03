@@ -43,7 +43,7 @@ class Set (set):
         return Dict(F).fmap(Set)
     
     def __mul__(self, other): 
-        return Set(p for p in product(self, other))
+        return self.__class__(p for p in product(self, other))
 
     def __pow__(self, exp):
         return Set(p for p in product(self, repeat=exp))

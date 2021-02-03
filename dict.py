@@ -1,5 +1,8 @@
 class Dict (dict): 
 
+    def pull(self, other):
+        return Dict({x: self[y] for y, x in other})
+
     def map(self, f): 
         return Dict({k: f(v, k) for v, k in self})
 

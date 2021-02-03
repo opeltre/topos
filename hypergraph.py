@@ -9,7 +9,7 @@ class Hypergraph (Set):
     def __init__(self, elems, sep=','):
         if type(elems) == str:
             elems = elems.split(sep)
-        elems = (Set(e) for e in elems)
+        elems = (Set(e) if type(e) == str else e for e in elems)
         super().__init__(elems, sep)
 
         self._below = self.relate(lambda a, b: a > b)

@@ -50,4 +50,12 @@ class System (Hypergraph):
         return lambda t_b : t_b[pull]
     
     def __getitem__(self, n): 
+        if type(n) == tuple:
+            Kn = (self.nerve(ni) for ni in n)
+            return [a for a in product(*Kn)]
         return self.nerve(n)
+    
+    def __repr__(self): 
+        elems = [str(e) for e in self]
+        s = ' '.join(elems)
+        return f"System {s}"
