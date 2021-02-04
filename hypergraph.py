@@ -2,6 +2,12 @@ from set import Set
 from dict import Dict
 from simplex import Simplex
 
+class Ordered:
+
+    def below(self, a):
+        pass
+
+
 class Hypergraph (Set): 
     """
     Hypergraphs 
@@ -12,9 +18,6 @@ class Hypergraph (Set):
         elems = (Set(e) if type(e) == str else e for e in elems)
         super().__init__(elems, sep)
 
-        self._below = self.relate(lambda a, b: a > b)
-        self._above = self.relate(lambda b, a: a > b)
-
     def vertices(self): 
         vertices = Set()
         for face in self:
@@ -23,18 +26,13 @@ class Hypergraph (Set):
         return vertices
 
     def below (self, a, strict=1):
-        cone = set()
-        for b in self: 
-            if a > b: 
-                cone.add(b)
-        return Hypergraph(cone | a if not strict else cone)
+        if not strict: 
+            yield a
+        for b in self._below[a]:
+            yield b
 
     def above (self, b, strict=1):
-        cone = set()
-        for a in self: 
-            if a > b: 
-                cone.add(a)
-        return Hypergraph(cone | a if not strict else cone)
+        return self._above[b]
 
     def between (self, a, c): 
         return self.below(a).above(c)

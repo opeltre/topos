@@ -13,15 +13,6 @@ class Mappable:
     def fmap(self, f):
         return self.__class__((f(x) for x in self))
 
-    def graph(self, f): 
-        return self.__class__((f(a), a) for a in self)
-
-    def fibers(self, f): 
-        F = {}
-        for y, x in self.graph(f): 
-            F[y] = F[y] + [x] if y in F else [x]
-        return Dict(F).fmap(self.__class__)
-
     def __add__(self, other): 
         a = ((0, x) for x in self)
         b = ((1, y) for y in other)

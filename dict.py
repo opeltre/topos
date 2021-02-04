@@ -1,13 +1,13 @@
 class Dict (dict): 
 
     def pull(self, other):
-        return Dict({x: self[y] for y, x in other})
+        return self.__class__({x: self[y] for y, x in other})
 
     def map(self, f): 
-        return Dict({k: f(v, k) for v, k in self})
+        return self.__class__({k: f(v, k) for v, k in self})
 
     def fmap(self, f): 
-        return Dict({k: f(v) for v, k in self})
+        return self.__class__({k: f(v) for v, k in self})
 
     def map_(self, f):
         for v, k in self:

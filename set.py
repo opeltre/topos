@@ -3,23 +3,19 @@ from itertools import product
 from dict import Dict
 from mixin import Hashable, Mappable
 
-class Set (Hashable, Mappable, set):
+class SetMixin (Hashable, Mappable):
     """
     Hashable sets as strings.
     """
-    def __init__(self, elems=(), sep=':'):
-        self.sep = sep 
-        if type(elems) == str:
-            elems = elems.split(sep) if len(elems) > 0 else []
-        super().__init__(elems)
-    
-    def relate(self, r, arity=2):
-        fibers = self ** (arity - 1)
-        related = lambda a :\
-            self.__class__(
-                (b for b in fibers if r(a, *b)) if arity > 2 else
-                (b for b in self if r(a, b)))
-        return Setmap({a: related(a) for a in self})
+    def graph(self, f): 
+        return Setmap({a: f(a) for a in self})
+
+    def fibers(self, f): 
+        F = {}
+        for x in self: 
+            y = f(x)
+            F[y] = F[y] + [x] if y in F else [x]
+        return Setmap(F).fmap(Set)
 
     def __str__(self): 
         elems = [str(e) for e in self]
@@ -37,22 +33,63 @@ class Set (Hashable, Mappable, set):
         return values.fmap(lambda y: \
             Setmap({x: y[i] for i, x in enumerate(src)}))
 
-class Setmap (Hashable, Mappable, Dict):
 
-    def __str__(self):
-        elems = [(k, ek) for ek, k in self]
-        elems.sort()
-        s = "{\n"
-        for k, ek in elems: 
-            s += f"{str(k)} :-> {ek}\n"
-        s += "}"
-        return s
+class Set (SetMixin, set):
 
-    def __repr__(self):
-        return f"Setmap {str(self)}" 
+    def __init__(self, elems=(), sep=':'):
+        self.sep = sep 
+        if type(elems) == str:
+            elems = elems.split(sep) if len(elems) > 0 else []
+        super().__init__(elems)
+    
+    def curry(self): 
+        f = {}
+        for (x, y) in self:
+            if x in f:
+                f[x].add(y)
+            else:
+                f[x] = set((y))
+        return Setmap(f.fmap(Set))
+
+class MapMixin: 
+
+    def __call__(self, arg):
+        return self[arg]
+
+    def fmap(self, f): 
+        return self.__class__({k: f(v) for v, k in self})
+
+    def map(self, f): 
+        return self.__class__({k: f(v, k) for v, k in self})
+
+    def uncurry(self): 
+        g = {}
+        for fx, x in self:
+            for fxy, y in fx: 
+                g[(x, y)] = fxy
+        return self.__class__(g)
+
+    def curry(self): 
+        f = {}
+        for gxy, (x, y) in self:
+            if x in f:
+                f[x][y] = gxy
+            else:
+                f[x] = {y: gxy}
+        return self.__class__(f).fmap(self.__class__)
+
+    def __matmul__(self, other): 
+        fog = {k: self[gk] for gk, k in other}
+        return Setmap(fog)
+
+    def __or__(self, other): 
+        if isinstance(Mapmixin, other):
+            return other @ self
+        else:
+            return self.fmap(other)
 
     def __mul__(self, other): 
-        if not isinstance(Setmap, other): 
+        if not isinstance(Mapmixin, other): 
             return Set(self) * other
         fg = {}
         for (fx, x) in self:
@@ -60,6 +97,40 @@ class Setmap (Hashable, Mappable, Dict):
                 fg[(x, y)] = (fx, gy)
         return Setmap(fg)
 
-    def __matmul__(self, other): 
-        fog = {k: self[gk] for gk, k in other}
-        return self.__class__(fog)
+    def __add__(self, other): 
+        f_g = {}
+        for (gy, y) in other:
+            f_g[y] = gy
+        for (fx, x) in self: 
+            f_g[x] = fx
+        return self.__class__(f_g)
+    
+    def __str__(self):
+        elems = [(k, ek) for ek, k in self]
+        elems.sort()
+        s = "{\n"
+        for k, ek in elems: 
+            s += f"{str(k)}  :->  {ek}\n"
+        s += "}"
+        return s
+
+class Setmap (MapMixin, SetMixin, Dict):
+
+    def __repr__(self):
+        return f"Setmap {str(self)}" 
+
+    def fibers(self, f=None): 
+        if f != None: 
+            return super().fibers(f)
+        F = {}
+        for y, x in self: 
+            F[y] = F[y] + [x] if y in F else [x]
+        return Setmap(F).fmap(Set)
+        f = {}
+        for gxy, (x, y) in self:
+            if x in f:
+                f[x][y] = gxy
+            else:
+                f[x] = {y: gxy}
+        return Setmap(f).fmap(Setmap)
+        return Setmap(f).fmap(Setmap)

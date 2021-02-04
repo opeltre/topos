@@ -8,7 +8,7 @@ class Simplex (Set):
         self.vertices = vertices.split(sep) \
                       if type(vertices) == str else vertices
         self.dim = len(self.vertices) - 1
-        super().__init__(vertices, sep)
+        super().__init__(vertices, sep=sep)
     
     def __getitem__(self, i): 
         return self.vertices[i]
