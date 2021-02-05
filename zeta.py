@@ -1,33 +1,42 @@
-from set import Set, Setmap
 from simplex import Simplex
 from hypergraph import Hypergraph
-from tensor import Tensor
+from tensor import Tensor, Product
 
 K = Hypergraph(('i:j:k', 'i:k:l', 'j:k:l'))
 K = K.closure()
 
+""" Zeta Transform and Möbius Inversion """
+
+# chains = {(a, b) | a > b} <= K * K
+
 gt = lambda p: p[0] > p[1]
-
-d1 = lambda s: (s[0], *s[2:])
-
-p0 = lambda x: x[0]
-p1 = lambda x: x[1]
 
 chains = (K * K).fibers(gt)[True] 
 
-cones = chains.curry()
+# zeta_ab = 1 if a >= b
+#           0 otherwise
 
-N = [chains] 
-"""
-while len(N[-1]): 
-    Nk = N[k-1].fmap(lambda bs: (*bs, c) for c in cones)
-    N += [Nk]
-"""
-
-intervals = (K * K * K).fibers(d1)
-
-zeta = Setmap({
+z = Tensor({
     (a, b): 1 for (a, b) in chains
-})
+}).curry()
 
-zeta_t = Setmap({(b, a): y for y, (a, b) in zeta})
+I = Tensor({
+    (a, a): 1 for a in K
+}).curry()
+
+zeta = I + z
+
+# mu = inverse of zeta
+# 1 / (1 + z) ~= sum_k (-1)**k z**k  for z << 1
+
+zs = []
+zn = I 
+while not Tensor.iszero(zn): 
+    zs += [zn]
+    zn = zn @ z
+
+mu = sum((-1)**k * zk for zk, k in Product(zs))
+
+# mu @ zeta = I 
+
+""" Boundary and Coboundary """
