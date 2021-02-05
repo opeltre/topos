@@ -2,6 +2,7 @@ from itertools import product
 
 from dict import Dict
 from mixin import Hashable, Mappable
+ 
 
 class SetMixin (Hashable, Mappable):
     """
@@ -10,11 +11,8 @@ class SetMixin (Hashable, Mappable):
     def graph(self, f): 
         return Setmap({a: f(a) for a in self})
 
-    def fibers(self, f): 
-        F = {}
-        for x in self: 
-            y = f(x)
-            F[y] = F[y] + [x] if y in F else [x]
+    def fibers(self, f):
+        F = super().fibers(f)
         return Setmap(F).fmap(Set)
 
     def __str__(self): 
@@ -49,9 +47,10 @@ class Set (SetMixin, set):
                 f[x].add(y)
             else:
                 f[x] = set((y))
-        return Setmap(f.fmap(Set))
+        return Setmap(f).fmap(Set)
 
-class MapMixin: 
+
+class MapMixin (Mappable): 
 
     def __call__(self, arg):
         return self[arg]
@@ -61,6 +60,20 @@ class MapMixin:
 
     def map(self, f): 
         return self.__class__({k: f(v, k) for v, k in self})
+    
+    def fibers(self, f=None): 
+        F = {}
+        if f == None:
+            for y, x in self: 
+                F[y] = F[y] + [x] if y in F else [x]
+            return self.__class__(F) 
+        for y, x in self: 
+            z = f(y, x)
+            if z in F:
+                F[z][x] = y
+            else:
+                F[z] = {x: y} 
+        return self.__class__(F).fmap(self.__class__)
 
     def uncurry(self): 
         g = {}
@@ -77,13 +90,27 @@ class MapMixin:
             else:
                 f[x] = {y: gxy}
         return self.__class__(f).fmap(self.__class__)
+    
+    def restrict(self, dim):
+        dim = (dim, ) if type(dim) == int else dim
+        return self.__class__((self[i] for i in dim))
+
+    def forget(self, dim):
+        dim = (dim, ) if type(dim) == int else dim
+        n = len(self)
+        dim = [i % n for i in dim]
+        axes = [j for j in range(n) if j not in dim]
+        return self.restrict(axes)
+    
+    def domain(self): 
+        return Set(x for fx, x in self)
 
     def __matmul__(self, other): 
         fog = {k: self[gk] for gk, k in other}
         return Setmap(fog)
 
     def __or__(self, other): 
-        if isinstance(Mapmixin, other):
+        if isinstance(MapMixin, other):
             return other @ self
         else:
             return self.fmap(other)
@@ -110,9 +137,11 @@ class MapMixin:
         elems.sort()
         s = "{\n"
         for k, ek in elems: 
-            s += f"{str(k)}  :->  {ek}\n"
+            sk = str(ek).replace('\n', '\n' + ' '*4)
+            s += f"{str(k)} :-> {sk}\n"
         s += "}"
         return s
+
 
 class Setmap (MapMixin, SetMixin, Dict):
 
@@ -120,17 +149,4 @@ class Setmap (MapMixin, SetMixin, Dict):
         return f"Setmap {str(self)}" 
 
     def fibers(self, f=None): 
-        if f != None: 
-            return super().fibers(f)
-        F = {}
-        for y, x in self: 
-            F[y] = F[y] + [x] if y in F else [x]
-        return Setmap(F).fmap(Set)
-        f = {}
-        for gxy, (x, y) in self:
-            if x in f:
-                f[x][y] = gxy
-            else:
-                f[x] = {y: gxy}
-        return Setmap(f).fmap(Setmap)
-        return Setmap(f).fmap(Setmap)
+        return super().fibers(f).fmap(Set)

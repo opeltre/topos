@@ -50,7 +50,8 @@ class Dict (dict):
     def __str__(self): 
         s = "{\n"
         for v, k in self:
-            s += f"{k} :\n {v}\n\n"
+            sv = str(v).replace('\n', '\n    ')
+            s += f"{k} :\n {sv}\n\n"
         return s + "}"
 
     def __repr__(self): 
