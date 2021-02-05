@@ -43,19 +43,6 @@ class VectorMixin(MapMixin):
             ti.sum() if isTensor(ti) else ti \
             for ti, i in self)
 
-class MonadMixin:
-
-    @classmethod 
-    def unit(cls, a):
-        return cls.__init__(a)
-
-    def join(self):
-        return self.__class__(
-            reduce(lambda x, y: (*x, *y), self))
-
-    def bind(self, f): 
-        return self.fmap(f).join()
-
 
 class Product (VectorMixin, tuple):
     
@@ -87,15 +74,12 @@ class Product (VectorMixin, tuple):
         return self.__class__((f(xi, i) for xi, i in self))
 
 
-class Vector (VectorMixin, Dict):
-    pass
-
-
 class Tensor (VectorMixin, Dict):  
     
     def __init__(self, d): 
         word = lambda a: a if isinstance(a, Product) else Product(a) 
-        d = ({word(a): da for da, a in Dict(d)})
+        tensor = lambda t: Tensor(t) if isinstance(t, dict) else t
+        d = ({word(a): tensor(da) for da, a in Dict(d)})
         super().__init__(d)
 
     def __or__(self, other): 
@@ -114,7 +98,7 @@ class Tensor (VectorMixin, Dict):
     def curry(self, dim=0):
         proj = lambda ta, a: a.restrict(dim)
         t = self.fibers(proj).fmap(lambda tb: tb.sum(dim))
-        return Operator(t)
+        return Matrix(t)
 
     def flip(self, dim=(1,0)):
         t = lambda a: a.flip(dim)
@@ -122,8 +106,21 @@ class Tensor (VectorMixin, Dict):
             t(a): fa for fa, a in self
         })
 
+    def trim(self): 
+        cls = self.__class__
+        not_zero = lambda ti, i: not cls.iszero(ti)
+        trims = lambda t: t.trim() if isinstance(t, VectorMixin)\
+                else t
+        return cls(self.fmap(trims).filter(not_zero))
 
-class Operator (Tensor): 
+    @classmethod 
+    def iszero(cls, t): 
+        if not isinstance(t, Dict): 
+            return t == 0
+        return len(t.filter(lambda ti, i: not cls.iszero(ti))) == 0
+
+
+class Matrix (Tensor): 
 
     def uncurry(self): 
         t = {}
@@ -132,18 +129,50 @@ class Operator (Tensor):
                 t[a | b] = tab
         return Tensor(t)
 
+    def __matmul__(self, other): 
+        if isinstance(other, Matrix):
+            B = other.t()
+            AB = self.fmap(
+                lambda Ai_: B.fmap(
+                lambda B_k: Ai_ & B_k))
+            return AB.trim()
+        return Tensor(A).map(lambda Ai, i: Ai & other[i])
+
     def transpose(self, dim=(1, 0)):
         return self.uncurry().flip(dim).curry()
 
     def t(self, dim=(1, 0)):
         return self.transpose(dim)
 
-    def __matmul__(self, other): 
-        if isinstance(other, Operator):
-            B = other.t()
-            AB = Tensor(self | B)
-            return AB.fmap(lambda ab: ab.sum())
-        return Tensor(A).map(lambda Ai, i: Ai & other[i])
+
+class Functional (Tensor): 
+
+    def __and__(self, other): 
+        if isinstance (other, Functional): 
+            return lambda t: sum(self[k](fk(t) for fk, k in other))
+        return sum(self[k](tk) for tk, k in other)
+
+    def __add__(self, other): 
+        add = lambda F, G:\
+            lambda t: F(t) + G(t) if isinstance(other, Functional) else\
+            lambda t: F(t) + G
+        return self.map(lambda Fi, i: add(Fi, other[i]))
+
+    def __mul__(self, other):
+        mul = lambda F, G:\
+            lambda t: F(t) * G(t) if isinstance(other, Functional) else\
+            lambda t: F(t) * G
+        return self.map(lambda Fi, i: mul(Fi, other[i]))
+
+    def __radd__(self, other): 
+        return self.__add__(other)
+
+    def __rmul__(self, other): 
+        return self.__mul__(other)
 
     def __repr__(self): 
-        return f"Operator {str(self)}"
+        return f"Functional {str(self)}"
+
+
+class Operator (Functional, Matrix):
+    pass

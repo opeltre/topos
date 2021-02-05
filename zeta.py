@@ -7,11 +7,9 @@ K = K.closure()
 
 """ Zeta Transform and Möbius Inversion """
 
-# chains = {(a, b) | a > b} <= K * K
+# chains = {(a, b) | a > b in K * K} 
 
-gt = lambda p: p[0] > p[1]
-
-chains = (K * K).fibers(gt)[True] 
+chains = (p for p in K * K if p[0] > p[1])
 
 # zeta_ab = 1 if a >= b
 #           0 otherwise
@@ -26,17 +24,18 @@ I = Tensor({
 
 zeta = I + z
 
-# mu = inverse of zeta
-# 1 / (1 + z) ~= sum_k (-1)**k z**k  for z << 1
+# 1 / (1 + h) ~= sum_k (-1)**k h**k  for h << 1
 
-zs = []
-zn = I 
-while not Tensor.iszero(zn): 
-    zs += [zn]
-    zn = zn @ z
-
-mu = sum((-1)**k * zk for zk, k in Product(zs))
+def invert (a):
+    h = (a - I).trim()
+    hn, pows = I, []
+    while not Tensor.iszero(hn):
+        pows += [hn]
+        hn = hn @ h
+    return sum((-1)**k * hk for hk, k in Product(pows))
 
 # mu @ zeta = I 
+
+mu = invert(zeta)
 
 """ Boundary and Coboundary """
