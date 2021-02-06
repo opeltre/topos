@@ -19,3 +19,7 @@ assert g.degree == 0
 h = f.mu().zeta()
 assert (h - f).norm() < 1e-6:w
 ``` 
+
+See [zeta.py](zeta.py) for examples. 
+
+$$ \zeta^n = \zeta^{n - 1} \cup \zeta $$ 
