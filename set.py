@@ -133,7 +133,7 @@ class MapMixin (Mappable):
         return self.__class__(f_g)
     
     def __str__(self):
-        elems = [(k, ek) for ek, k in self]
+        elems = [(str(k), str(ek)) for ek, k in self]
         elems.sort()
         s = "{\n"
         for k, ek in elems: 

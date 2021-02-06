@@ -79,6 +79,9 @@ class Product (VectorMixin, tuple):
     def project(self, dim=(0,)):
         return self.restrict(dim)
 
+    def p(self, *args):
+        return self.project(*args)
+
     def flip(self, dim=(1, 0)):
         k = len(dim)
         return self.__class__(
@@ -95,7 +98,9 @@ class Tensor (VectorMixin, Dict):
     
     def __init__(self, d={}): 
         word = lambda a: a if isinstance(a, Product) else Product(a) 
-        tensor = lambda t: Tensor(t) if isinstance(t, dict) else t
+        tensor = lambda t: Tensor(t)\
+            if not isinstance(t, VectorMixin) and isinstance(t, dict)\
+            else t
         d = ({word(a): tensor(da) for da, a in Dict(d)})
         super().__init__(d)
 
@@ -155,35 +160,3 @@ class Matrix (Tensor):
                 T += Tensor({j: {i: Aij}})
         return self.__class__(T)
 
-
-class Functional (Tensor): 
-
-    def __and__(self, other): 
-        if isinstance (other, Functional): 
-            return lambda t: sum(self[k](fk(t) for fk, k in other))
-        return sum(self[k](tk) for tk, k in other)
-
-    def __add__(self, other): 
-        add = lambda F, G:\
-            lambda t: F(t) + G(t) if isinstance(other, Functional) else\
-            lambda t: F(t) + G
-        return self.map(lambda Fi, i: add(Fi, other[i]))
-
-    def __mul__(self, other):
-        mul = lambda F, G:\
-            lambda t: F(t) * G(t) if isinstance(other, Functional) else\
-            lambda t: F(t) * G
-        return self.map(lambda Fi, i: mul(Fi, other[i]))
-
-    def __radd__(self, other): 
-        return self.__add__(other)
-
-    def __rmul__(self, other): 
-        return self.__mul__(other)
-
-    def __repr__(self): 
-        return f"Functional {str(self)}"
-
-
-class Operator (Functional, Matrix):
-    pass

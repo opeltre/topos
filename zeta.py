@@ -1,5 +1,6 @@
 from hypergraph import Hypergraph
-from tensor import Tensor, Product, Matrix, Functional
+from tensor import Tensor, Product, Matrix
+from functional import Lambda, Functional
 
 K = Hypergraph(('i:j:k', 'i:k:l', 'j:k:l'))
 K = K.closure()
@@ -8,7 +9,7 @@ K = K.closure()
 
 # chains = {(a, b) | a > b in K * K} 
 
-chains = (p for p in K * K if p[0] > p[1])
+chains = [p for p in K * K if p[0] > p[1]]
 
 # zeta_ab = 1 if a >= b
 #           0 otherwise
@@ -116,26 +117,44 @@ L = Product(Laplacian * mi for mi, i in NoN)
 
 """ Functionals and Operators """
 
+Id = Functional({(a, a): 1 for a in K})
+
 def extend(a, b):
     pull = [slice(None) if i in b else None for i in a]
-    return lambda tb: tb[pull]
+    j_ab = lambda tb: tb[pull]
+    j_ab.__name__ = f"Extend {a} < {b}"
+    return j_ab
 
-j = Functional({
+J = Id + Functional({
     (a, b): extend(a, b) for (a, b) in chains
 }) 
 
 def project(a, b):
     dim = tuple((i for i, x in enumerate(a) if x not in b))
-    return lambda qa: torch.sum(qa, dim=dim)
+    S_ab = lambda qa: torch.sum(qa, dim=dim)
+    S_ab.__name__ = f"Sum {a} > {b}"
+    return S_ab
 
-Sigma = Functional({
+Sigma = Id + Functional({
     (a, b): project(a, b) for (a, b) in chains
 }) 
 
-Z = []
-for zn, n in Zeta:
-    Zn = zn.map(
-        lambda za, a: za.map(
-        lambda zab, b: j[a.project(-1) | b.project(-1)]
+def Cofunctor (matrix): 
+    F = matrix.map(
+        lambda Ma, a: Ma.map(
+        lambda Mab, b: Mab * J[a.p(-1)|b.p(-1)]
     ))
-    Z += [Zn]
+    return Functional(F)
+
+def Functor (matrix): 
+    F = matrix.map(
+        lambda Mb, b: Mb.map(
+        lambda Mba, a: Mba * Sigma[a.p(-1)|b.p(-1)]
+    ))
+    return Functional(F)
+
+
+K.zeta = Zeta.fmap(Cofunctor)
+K.mu = Mu.fmap(Cofunctor)
+K.d = d.fmap(Functor)
+K.delta = delta.fmap(Cofunctor)
