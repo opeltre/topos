@@ -1,4 +1,4 @@
-class Dict (dict): 
+class DictMixin:
 
     def pull(self, other):
         return self.__class__({x: self[y] for y, x in other})
@@ -56,3 +56,6 @@ class Dict (dict):
 
     def __repr__(self): 
         return f"Dict {self}"
+
+class Dict (DictMixin, dict):
+    pass

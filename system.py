@@ -2,20 +2,39 @@ import torch
 
 from set import Set
 from hypergraph import Hypergraph
-from simplex import Simplex 
-from field import Field
+
+from tensor import Tensor
+from functional import Functional
+
 
 class System (Hypergraph):
 
-    def __init__(self, hypergraph, shape=2, free="True"): 
-        K = Hypergraph(hypergraph).closure()
-        super().__init__(K)
-        if type(shape) == int: 
-            Ni = shape
-            shape = {a: [Ni for i in a] for a in self}
-        elif free == "True": 
-            shape = {a: [shape[i] for i in a] for a in self}
-        self.shape = shape 
+    def __init__(self, K, shape=2):
+
+        if not isinstance(K, Hypergraph):
+            K = Hypergraph(K)
+        if not isinstance(K, System):
+            K = K.closure()
+        super().__init__((a for a in K))
+
+        # E(i) = number of microstates for atom i
+        E = lambda i: shape if type(shape) == int else shape[i]
+        self.shape = {a: [E(i) for i in a] for a in self}
+        
+        # Nerve 
+        I = self.field({
+            (a, a) : 1 for a in K
+        }).curry()
+        below = self.field({
+            (a, b) : 1 for a, b in K * K if a > b
+        }).curry()
+
+        self.below = below
+        self.above = below.t()
+        self.zeta = I + self.below 
+   
+    def field (self, *args):
+        return Tensor(*args)
     
     def cofaces(self, n): 
         return [self.coface(n, i) for i in range(n + 2)]
@@ -26,10 +45,6 @@ class System (Hypergraph):
             b = a.face(i)
             cofaces[b] += [a]
         return cofaces
-
-
-    def field(self, *args, **kwargs):
-        return Field(self, *args, **kwargs)
     
     def zeros(self, face): 
         a = Set(face[-1])
