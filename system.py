@@ -51,6 +51,19 @@ class System (Hypergraph):
             lambda zn, n: self.invert(zn, n)
         )
 
+    def field (self, *args):
+        return Tensor(*args)
+    
+    def zeros(self, n): 
+        return self.N[n].map(
+            lambda _, a: torch.zeros(self.shape[a[0]])
+        )
+        
+    def gaussian(self, n):
+        return self.N[n].map(
+            lambda _, a: torch.randn(self.shape[a[0]])
+        )
+
     def rtimes(self, t, s):
         r = t.__class__()
         s = s.fibers(lambda sb, b: b.project(0))
@@ -83,17 +96,6 @@ class System (Hypergraph):
             i += 1
         return sum((-1)**k * pk for pk, k in Product(pows))
     
-    def field (self, *args):
-        return Tensor(*args)
-    
-    def zeros(self, face): 
-        a = Set(face[-1])
-        return torch.zeros(self.shape[a])
-        
-    def gaussian(self, face):
-        a = Set(face[-1])
-        return torch.randn(self.shape[a])
-
     def project(self, a, b):
         a, b = Set(a), Set(b)
         dim = tuple((i for i, x in enumerate(a) if x not in b))
@@ -114,13 +116,3 @@ class System (Hypergraph):
         elems = [str(e) for e in self]
         s = ' '.join(elems)
         return f"System {s}"
-    def cofaces(self, n): 
-        return [self.coface(n, i) for i in range(n + 2)]
-
-    def coface(self, n, i): 
-        cofaces = {b: [] for b in self[n]}
-        for a in self[n + 1]:
-            b = a.face(i)
-            cofaces[b] += [a]
-        return cofaces
-    
