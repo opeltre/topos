@@ -4,7 +4,7 @@ from functools import reduce
 from tensor import VectorMixin, Tensor, Matrix
 
 from set import MapMixin
-from dict import Dict
+from dict import Dict, Record
 
 def Id (x):
     return x
@@ -17,7 +17,7 @@ class Lambda (Tensor):
     def __init__(self, f=1):
         if isinstance(f, (float, int, torch.Tensor)): 
             super().__init__({(Id,): f})
-        elif isinstance(f, dict):
+        elif isinstance(f, (dict, Tensor)):
             super().__init__(f)
         else:
             super().__init__({(f,) : 1})
@@ -62,7 +62,7 @@ class Functional (Tensor):
     def __init__(self, elems): 
         F = Dict(elems)
         coef = lambda Fi: isinstance(Fi, Lambda)\
-            or not isinstance(Fi, dict)
+            or not isinstance(Fi, (dict, Record))
         super().__init__({
             i : Lambda(Fi) if coef(Fi) else Functional(Fi)\
             for Fi, i in F

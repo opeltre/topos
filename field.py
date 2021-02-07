@@ -1,37 +1,20 @@
 import torch
 import itertools 
 
-from dict import Dict
+from dict import Dict, Record
 from hypergraph import Hypergraph
 from simplex import Simplex
 
 class Field (Tensor):
 
-    def __init__(self, K, n=0, values="zeros"):
-        """
-        """
+    def __init__(self, K, n=0, values={}):
         self.complex = K
         self.degree = n 
         self.cuda = False
-
-        if type(values) == str: 
-            if values in K.__dir__():
-                val = K.__getattribute__(values)
-                values = {a: val(a) for a in K[n]}
-            else:
-                values = {a: 0 for a in K[n]}
-        self.values = Dict(values)
-
-    def map(self, f): 
-        values = self.values.map(f)
-        return Field(self.complex, self.degree, values)
-
-    def fmap(self, f):
-        values = self.values.fmap(f)
-        return Field(self.complex, self.degree, values)
+        super().__init__(values)
 
     def map_cuda(self, f):
-        out = Field({})
+        out = Tensor()
         for vk, k in self:
             sk = torch.cuda.Stream()
             with torch.cuda.stream(sk):

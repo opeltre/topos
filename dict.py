@@ -34,7 +34,20 @@ class DictMixin:
         for v, k in self:
             acc = f(acc, v, k)
         return acc
-    
+
+    def __str__(self): 
+        s = "{\n"
+        for v, k in self:
+            sv = str(v).replace('\n', '\n    ')
+            s += f"{k} :\n {sv}\n\n"
+        return s + "}"
+
+    def __repr__(self): 
+        return f"Dict {self}"
+
+
+class Dict (DictMixin, dict):
+
     def __iter__(self): 
         return ((self[k], k) for k in super().__iter__())
 
@@ -46,16 +59,24 @@ class DictMixin:
 
     def __dir__(self):
         return super().__dir__() + [str(k) for k in self.keys()]
-   
-    def __str__(self): 
-        s = "{\n"
-        for v, k in self:
-            sv = str(v).replace('\n', '\n    ')
-            s += f"{k} :\n {sv}\n\n"
-        return s + "}"
 
-    def __repr__(self): 
-        return f"Dict {self}"
 
-class Dict (DictMixin, dict):
-    pass
+class Record (DictMixin):
+
+    def __init__(self, values={}):
+
+        if isinstance(values, Record):
+            values = values.values
+        self.values = Dict(values)
+
+    def __contains__(self, key): 
+        return key in self.values
+
+    def __iter__(self):
+        return self.values.__iter__()
+        
+    def __getitem__(self, key): 
+        return self.values[key]
+
+    def __setitem__(self, key, val):
+        self.values.__setitem__(key, val)

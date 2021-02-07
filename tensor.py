@@ -2,7 +2,7 @@ import torch
 from functools import reduce
 
 from set import MapMixin
-from dict import Dict
+from dict import Record 
 
 class VectorMixin(MapMixin): 
 
@@ -52,7 +52,7 @@ class VectorMixin(MapMixin):
 
     @classmethod 
     def iszero(cls, t): 
-        if not isinstance(t, Dict): 
+        if not isinstance(t, VectorMixin): 
             return t == 0
         return len(t.filter(lambda ti, i: not cls.iszero(ti))) == 0
 
@@ -94,14 +94,14 @@ class Product (VectorMixin, tuple):
         return self.__class__((f(xi, i) for xi, i in self))
 
 
-class Tensor (VectorMixin, Dict):  
+class Tensor (VectorMixin, Record):  
     
     def __init__(self, d={}): 
         word = lambda a: a if isinstance(a, Product) else Product(a) 
-        tensor = lambda t: Tensor(t)\
-            if not isinstance(t, VectorMixin) and isinstance(t, dict)\
-            else t
-        d = ({word(a): tensor(da) for da, a in Dict(d)})
+        tensor = lambda t: t \
+            if isinstance(t, (VectorMixin, int, float, torch.Tensor)) \
+            else Tensor(t)
+        d = {word(a): tensor(da) for da, a in Record(d)}
         super().__init__(d)
 
     def __or__(self, other): 
