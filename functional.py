@@ -84,7 +84,7 @@ class Functional (Tensor):
             )).sum()
 
     def __repr__(self): 
-        return f"Functional {str(self)}"
+        return f"\u03BB-Tensor {str(self)}"
 
 
 class Operator (Functional, Matrix):

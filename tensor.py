@@ -71,7 +71,7 @@ class Product (VectorMixin, tuple):
         return f"{elems}"
 
     def __repr__(self): 
-        return f"Product {str(self)}"
+        return f"\u03a0-Tensor {str(self)}"
 
     def __or__(self, other): 
         return self.__class__(xi for xi, i in (*self, *other))
@@ -97,12 +97,14 @@ class Product (VectorMixin, tuple):
 class Tensor (VectorMixin, Record):  
     
     def __init__(self, d={}): 
-        word = lambda a: a if isinstance(a, Product) else Product(a) 
+        self.degree = None
         tensor = lambda t: t \
             if isinstance(t, (VectorMixin, int, float, torch.Tensor)) \
             else Tensor(t)
-        d = {word(a): tensor(da) for da, a in Record(d)}
-        super().__init__(d)
+        word = lambda a: a if isinstance(a, Product) else Product(a) 
+        super().__init__({
+            word(a): tensor(da) for da, a in Record(d)
+        })
 
     def __or__(self, other): 
         t = {}
@@ -130,6 +132,44 @@ class Tensor (VectorMixin, Record):
         return self.__class__({
             t(a): fa for fa, a in self
         })
+
+    def cup(self, other):
+        r = self.__class__() 
+        s = other.fibers(lambda sb, b: b.p(0))
+        cup = lambda ti, sj: ti.cup(sj) if\
+            isinstance(ti, Tensor) and isinstance(sj, Tensor) \
+            else ti * sj
+        for ta, a in self: 
+            a_ = a.forget(-1)
+            j = a .p(-1)
+            for sb, b in s[j] if j in s else []:
+                r[a_ | b] = cup(ta, sb)
+        return r.trim()
+
+    def cap(self, other): 
+        r = self.__class__()
+        cap = lambda ti, sj: ti.cap(sj) if\
+            isinstance(ti, Tensor) and isinstance(sj, Tensor) \
+            else ti * sj
+        k_1 = 0
+        sk = Tensor()
+        for tb, b in self: 
+            k = len(b)
+            sk = other.curry(range(0, k)) if k_1 != k else sk
+            k_1 = k
+            for sa, a in sk[b]:
+                c = a.forget(range(0, k - 1))
+                r[c] = cap(tb, sa) + (r[c] if c in r else 0)
+        return r.trim()
+
+    def cup_pows(self, other=None, N=10):
+        p = other if other else self
+        pk, pows, i = self, [], 0
+        while not Tensor.iszero(pk) and i <= N:
+            pows += [pk] 
+            pk = pk.cup(p)
+            i += 1
+        return Product(pows)
 
 
 class Matrix (Tensor): 
@@ -159,4 +199,3 @@ class Matrix (Tensor):
             for Aij, j in Ai:
                 T += Tensor({j: {i: Aij}})
         return self.__class__(T)
-

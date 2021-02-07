@@ -36,7 +36,7 @@ class DictMixin:
         return acc
 
     def __str__(self): 
-        s = "{\n"
+        s = "{\n" if len(self) else "{"
         for v, k in self:
             sv = str(v).replace('\n', '\n    ')
             s += f"{k} :\n {sv}\n\n"
