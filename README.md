@@ -1,5 +1,8 @@
 # Statistics and Topology 
 
+In multinilear algebra, a tensor $t$ can be viewed as collections of scalars $t_{ij\dots k}$
+indexed by some words $ij\dots k$ in the elementary coordinates $i, j, k \dots$. 
+
 ```python
 from system import System
 from field import Field
