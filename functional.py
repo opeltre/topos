@@ -14,13 +14,16 @@ def One (x):
 
 class Lambda (Tensor):
 
-    def __init__(self, f=1, name='<\u03BB>'):
+    def __init__(self, f=1, name='\u03BB'):
         self.__name__ = name
         if isinstance(f, (float, int, torch.Tensor)): 
             super().__init__({(Id,): f})
+            self.__name__ = str(f)
         elif isinstance(f, (dict, Tensor)):
             super().__init__(f)
-        else:
+        elif callable(f):
+            if '__name__' in f.__dir__(): 
+                self.__name__ = f.__name__
             super().__init__({(f,) : 1})
     
     def __add__(self, other): 
@@ -51,7 +54,8 @@ class Lambda (Tensor):
         s = ""
         l = "\u03BB: "
         for ca, Fa in self: 
-            names = (fi.__name__ for fi, i in Fa)
+            names = ((fi.__name__ if '__name__' in fi.__dir__() else '_')\
+                    for fi, i in Fa)
             names = [n.replace("<lambda>", "\u03BB") for n in names]
             f = " * ".join(names)
             s += f"{ca} * {f}\n"
@@ -65,17 +69,14 @@ class Lambda (Tensor):
 class Functional (Tensor): 
     
     def __init__(self, elems): 
-        F = Dict(elems)
+        F = Record(elems)
         coef = lambda Fi: isinstance(Fi, Lambda)\
-            or not isinstance(Fi, (dict, Record))
+            or not isinstance(Fi, (dict, Record, Dict))
         super().__init__({
             i : Lambda(Fi) if coef(Fi) else Functional(Fi)\
             for Fi, i in F
         })
 
-    def curry(self, *args):
-        return Operator(super().curry(*args))
-    
     def __radd__(self, other): 
         return self.__add__(other) 
 

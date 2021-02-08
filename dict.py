@@ -80,3 +80,6 @@ class Record (DictMixin):
 
     def __setitem__(self, key, val):
         self.values.__setitem__(key, val)
+
+    def __len__(self): 
+        return len(self.values)
