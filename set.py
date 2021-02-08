@@ -135,12 +135,21 @@ class MapMixin (Mappable):
     def __str__(self):
         elems = [(str(k), str(ek)) for ek, k in self]
         elems.sort()
-        s = "{\n"
+        s = ''
         for k, ek in elems: 
-            sk = str(ek).replace('\n', '\n' + ' '*4)
+            sk = str(ek)
+            if '\n' in sk: 
+                sk = '\n' + sk 
+            if '\n\n' in sk:
+                sk += '\n'
+            sk = sk.replace('\n', '\n\t')
             s += f"{str(k)} :-> {sk}\n"
-        s += "}"
         return s
+
+    def __repr__(self):
+        s = str(self)
+        b = '{\n' if '\n' in s else "{"  
+        return b + str(self) + "}"
 
 
 class Setmap (MapMixin, SetMixin, Dict):

@@ -6,7 +6,7 @@ from dict import Dict
 from hypergraph import Hypergraph
 
 from tensor import Tensor, Product
-from functional import Functional
+from functional import Functional, Id
 
 
 class System (Hypergraph):
@@ -19,37 +19,59 @@ class System (Hypergraph):
             K = K.closure()
         super().__init__((a for a in K))
 
-        # E(i) = number of microstates for atom i
+        ## E(i) = number of microstates for atom i
         E = lambda i: shape if type(shape) == int else shape[i]
         self.shape = Dict({a: Product(E(i) for i in a) for a in self})
         
-        # Nerve(i) = { a0 > ... > ai | a in K**i }  
+        ## Nerve(i) = { a0 > ... > ai | a in K**i }  
+        chains = [(a, b) for a, b in K * K if a > b]
         N0 = self.field({
             (a, ) : 1 for a in K
         })
         N1 = self.field({
-            (a, b) : 1 for a, b in K * K if a > b
+            (a, b) : 1 for a, b in chains
         })
         self.N = N0.cup_pows(N1)
 
         # Combinatorics
+
         I = self.field({
             (a, a) : 1 for a in K
         }).curry()
         self.below = N1.curry(0)
         self.above = N1.curry(1)
 
-        # zeta_ab = 1 if a >= b else 0
+        ## zeta_ab = 1 if a >= b else 0
         self.zeta = I + self.below 
 
-        # Zeta_n = Zeta_n-1 >> zeta
+        ## Zeta_n = Zeta_n-1 >> zeta
         self.I = self.rpows(I)
         self.Zeta = self.rpows(self.zeta)
 
-        # Mu_n = Zeta_n ** (-1)
+        ## Mu_n = Zeta_n ** (-1)
         self.Mu = self.Zeta.map(
             lambda zn, n: self.invert(zn, n)
         )
+
+        # Functors 
+        self.J = self.I[0].uncurry() + Functional({
+            (a, b): self.extend(a, b) for a, b in chains
+        })
+        self.Sigma = self.I[0].uncurry() + Functional({
+            (a, b): self.project(a, b) for a, b in chains
+        })
+
+    def extend(self, a, b):
+        pull = [slice(None) if i in b else None for i in a]
+        J_ab = lambda tb: tb[pull]
+        J_ab.__name__ = f"Extend {a} < {b}"
+        return J_ab
+
+    def project(self, a, b):
+        dim = tuple((i for i, x in enumerate(a) if x not in b))
+        S_ab = lambda qa: torch.sum(qa, dim=dim)
+        S_ab.__name__ = f"Sum {a} > {b}"
+        return S_ab
 
     def field (self, *args):
         return Tensor(*args)
@@ -95,16 +117,6 @@ class System (Hypergraph):
             pk = pk @ h
             i += 1
         return sum((-1)**k * pk for pk, k in Product(pows))
-    
-    def project(self, a, b):
-        a, b = Set(a), Set(b)
-        dim = tuple((i for i, x in enumerate(a) if x not in b))
-        return lambda q_a: torch.sum(q_a, dim=dim)
-
-    def extend(self, a, b):
-        a, b = Set(a), Set(b)
-        pull = [slice(None) if i in b else None for i in a]
-        return lambda t_b : t_b[pull]
     
     def __getitem__(self, n): 
         if type(n) == tuple:

@@ -31,7 +31,8 @@ class VectorMixin(MapMixin):
         return self.__mul__(other)
 
     def __repr__(self): 
-        return f"Tensor {str(self)}"
+        s = super().__repr__()
+        return f"Tensor {s}"
 
     def __and__(self, other):
         return (self * other).sum()
@@ -58,20 +59,24 @@ class VectorMixin(MapMixin):
 
 
 class Product (VectorMixin, tuple):
-    
+
     def __iter__(self): 
         return ((xi, i) for i, xi in enumerate(super().__iter__()))
     
     def __str__(self):
-        elems = []
+        s = ""
         for xi, i in self:
-            si = str(xi).replace('\n', '\n' + ' '*4) 
-            elems += [si]
-        elems = " . ".join(elems)
-        return f"{elems}"
+            si = str(xi)
+            if '\n' in si: 
+                si = ('\n' + si).replace('\n', '\n   ') 
+                s += f"\n{i} :{si}"
+            else:
+                s += f" . {si}" if len(s) > 0 else si
+        return s
 
     def __repr__(self): 
-        return f"\u03a0-Tensor {str(self)}"
+        s = super().__repr__()
+        return f"\u03a0-{s}"
 
     def __or__(self, other): 
         return self.__class__(xi for xi, i in (*self, *other))
@@ -170,6 +175,12 @@ class Tensor (VectorMixin, Record):
             pk = pk.cup(p)
             i += 1
         return Product(pows)
+
+class Vector (Tensor): 
+    # __init__ override: Vector({a: 1}) -> Tensor({(a,): 1})
+    # or
+    # def Vector(v) 
+    pass
 
 
 class Matrix (Tensor): 
