@@ -33,8 +33,7 @@ class Lambda (Tensor):
 
     def __mul__(self, other): 
         if isinstance(other, Lambda): 
-            f = lambda x: self(x) * other(x)
-            return Lambda(f)
+            return super().__or__(other)
         return super().__mul__(other)
 
     def __rmul__(self, other): 
