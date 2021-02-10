@@ -100,9 +100,13 @@ class System (Hypergraph):
         return Tensor(*args)
     
     def zeros(self, n): 
-        zero = lambda _, a: torch.zeros(self.shape[a[0]])
+        zero = lambda _, a: torch.zeros(self.shape[a[-1]])
         return self.N[n].map(zero)
         
+    def gaussian(self, n):
+        gauss = lambda _, a: torch.randn(self.shape[a[-1]])
+        return self.N[n].map(gauss)
+
     def extend(self, a, b):
         pull = [slice(None) if i in b else None for i in a]
         J_ab = lambda tb: tb[pull]
@@ -124,10 +128,6 @@ class System (Hypergraph):
         F_ab = lambda ha: - torch.log(S_ab(torch.exp(-ha)))
         F_ab.__name__ = f"Effective Energy {a} > {b}"
         return F_ab
-
-    def gaussian(self, n):
-        gauss = lambda _, a: torch.randn(self.shape[a[0]])
-        return self.N[n].map(gauss)
 
     def diff(self, n): 
         if not n < len(self.N) - 1:

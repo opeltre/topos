@@ -88,7 +88,7 @@ class Functional (Tensor):
 
     def __and__(self, other): 
         if not isinstance(other, Functional): 
-            return self.sum()(other)
+            return sum(yi for yi, i in self(other))
         K = self.domain() & other.domain()
         return Lambda({
             (self[i] @ other[i], ): 1 for i in K
