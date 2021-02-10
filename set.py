@@ -110,7 +110,7 @@ class MapMixin (Mappable):
         return Setmap(fog)
 
     def __or__(self, other): 
-        if isinstance(MapMixin, other):
+        if isinstance(other, MapMixin):
             return other @ self
         else:
             return self.fmap(other)

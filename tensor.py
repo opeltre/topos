@@ -3,6 +3,7 @@ from functools import reduce
 
 from set import MapMixin
 from dict import Record 
+from product import ProductMixin, Word
 
 class VectorMixin(MapMixin): 
 
@@ -60,45 +61,14 @@ class VectorMixin(MapMixin):
         return len(t.filter(lambda ti, i: not cls.iszero(ti))) == 0
 
 
-class Product (VectorMixin, tuple):
+class Product (ProductMixin, VectorMixin, tuple):
 
     def __iter__(self): 
         return ((xi, i) for i, xi in enumerate(super().__iter__()))
     
-    def __str__(self):
-        s = ""
-        for xi, i in self:
-            si = str(xi)
-            if '\n' in si: 
-                si = ('\n' + si).replace('\n', '\n   ') 
-                s += f"\n{i} :{si}"
-            else:
-                s += f" . {si}" if len(s) > 0 else si
-        return s
-
     def __repr__(self): 
         s = super().__repr__()
         return f"\u03a0-{s}"
-
-    def __or__(self, other): 
-        return self.__class__(xi for xi, i in (*self, *other))
-
-    def project(self, dim=(0,)):
-        return self.restrict(dim)
-
-    def p(self, *args):
-        return self.project(*args)
-
-    def flip(self, dim=(1, 0)):
-        k = len(dim)
-        return self.__class__(
-            (self[dim[i]] if i < k else xi for xi, i in self))
-
-    def fmap(self, f):
-        return self.__class__((f(xi) for xi, i in self))
-
-    def map(self, f):
-        return self.__class__((f(xi, i) for xi, i in self))
 
 
 class Tensor (VectorMixin, Record):  
@@ -108,7 +78,7 @@ class Tensor (VectorMixin, Record):
         tensor = lambda t: t \
             if isinstance(t, (VectorMixin, int, float, torch.Tensor)) \
             else Tensor(t)
-        word = lambda a: a if isinstance(a, Product) else Product(a) 
+        word = lambda a: a if isinstance(a, Word) else Word(a) 
         super().__init__({
             word(a): tensor(da) for da, a in Record(d)
         })
