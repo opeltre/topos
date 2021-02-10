@@ -26,6 +26,16 @@ class Lambda (Tensor):
                 self.__name__ = f.__name__
             super().__init__({(f,) : 1})
     
+    def __call__(self, x): 
+        return sum(
+            ca * reduce(lambda p, Fj : p * Fj[0](x), Fa, 1)\
+            for ca, Fa in self)
+
+    def __matmul__(self, other): 
+        fog = lambda t: self(other(t))
+        fog.__name__ = f"{f.__name__} o {g.__name__}"
+        return fog
+
     def __add__(self, other): 
         b = other if isinstance(other, Lambda) \
                 else Lambda(other)
@@ -42,13 +52,11 @@ class Lambda (Tensor):
     def __rmul__(self, other): 
         return self.__mul__(other)
 
-    def __call__(self, x): 
-        return sum(
-            ca * reduce(lambda p, Fj : p * Fj[0](x), Fa, 1)\
-            for ca, Fa in self)
-
     def sum(self, *args): 
         return self
+
+    def __repr__(self): 
+        return str(self)
 
     def __str__(self): 
         s = ""
@@ -62,9 +70,6 @@ class Lambda (Tensor):
         return l + ('\n' + s).replace('\n', '\n  ') \
             if len(self.domain()) > 1 else \
             '\t' + l + s.replace('\n', '')
-
-    def __repr__(self): 
-        return str(self)
 
 class Functional (Tensor): 
     
@@ -81,18 +86,8 @@ class Functional (Tensor):
         return self.__add__(other) 
 
     def __and__(self, other): 
-
-        def compose(f, g): 
-            if f == Id:
-                return g
-            elif g == Id:
-                return f
-            fog = lambda t: f(g(t))
-            fog.__name__ = f"{f.__name__} o {g.__name__}"
-            return fog
-
         return Lambda({
-            (compose(Fi, other[i]),): 1 for Fi, i in self
+            (Fi @ other[i], ): 1 for Fi, i in self
         })
 
     def __repr__(self): 
