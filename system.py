@@ -5,8 +5,8 @@ from dict import Dict
 
 from hypergraph import Hypergraph
 
-from tensor import Tensor, Product
-from functional import Functional, Id
+from tensor import Tensor, Product, Matrix
+from functional import Id, Functional, Operator
 
 
 class System (Hypergraph):
@@ -42,25 +42,67 @@ class System (Hypergraph):
         self.above = N1.curry(1)
 
         ## zeta_ab = 1 if a >= b else 0
-        self.zeta = I + self.below 
+        zeta = I + self.below 
 
-        ## Zeta_n = Zeta_n-1 >> zeta
+        ## Higher degree zeta & mu transforms
+
+        ## zeta_n = zeta_n-1 >> zeta
         self.I = self.rpows(I)
-        self.Zeta = self.rpows(self.zeta)
+        self.zeta = self.rpows(zeta)
 
-        ## Mu_n = Zeta_n ** (-1)
-        self.Mu = self.Zeta.map(
+        ## mu_n = zeta_n ** (-1)
+        self.mu = self.zeta.map(
             lambda zn, n: self.invert(zn, n)
         )
+        
+        # Differential and codifferential
+
+        self.d = Product(self.diff(i) for Ni, i in self.N)
+        self.delta = Product(self.codiff(i) for Ni, i in self.N)
+        d = sum(di for di, i in self.d)
+        L = d @ d.t() + d.t() @ d
+        self.Laplacian = L
 
         # Functors 
-        self.J = self.I[0].uncurry() + Functional({
+
+        I0 = self.I[0].uncurry() 
+
+        ## cylindrical extensions
+        self.J = I0 + Functional({
             (a, b): self.extend(a, b) for a, b in chains
         })
-        self.Sigma = self.I[0].uncurry() + Functional({
+        ## marginal projections
+        self.Sigma = I0 + Functional({
             (a, b): self.project(a, b) for a, b in chains
         })
+        ## effective energies 
+        self.F = I0 + Functional({
+            (a, b): self.effective(a, b) for a, b in chains
+        })
+        ## free energies
+        self.F += Functional({
+            (a,):   self.effective(a) for a in self
+        })
 
+        ## Operators 
+        OpJ = lambda t: Operator(t, fmap=self.J)
+        OpF = lambda t: Operator(t, cofmap=self.F)
+        OpS = lambda t: Operator(t, cofmap=self.Sigma)
+
+        self.Zeta   = self.zeta.fmap(OpJ)
+        self.Mu     = self.mu.fmap(OpJ)
+        self.Delta  = self.delta.fmap(OpJ)
+        self.D      = self.d.fmap(OpS)
+        self.Deff   = self.d.fmap(OpF)
+
+
+    def field (self, *args):
+        return Tensor(*args)
+    
+    def zeros(self, n): 
+        zero = lambda _, a: torch.zeros(self.shape[a[0]])
+        return self.N[n].map(zero)
+        
     def extend(self, a, b):
         pull = [slice(None) if i in b else None for i in a]
         J_ab = lambda tb: tb[pull]
@@ -73,18 +115,33 @@ class System (Hypergraph):
         S_ab.__name__ = f"Sum {a} > {b}"
         return S_ab
 
-    def field (self, *args):
-        return Tensor(*args)
-    
-    def zeros(self, n): 
-        return self.N[n].map(
-            lambda _, a: torch.zeros(self.shape[a[0]])
-        )
-        
+    def effective(self, a, b=None): 
+        if not b or len(b) == 0:
+            F_a = lambda ha: - torch.logsumexp(-ha)
+            F_a.__name__ = f"Free Energy {a}"
+            return F_a
+        S_ab = self.project(a, b)
+        F_ab = lambda ha: - torch.log(S_ab(torch.exp(-ha)))
+        F_ab.__name__ = f"Effective Energy {a} > {b}"
+        return F_ab
+
     def gaussian(self, n):
-        return self.N[n].map(
-            lambda _, a: torch.randn(self.shape[a[0]])
-        )
+        gauss = lambda _, a: torch.randn(self.shape[a[0]])
+        return self.N[n].map(gauss)
+
+    def diff(self, n): 
+        if not n < len(self.N) - 1:
+            return Matrix()
+        face = lambda i: Matrix({
+            a : {a.forget(i) : 1} for _, a in self.N[n + 1]
+        })
+        d = sum((-1)**i * face(i) for i in range(n + 2))
+        return d
+
+    def codiff(self, n): 
+        if not n > 0:
+            return Matrix()
+        return self.diff(n - 1).t()
 
     def rtimes(self, t, s):
         r = t.__class__()

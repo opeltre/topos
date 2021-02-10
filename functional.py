@@ -33,7 +33,7 @@ class Lambda (Tensor):
 
     def __matmul__(self, other): 
         fog = lambda t: self(other(t))
-        fog.__name__ = f"{f.__name__} o {g.__name__}"
+        fog.__name__ = f"{self.__name__} o {other.__name__}"
         return fog
 
     def __add__(self, other): 
@@ -71,10 +71,11 @@ class Lambda (Tensor):
             if len(self.domain()) > 1 else \
             '\t' + l + s.replace('\n', '')
 
+
 class Functional (Tensor): 
     
     def __init__(self, elems): 
-        F = Record(elems)
+        F = Record(elems) if not isinstance (elems, Record) else elems
         coef = lambda Fi: isinstance(Fi, Lambda)\
             or not isinstance(Fi, (dict, Record, Dict))
         super().__init__({
@@ -86,14 +87,34 @@ class Functional (Tensor):
         return self.__add__(other) 
 
     def __and__(self, other): 
+        if not isinstance(other, Functional): 
+            return self.sum()(other)
+        K = self.domain() & other.domain()
         return Lambda({
-            (Fi @ other[i], ): 1 for Fi, i in self
+            (self[i] @ other[i], ): 1 for i in K
         })
+    
+    
+    def __call__(self, other): 
+        if not isinstance(other, Tensor):
+            return Tensor(self).map(lambda Fi, i: Fi(other))
+        return Tensor(self).map(lambda Fi, i: Fi(other[i]))
 
     def __repr__(self): 
         s = "{\n" + str(self) + "}"
         return f"\u03BB-Tensor {s}"
 
 
-class Operator (Functional, Matrix):
-    pass
+class Operator (Matrix, Functional):
+
+    def __init__(self, elems, fmap=None, cofmap=None): 
+        F = Matrix(elems) if not isinstance(elems, Matrix) else elems
+        if fmap: 
+            F = F.map(
+                lambda Fa, a: Fa.map(
+                lambda Fab, b: Fab * fmap[a.p(-1)|b.p(-1)]))
+        elif cofmap: 
+            F = F.map(
+                lambda Fb, b: Fb.map(
+                lambda Fba, a: Fba * cofmap[a.p(-1)|b.p(-1)]))
+        super().__init__(F)

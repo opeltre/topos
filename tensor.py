@@ -53,7 +53,9 @@ class VectorMixin(MapMixin):
 
     @classmethod 
     def iszero(cls, t): 
-        if not isinstance(t, VectorMixin): 
+        if isinstance(t, torch.Tensor): 
+            return t.norm() == 0.
+        elif not isinstance(t, VectorMixin): 
             return t == 0
         return len(t.filter(lambda ti, i: not cls.iszero(ti))) == 0
 
@@ -176,12 +178,6 @@ class Tensor (VectorMixin, Record):
             i += 1
         return Product(pows)
 
-class Vector (Tensor): 
-    # __init__ override: Vector({a: 1}) -> Tensor({(a,): 1})
-    # or
-    # def Vector(v) 
-    pass
-
 
 class Matrix (Tensor): 
 
@@ -199,7 +195,9 @@ class Matrix (Tensor):
                 lambda Ai_: B.fmap(
                 lambda B_k: Ai_ & B_k))
             return AB.trim()
-        return Tensor(A).map(lambda Ai, i: Ai & other[i])
+        return Tensor({
+            (i, ): Ai_ & other for Ai_, i in self
+        }).trim()
 
     def transpose(self):
         return self.t()
@@ -210,3 +208,6 @@ class Matrix (Tensor):
             for Aij, j in Ai:
                 T += Tensor({j: {i: Aij}})
         return self.__class__(T)
+
+    def __call__(self, other): 
+        return self @ other
