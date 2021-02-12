@@ -45,6 +45,13 @@ class VectorMixin(MapMixin):
             ti.sum() if isTensor(ti) else ti \
             for ti, i in self)
 
+    def norm(self): 
+        norm2 = lambda t: t.norm() ** 2 \
+                if isinstance(t, (torch.Tensor, VectorMixin)) \
+                else t ** 2
+        n2 = self.fmap(norm2)
+        return sum(ni for ni, i in n2)
+
     def trim(self): 
         cls = self.__class__
         not_zero = lambda ti, i: not cls.iszero(ti)
@@ -98,7 +105,7 @@ class Tensor (VectorMixin, Record):
             return super().sum()
         proj = lambda ta, a: a.forget(dim)
         return self.fibers(proj).fmap(lambda tb: tb.sum())
-
+    
     def curry(self, dim=0):
         proj = lambda ta, a: a.restrict(dim)
         t = self.fibers(proj).fmap(lambda tb: tb.sum(dim))
