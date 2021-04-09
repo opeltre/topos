@@ -1,4 +1,4 @@
-from set import Set
+from .set import Set
 
 class Simplex (Set): 
     """

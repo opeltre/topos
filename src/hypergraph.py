@@ -1,9 +1,9 @@
 import torch
 
-from set import Set
-from dict import Dict
-from simplex import Simplex
-from tensor import Tensor, Product
+from .set import Set
+from .dict import Dict
+from .simplex import Simplex
+from .tensor import Tensor, Product
 
 
 class Hypergraph (Set): 

@@ -1,5 +1,5 @@
-from mixin import Mappable, Hashable
-from set import MapMixin 
+from .mixin import Mappable, Hashable
+from .set import MapMixin 
 
 class ProductMixin (MapMixin) :
 

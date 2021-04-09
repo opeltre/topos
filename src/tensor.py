@@ -1,9 +1,9 @@
 import torch 
 from functools import reduce
 
-from set import MapMixin
-from dict import Record 
-from product import ProductMixin, Word
+from .set import MapMixin
+from .dict import Record 
+from .product import ProductMixin, Word
 
 class VectorMixin(MapMixin): 
 

@@ -1,9 +1,9 @@
 import torch
 import itertools 
 
-from dict import Dict, Record
-from hypergraph import Hypergraph
-from simplex import Simplex
+from .dict import Dict, Record
+from .hypergraph import Hypergraph
+from .simplex import Simplex
 
 class Field (Tensor):
 

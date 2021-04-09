@@ -1,10 +1,10 @@
 import torch
 from functools import reduce
 
-from tensor import VectorMixin, Tensor, Matrix
+from .tensor import VectorMixin, Tensor, Matrix
 
-from set import MapMixin
-from dict import Dict, Record
+from .set import MapMixin
+from .dict import Dict, Record
 
 def Id (x):
     return x

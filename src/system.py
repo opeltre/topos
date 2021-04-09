@@ -1,12 +1,12 @@
 import torch 
 
-from set import Set
-from dict import Dict
+from .set import Set
+from .dict import Dict
 
-from hypergraph import Hypergraph
+from .hypergraph import Hypergraph
 
-from tensor import Tensor, Product, Matrix
-from functional import Id, Functional, Operator
+from .tensor import Tensor, Product, Matrix
+from .functional import Id, Functional, Operator
 
 
 class System (Hypergraph):

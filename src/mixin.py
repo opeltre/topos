@@ -1,6 +1,6 @@
 from itertools import product, chain
 
-from dict import Dict
+from .dict import Dict
 
 
 class Hashable:

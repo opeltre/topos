@@ -1,7 +1,7 @@
 from itertools import product
 
-from dict import Dict
-from mixin import Hashable, Mappable
+from .dict import Dict
+from .mixin import Hashable, Mappable
  
 
 class SetMixin (Hashable, Mappable):
