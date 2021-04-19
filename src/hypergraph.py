@@ -1,7 +1,7 @@
 import torch
 
-from .set import Set
-from .dict import Dict
+from .types.set import Set
+from .types.dict import Dict
 from .simplex import Simplex
 from .tensor import Tensor, Product
 
