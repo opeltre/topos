@@ -1,6 +1,5 @@
 from itertools import product
 
-from .dict import Dict
 from .mixin import Hashable, Mappable
  
 
