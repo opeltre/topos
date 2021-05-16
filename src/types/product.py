@@ -1,7 +1,6 @@
-from .mixin import Mappable, Hashable
-from .set import MapMixin 
+from map import Mapping
 
-class ProductMixin (MapMixin) :
+class Product (Mapping) :
 
     def __or__(self, other): 
         return self.__class__(xi for xi, i in (*self, *other))
@@ -17,12 +16,6 @@ class ProductMixin (MapMixin) :
         return self.__class__(
             (self[dim[i]] if i < k else xi for xi, i in self))
 
-    def fmap(self, f):
-        return self.__class__((f(xi) for xi, i in self))
-
-    def map(self, f):
-        return self.__class__((f(xi, i) for xi, i in self))
-
     def __repr__(self): 
         s = str(self)
         return f"\u03a0-{s}"
@@ -35,12 +28,11 @@ class ProductMixin (MapMixin) :
                 si = ('\n' + si).replace('\n', '\n   ') 
                 s += f"\n{i} :{si}"
             else:
-                s += f" . {si}" if len(s) > 0 else si
-        return s
+                s += f".{si}" if len(s) > 0 else si
+        return f"({s})"
 
-class Word (ProductMixin, Hashable, tuple): 
+
+class Prod (Product, tuple): 
 
     def __iter__(self): 
         return ((xi, i) for i, xi in enumerate(super().__iter__()))
-    
-    
