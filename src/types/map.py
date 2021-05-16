@@ -68,6 +68,7 @@ class Mapping:
     def __repr__(self):
         return f"Mapping {str(self)}"
 
+
 class Map (Mapping, Hashable, dict):
    
     def __repr__(self):
