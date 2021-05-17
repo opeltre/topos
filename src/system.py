@@ -1,12 +1,7 @@
 import torch 
 
-from .set import Set
-from .dict import Dict
-
-from .hypergraph import Hypergraph
-
-from .tensor import Tensor, Product, Matrix
-from .functional import Id, Functional, Operator
+from topos import Hypergraph, Tensor, Oplus, Prod, Matrix
+from functional import Id, Functional, Operator
 
 
 class System (Hypergraph):
@@ -21,7 +16,7 @@ class System (Hypergraph):
 
         ## E(i) = number of microstates for atom i
         E = lambda i: shape if type(shape) == int else shape[i]
-        self.shape = Dict({a: Product(E(i) for i in a) for a in self})
+        self.shape = {a: Prod(E(i) for i in a) for a in self}
         
         ## Nerve(i) = { a0 > ... > ai | a in K**i }  
         chains = [(a, b) for a, b in K * K if a > b]
@@ -57,8 +52,8 @@ class System (Hypergraph):
         
         # Differential and codifferential
 
-        self.d = Product(self.diff(i) for Ni, i in self.N)
-        self.delta = Product(self.codiff(i) for Ni, i in self.N)
+        self.d = Oplus(self.diff(i) for Ni, i in self.N)
+        self.delta = Oplus(self.codiff(i) for Ni, i in self.N)
         d = sum(di for di, i in self.d)
         L = d @ d.t() + d.t() @ d
         self.Laplacian = L
@@ -84,6 +79,7 @@ class System (Hypergraph):
             (a,):   self.effective(a) for a in self
         })
 
+        """
         ## Operators 
         OpJ = lambda t: Operator(t, fmap=self.J)
         OpF = lambda t: Operator(t, cofmap=self.F)
@@ -94,6 +90,7 @@ class System (Hypergraph):
         self.Delta  = self.delta.fmap(OpJ)
         self.D      = self.d.fmap(OpS)
         self.Deff   = self.d.fmap(OpF)
+        """
 
 
     def field (self, *args):
@@ -164,7 +161,7 @@ class System (Hypergraph):
             pows += [pk]
             pk = self.rtimes(pk, s)
             i += 1
-        return Product(pows)
+        return Oplus(pows)
 
     def invert(self, matrix, n=0, N=10):
         h = matrix - self.I[n]
@@ -173,7 +170,7 @@ class System (Hypergraph):
             pows += [pk]
             pk = pk @ h
             i += 1
-        return sum((-1)**k * pk for pk, k in Product(pows))
+        return sum((-1)**k * pk for pk, k in Oplus(pows))
     
     def __getitem__(self, n): 
         if type(n) == tuple:

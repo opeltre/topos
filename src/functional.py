@@ -1,10 +1,7 @@
 import torch
 from functools import reduce
 
-from .tensor import VectorMixin, Tensor, Matrix
-
-from .set import MapMixin
-from .dict import Dict, Record
+from topos import Tensor, Matrix, Mapping, Map
 
 def Id (x):
     return x
@@ -75,9 +72,9 @@ class Lambda (Tensor):
 class Functional (Tensor): 
     
     def __init__(self, elems): 
-        F = Record(elems) if not isinstance (elems, Record) else elems
+        F = Map(elems) if not isinstance (elems, Mapping) else elems
         coef = lambda Fi: isinstance(Fi, Lambda)\
-            or not isinstance(Fi, (dict, Record, Dict))
+            or not isinstance(Fi, (dict, Mapping))
         super().__init__({
             i : Lambda(Fi) if coef(Fi) else Functional(Fi)\
             for Fi, i in F
