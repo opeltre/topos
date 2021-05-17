@@ -1,6 +1,12 @@
-from map import Mapping
+from .set import Mapping
 
 class Product (Mapping) :
+
+    def map (self, f):
+        return self.__class__(f(xi, i) for xi, i in self)
+
+    def fmap (self, f):
+        return self.__class__(f(xi) for xi, i in self)
 
     def __or__(self, other): 
         return self.__class__(xi for xi, i in (*self, *other))
@@ -18,7 +24,7 @@ class Product (Mapping) :
 
     def __repr__(self): 
         s = str(self)
-        return f"\u03a0-{s}"
+        return f"\u03a0({s})"
 
     def __str__(self):
         s = ""
@@ -29,7 +35,7 @@ class Product (Mapping) :
                 s += f"\n{i} :{si}"
             else:
                 s += f".{si}" if len(s) > 0 else si
-        return f"({s})"
+        return f"{s}"
 
 
 class Prod (Product, tuple): 
