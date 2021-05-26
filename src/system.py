@@ -1,6 +1,7 @@
 import torch 
 
 from topos import Hypergraph, Tensor, Oplus, Prod, Matrix
+from topos import timed
 from functional import Id, Functional, Operator
 
 
@@ -46,14 +47,15 @@ class System (Hypergraph):
         self.zeta = self.rpows(zeta)
 
         ## mu_n = zeta_n ** (-1)
-        self.mu = self.zeta.map(
-            lambda zn, n: self.invert(zn, n)
+        print("computing mu:")
+        self.mu = timed(self.zeta.map)(
+            lambda zn, n: timed(self.invert)(zn, n)
         )
         
         # Differential and codifferential
-
-        self.d = Oplus(self.diff(i) for Ni, i in self.N)
-        self.delta = Oplus(self.codiff(i) for Ni, i in self.N)
+        print("computing diffs:")
+        self.d = Oplus(timed(self.diff)(i) for Ni, i in self.N)
+        self.delta = Oplus(timed(self.codiff)(i) for Ni, i in self.N)
         d = sum(di for di, i in self.d)
         L = d @ d.t() + d.t() @ d
         self.Laplacian = L
@@ -138,7 +140,7 @@ class System (Hypergraph):
     def codiff(self, n): 
         if not n > 0:
             return Matrix()
-        return self.diff(n - 1).t()
+        return timed(self.diff(n - 1).t)()
 
     def rtimes(self, t, s):
         r = t.__class__()

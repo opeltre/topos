@@ -3,6 +3,7 @@ from functools import reduce
 
 from .set import Map, Mapping
 from .product import Prod
+from .timed import timed
 
 class NumMapping (Mapping): 
 
@@ -167,11 +168,12 @@ class Matrix (Tensor):
         return Tensor(t)
 
     def __matmul__(self, other): 
+        print("matmul:")
         if isinstance(other, Matrix):
-            B = other.t()
-            AB = self.fmap(
-                lambda Ai_: B.fmap(
-                lambda B_k: Ai_ & B_k))
+            B = timed(other.t)()
+            A, B = self, other
+            AB = {}
+            AB = Matrix({i : {k : Ai & Bk for Bk, k in B} for Ai, i in A})
             return AB.trim()
         return Tensor({
             (i, ): Ai_ & other for Ai_, i in self
@@ -184,7 +186,9 @@ class Matrix (Tensor):
         T = Tensor()
         for Ai, i in self:
             for Aij, j in Ai:
-                T += Tensor({j: {i: Aij}})
+                if j  not in T:
+                    T[j] = {}
+                T[j][i] = Aij
         return self.__class__(T)
 
     def __call__(self, other): 
