@@ -1,17 +1,29 @@
 from .set import Set
 from .tensor import Tensor
+from itertools import product
 
 class Hypergraph (Set): 
     """
     Hypergraphs 
     """
-    def __init__(self, elems, sep=','):
+    def __init__(self, elems, sep=',', **kwargs):
         if type(elems) == str:
             elems = elems.split(sep)
-        K = (Set(e) if type(e) == str else e for e in elems)
+        K = [Set(e) if type(e) == str else e for e in elems]
+
         super().__init__(K, sep)
         
-        self.nerve = []
+        self.chains =   \
+            [(a, b) for a, b in product(K, K) if a > b]\
+            if "chains" not in kwargs else kwargs["chains"]
+
+        self._below, self._above =  \
+            {a: [] for a in self},  \
+            {b: [] for b in self}
+
+        for (a, b) in self.chains:
+            self._below[a] += [b]
+            self._above[b] += [a]
 
     def vertices(self): 
         vertices = Set()
@@ -27,14 +39,16 @@ class Hypergraph (Set):
             yield b
 
     def above (self, b, strict=1):
-        return self._above[b]
+        if not strict: 
+            yield b
+        for a in self._above[b]:
+            yield a
 
     def between (self, a, c): 
-        return self.below(a).above(c)
+        return (b for b in self.below(a) if b > c)
 
-    def intercone (self, a, b, strict=1):
-        icone = self.below(a, strict).difference(self.below(b))
-        return Hypergraph(icone)
+    def intercone (self, a, c, strict=1):
+        return (b for b in self.below(a) if not b <= c)
 
     def add(self, elem): 
         super().add(Set((elem)))
