@@ -1,10 +1,40 @@
 from .set import Set
 from .tensor import Tensor
 from itertools import product
+from .hashable import Hashable
 
 
 def toSet (a):
     return a if isinstance(a, Set) else Set(a)
+
+class Chain (Hashable): 
+
+    @classmethod
+    def read(cls, string):
+        if isinstance(string, cls):
+            return string
+        elems = string.split(" > ")
+        return cls(*(Set(e) for e in elems))
+
+    def __init__(self, *js): 
+        self.degree = len(js) - 1
+        self.elems = js
+
+    def d (self, i): 
+        return Chain(*(self.elems[:i] + self.elems[i+1:]))
+
+    def __getitem__(self, i): 
+        return self.elems[i % (self.degree + 1)]
+
+    def __iter__(self):
+        return self.elems.__iter__()
+
+    def __str__(self): 
+        return " > ".join([str(e) for e in self.elems])
+
+    def __repr__(self):
+        return f"{self}"
+    
 
 class Hypergraph (Set): 
     """
@@ -53,6 +83,18 @@ class Hypergraph (Set):
 
     def intercone (self, a, c, strict=1):
         return (b for b in self.below(a) if not b <= toSet(c))
+
+    def nerve (self, degree = -1): 
+        N = [[Chain(a) for a in self]]
+        d = degree
+        while d != 0:
+            Nd = [Chain(*c, b) for c in N[-1] for b in self.below(c[-1])] 
+            d -= 1
+            if len(Nd) == 0:
+                break
+            else:
+                N += [Nd]
+        return N
 
     def add(self, elem): 
         super().add(Set((elem)))

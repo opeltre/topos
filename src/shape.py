@@ -1,7 +1,9 @@
 import torch
 import sparse
-from topos import Hypergraph, Set
+from topos import Hypergraph, Set, Chain
 from topos.hashable import Hashable
+from itertools import product
+
 
 class Shape :
 
@@ -15,7 +17,7 @@ class Shape :
 
     def index(self, *js):
         i = js[0]
-        for d in range(1, self.dim):
+        for d in range(1, min(len(js), self.dim)):
             i = (i * self.n[d]) + js[d]
         return i
     
@@ -27,17 +29,17 @@ class Shape :
 
 class Cell (Hashable): 
 
-    def __init__(self, key, i, shape, start=0):
+    def __init__(self, key, i, shape, begin=0):
         self.key    = key 
         self.idx    = i
-        self.start  = start
-        self.end    = start + shape.size
+        self.begin  = begin
+        self.end    = begin + shape.size
         self.shape  = shape
         self.size   = shape.size
 
-    def to (start):
-        self.start = start
-        self.end   = start + self.size
+    def to (begin):
+        self.begin = begin
+        self.end   = begin + self.size
 
     def __gt__(self, other): 
         return self.key > other.key
@@ -47,51 +49,56 @@ class Cell (Hashable):
 
     def __str__(self): 
         return str(self.key)
-
+    
+    def __repr__(self): 
+        return f"Cell {self} {self.begin}-{self.end}"
 
 class System : 
     
-    def __init__(self, K, shape=2, close=True, sort=True, degree=1):
+    def __init__(self, K, shape=2, close=True, sort=True, degree=-1):
+
+        #--- Nerve ---
         K = Hypergraph(K) if not isinstance(K, Hypergraph) else K
         K = K.closure() if close else K
-        E = lambda i: shape if type(shape) == int else shape[i]
+        N = K.nerve(degree)
+        if sort: 
+            for Nk in N:
+                Nk.sort(key = lambda c : (-len(c[-1]), str(c)))
 
         #--- Shapes of local tensors ---
+        E = lambda i: shape if type(shape) == int else shape[i]
         self.shape = { 
             a: Shape(*(E(i) for i in a)) for a in K
         }
 
         #--- Pointers to start of local data ---
-        start, cells, cell_map = 0, [], {}
-        for i, k in enumerate(K):
-            c_k = Cell(k, i, self.shape[k], start = start)
-            cells       += [c_k]
-            cell_map[k]  = c_k
-            start       += c_k.size
+        self.size = []
+        self.cells = {}
+        self.nerve = [[] for Nk in N]
+        for k, Nk in enumerate(N):
+            begin = 0
+            for i, c in enumerate(Nk):
+                cell = Cell(c, i, self.shape[c[-1]], begin = begin)
+                self.nerve[k]    += [cell]
+                self.cells[c]     = cell
+                begin            += cell.size
+            self.size += [begin]
 
-        self.size = start
+    def zeros(self, degree=0):
+        return Field(self, torch.zeros([self.size[degree]]))
 
-        K = Set(cells)
-        self.cells = K
+    def ones(self, degree=0):
+        return Field(self, torch.ones([self.size[degree]]))
 
-        #--- Nerve --- 
-
-        self.N = [K]
-        chains = [[a.idx, b.idx] for a, b in K * K if a > b]
-        chains = chains if len(chains) else [[], []]
-
-        one = sparse.eye(len(K))
-
-        zeta_1 = torch.sparse_coo_tensor(
-            torch.tensor(chains).t(),
-            torch.ones([len(chains)]),
-            (len(K), len(K))
-        )
-        zeta = one + zeta_1
-        self.zeta = zeta
+    def __getitem__(self, chain): 
+        return self.cells[Chain.read(chain)]
 
     def index(self, a, *js): 
-        return a.start + a.shape.index(*js)
+        cell = self[a]
+        return cell.begin + cell.shape.index(*js)
+
+    def __repr__(self): 
+        return f"System {self.cells}"
 
 
 class Field :
@@ -104,9 +111,9 @@ class Field :
 
     def get(self, a):
         shape   = self.system.shape[a] 
-        start   = self.system.start[a]
-        end     = self.system.shape[a].size + start
-        return self.data[start:end].view(shape)
+        begin   = self.system.begin[a]
+        end     = self.system.shape[a].size + begin
+        return self.data[begin:end].view(shape)
     
     #--- Arithmetic Operations ---
 
