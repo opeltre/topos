@@ -74,7 +74,7 @@ class Set (Iterable, Hashable, set):
 
 class Mapping: 
 
-    # __init__({k : fk}) very inefficient! 2 dict creations. 
+    # __init__({k : fk}) very inefficient! 2 dict creations. OR is it? 
 
     def fmap(self, f):
         return self.__class__({k: f(x) for x, k in self})
@@ -155,4 +155,4 @@ class Map (Mapping, Hashable, dict):
         return f"Map {str(self)}" 
 
     def __iter__(self): 
-        return ((self[k], k) for k in super().__iter__())
+        return ((vk, k) for k, vk in super().items())

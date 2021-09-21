@@ -4,7 +4,6 @@ from topos import Hypergraph, Set, Chain
 from topos.hashable import Hashable
 from itertools import product
 
-
 class Shape :
 
     def __init__(self, *ns):
@@ -20,6 +19,9 @@ class Shape :
         for d in range(1, min(len(js), self.dim)):
             i = (i * self.n[d]) + js[d]
         return i
+
+    def __iter__(self):
+        return self.n.__iter__()
     
     def __str__(self): 
         return "(" + ",".join([str(ni) for ni in self.n]) + ")"
@@ -85,10 +87,10 @@ class System :
             self.size += [begin]
 
     def zeros(self, degree=0):
-        return Field(self, torch.zeros([self.size[degree]]))
+        return Field(self, degree, torch.zeros([self.size[degree]]))
 
     def ones(self, degree=0):
-        return Field(self, torch.ones([self.size[degree]]))
+        return Field(self, degree, torch.ones([self.size[degree]]))
 
     def __getitem__(self, chain): 
         return self.cells[Chain.read(chain)]
@@ -103,34 +105,52 @@ class System :
 
 class Field :
 
-    def __init__(self, system, data=None):
+    def __init__(self, system, degree=0, data=None):
         self.system = system
+        self.degree = degree
         if isinstance(data, torch.Tensor):
             self.data = data
-        self.data = torch.zeros([system.size])
+        else:
+            self.data = torch.zeros([system.size[degree]])
 
     def get(self, a):
-        shape   = self.system.shape[a] 
-        begin   = self.system.begin[a]
-        end     = self.system.shape[a].size + begin
-        return self.data[begin:end].view(shape)
+        a = self.system[a] if not isinstance(a, Cell) else a
+        return self.data[a.begin:a.end].view(a.shape.n)
+
+    def __str__(self): 
+        def tensor (t, pad): 
+            return str(t).replace("tensor(", " " * 7)\
+                    .replace(")", "")\
+                    .replace("\n\n", "\n")\
+                    .replace("\t", "")\
+                    .replace(r'\s*', "")\
+                    .replace("\n", "\n" + " " * pad)
+        s = "{\n\n"
+        for c in self.system.nerve[self.degree]:
+            sc = f"{c} ::"
+            pad = len(sc) 
+            s += sc + tensor(self.get(c), pad) + ",\n\n"
+        return s + "}"
     
+    def __repr__(self): 
+        return f"{self.degree}-Field {self}"
+        
     #--- Arithmetic Operations ---
 
     def __add__(self, other): 
-        return Field(self, self.data\
+        return Field(self, self.degree, self.data\
             + other.data if isinstance(other, Field) else other)
 
     def __sub__(self, other): 
-        return Field(self, self.data\
+        return Field(self, self.degree, self.data\
             - other.data if isinstance(other, Field) else other)
 
     def __mul__(self, other): 
-        return Field(self, self.data\
+        return Field(self, self.degree, self.data\
             * other.data if isinstance(other, Field) else other)
 
     def __div__(self, other): 
-        return Field(self, self.data\
+        return Field(self, self.degree, self.data\
             / other.data if isinstance(other, Field) else other)
 
     def __radd__(self, other): 

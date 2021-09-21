@@ -168,11 +168,8 @@ class Matrix (Tensor):
         return Tensor(t)
 
     def __matmul__(self, other): 
-        print("matmul:")
         if isinstance(other, Matrix):
-            B = timed(other.t)()
-            A, B = self, other
-            AB = {}
+            A, B = self, other.t()
             AB = Matrix({i : {k : Ai & Bk for Bk, k in B} for Ai, i in A})
             return AB.trim()
         return Tensor({
