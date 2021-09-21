@@ -1,19 +1,24 @@
 import torch
 import shape
+from vect import Vect
 
-class Field :
+class Field (Vect): 
 
     def __init__(self, system, degree=0, data=None):
         self.system = system
         self.degree = degree
-        if isinstance(data, torch.Tensor):
-            self.data = data
-        else:
-            self.data = torch.zeros([system.size[degree]])
+        data = data if isinstance(data, torch.Tensor)\
+                else torch.zeros([system.size[degree]])
+        super().__init__(system.size[degree], data)
 
     def get(self, a):
         a = self.system[a] if not isinstance(a, shape.Cell) else a
         return self.data[a.begin:a.end].view(a.shape.n)
+
+    def same(self, data=None):
+        if isinstance(data, type(None)):
+            data = self.data
+        return Field(self.system, self.degree, data)
 
     #--- Show ---
 
@@ -35,50 +40,3 @@ class Field :
     def __repr__(self): 
         return f"{self.degree}-Field {self}"
     
-    #--- Arithmetic Operations ---
-
-    def same (self, data=None):
-        if not isinstance(data, torch.Tensor):
-            data = self.data
-        return Field(self, self.system, self.degree, data)
-
-    def __add__(self, other): 
-        return self.same(self.data\
-            + other.data if isinstance(other, Field) else other)
-
-    def __sub__(self, other): 
-        return self.same(self.data\
-            - other.data if isinstance(other, Field) else other)
-
-    def __mul__(self, other): 
-        return self.same(self.data\
-            * other.data if isinstance(other, Field) else other)
-
-    def __div__(self, other): 
-        return self.same(self.data\
-            / other.data if isinstance(other, Field) else other)
-
-    def __radd__(self, other): 
-        return self.__add__(other)
-
-    def __rsub__(self, other): 
-        return self.__sub__(other)
-
-    def __rmul__(self, other): 
-        return self.__mul__(other)
-
-    def __iadd__(self, other):
-        self.data += other.data if isinstance(other, Field) else other
-        return self
-
-    def __isub__(self, other):
-        self.data -= other.data if isinstance(other, Field) else other
-        return self
-
-    def __imul__(self, other):
-        self.data *= other.data if isinstance(other, Field) else other
-        return self
-
-    def __idiv__(self, other):
-        self.data /= other.data if isinstance(other, Field) else other
-        return self
