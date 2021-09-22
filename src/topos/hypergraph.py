@@ -1,5 +1,4 @@
 from .set import Set
-from .tensor import Tensor
 from itertools import product
 from .hashable import Hashable
 

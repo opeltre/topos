@@ -1,5 +1,5 @@
 import torch
-import shape
+from topos import Cell
 from vect import Vect
 
 class Field (Vect): 
@@ -12,13 +12,17 @@ class Field (Vect):
         super().__init__(system.size[degree], data)
 
     def get(self, a):
-        a = self.system[a] if not isinstance(a, shape.Cell) else a
+        a = self.system[a] if not isinstance(a, Cell) else a
         return self.data[a.begin:a.end].view(a.shape.n)
 
     def same(self, data=None):
         if isinstance(data, type(None)):
             data = self.data
         return Field(self.system, self.degree, data)
+
+    def is_same(self, other): 
+        return  self.system == other.system\
+            and self.degree == other.degree
 
     #--- Show ---
 

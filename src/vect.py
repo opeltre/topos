@@ -7,12 +7,12 @@ class Vect:
         self.size = size
         self.data = data
 
-    #--- Arithmetic Operations ---
-
     def same (self, data=None):
         if not isinstance(data, torch.Tensor):
             data = self.data
         return Vect(self, self.size, data)
+
+    #--- Arithmetic Operations ---
 
     def __add__(self, other): 
         return self.same(self.data\
