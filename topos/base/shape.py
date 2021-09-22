@@ -1,4 +1,4 @@
-from base.hashable import Hashable
+from .hashable import Hashable
 
 class Shape :
 

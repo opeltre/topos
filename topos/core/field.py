@@ -1,5 +1,5 @@
 import torch
-from base import Cell
+from topos import Cell
 from .vect import Vect
 
 class Field (Vect): 

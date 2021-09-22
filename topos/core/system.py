@@ -1,4 +1,4 @@
-from base import Hypergraph, Chain, Cell, Shape
+from topos import Hypergraph, Chain, Cell, Shape
 from .field import Field
 
 import torch
