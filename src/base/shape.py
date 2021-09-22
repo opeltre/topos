@@ -1,4 +1,4 @@
-from topos.hashable import Hashable
+from base.hashable import Hashable
 
 class Shape :
 

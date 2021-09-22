@@ -1,6 +1,6 @@
 import torch
-from topos import Cell
-from vect import Vect
+from base import Cell
+from .vect import Vect
 
 class Field (Vect): 
 
@@ -27,20 +27,22 @@ class Field (Vect):
     #--- Show ---
 
     def __str__(self): 
-        def tensor (t, pad): 
-            return str(t).replace("tensor(", " " * 7)\
-                    .replace(")", "")\
-                    .replace("\n\n", "\n")\
-                    .replace("\t", "")\
-                    .replace(r'\s*', "")\
-                    .replace("\n", "\n" + " " * pad)
         s = "{\n\n"
         for c in self.system.nerve[self.degree]:
             sc = f"{c} ::"
             pad = len(sc) 
-            s += sc + tensor(self.get(c), pad) + ",\n\n"
+            s += sc + show_tensor(self.get(c), pad) + ",\n\n"
         return s + "}"
     
     def __repr__(self): 
         return f"{self.degree}-Field {self}"
-    
+
+#--- Show --- 
+
+def show_tensor (t, pad):
+    return str(t).replace("tensor(", " " * 7)\
+        .replace(")", "")\
+        .replace("\n\n", "\n")\
+        .replace("\t", "")\
+        .replace(r'\s*', "")\
+        .replace("\n", "\n" + " " * pad)

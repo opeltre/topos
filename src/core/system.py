@@ -1,7 +1,7 @@
-from topos import Hypergraph, Chain, Cell, Shape
+from base import Hypergraph, Chain, Cell, Shape
+from .field import Field
 
 import torch
-import field
 
 class System : 
     
@@ -35,10 +35,10 @@ class System :
             self.size += [begin]
 
     def zeros(self, degree=0):
-        return field.Field(self, degree, torch.zeros([self.size[degree]]))
+        return Field(self, degree, torch.zeros([self.size[degree]]))
 
     def ones(self, degree=0):
-        return field.Field(self, degree, torch.ones([self.size[degree]]))
+        return Field(self, degree, torch.ones([self.size[degree]]))
 
     def __getitem__(self, chain): 
         return self.cells[Chain.read(chain)]
