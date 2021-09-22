@@ -1,5 +1,14 @@
 # Topos
 
+**This library is currently being refactored (sept. 21)**
+
+*Statistical fields are reimplemented as 1D-tensors internally
+for efficiency. This means more work to cook index formulas compared
+to an implementation leveraging on the natural mathematical structures
+involved. On the other hand, all arithmetic operations, map operations
+and linear operators benefit from a native parallel implementation 
+coming from pytorch.*
+
 ## Algebra and Topology
 
 Multilinear algebra tensors `t` can be viewed as collections of scalars `t[i|j|...|k]`
