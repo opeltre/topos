@@ -18,7 +18,7 @@ class System :
         #--- Shapes of local tensors ---
         E = lambda i: shape if type(shape) == int else shape[i]
         self.shape = { 
-            a: Shape(*(E(i) for i in a)) for a in K
+            a: Shape(*(E(i) for i in a.list())) for a in K
         }
 
         #--- Pointers to start of local data ---
@@ -33,12 +33,15 @@ class System :
                 self.cells[c]     = cell
                 begin            += cell.size
             self.size += [begin]
-
+    
     def zeros(self, degree=0):
         return Field(self, degree, torch.zeros([self.size[degree]]))
 
     def ones(self, degree=0):
         return Field(self, degree, torch.ones([self.size[degree]]))
+
+    def randn(self, degree=0):
+        return Field(self, degree, torch.randn([self.size[degree]]))
 
     def __getitem__(self, chain): 
         return self.cells[Chain.read(chain)]
