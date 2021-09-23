@@ -11,10 +11,23 @@ class Shape :
         self.size = size
 
     def index(self, *js):
+        if not len(js):
+            return 0
         i = js[0]
         for d in range(1, min(len(js), self.dim)):
             i = (i * self.n[d]) + js[d]
         return i
+
+    def coords(self, i):
+        if i >= self.size or i < 0:
+            raise IndexError(f"{self} coords {i}")
+        js = []
+        r, div = i, self.size
+        for d in range(0, self.dim): 
+            div //= self.n[d]
+            q, r = divmod(r, div)
+            js += [q]
+        return js
 
     def __iter__(self):
         return self.n.__iter__()

@@ -22,6 +22,11 @@ class Iterable:
             F[y] = F[y] + [x] if y in F else [x]
         return F
 
+    def list(self): 
+        xs = [x for x in self]
+        xs.sort(key=lambda x: str(x))
+        return xs
+
     def __add__(self, other): 
         return self.__class__(s for s in chain(self, other))
 
@@ -73,8 +78,6 @@ class Set (Iterable, Hashable, set):
 
 
 class Mapping: 
-
-    # __init__({k : fk}) very inefficient! 2 dict creations. OR is it? 
 
     def fmap(self, f):
         return self.__class__({k: f(x) for x, k in self})
