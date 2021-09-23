@@ -13,10 +13,10 @@ coming from pytorch.*
 
 See [example.py](example.py)
 
-```
+```py
 >>> u = K.randn(degree=0)
 >>> u
-0-Field {
+0 Field {
 
 (i:j) ::       [[-1.6016,  0.6941],
                 [-0.2367, -0.1504]],
@@ -32,7 +32,7 @@ See [example.py](example.py)
 1 Linear d
 
 >>> d(u)
-1-Field {
+1 Field {
 
 (i:j) > (j) ::       [ 2.3497, -0.0106],
 
