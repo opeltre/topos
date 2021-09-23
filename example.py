@@ -5,7 +5,7 @@ import torch
 from topos.core.operators import face, differential, codifferential
 from topos.core.functional import Matrix
 
-K = System(("i:j", "j:k"))
+K = System(("i:j", "j:k", "k:l"))
 # K = System(("i:j:k", "i:k:l", "j:k:l"))
 
 mat_d = differential(K, 0)

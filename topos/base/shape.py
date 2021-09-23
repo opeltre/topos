@@ -11,6 +11,8 @@ class Shape :
         self.size = size
 
     def index(self, *js):
+        if not len(js):
+            return 0
         i = js[0]
         for d in range(1, min(len(js), self.dim)):
             i = (i * self.n[d]) + js[d]
