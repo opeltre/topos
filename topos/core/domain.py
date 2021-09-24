@@ -47,7 +47,7 @@ class Domain :
     def __repr__(self):
         return "Domain"
 
-class Domain_k (Domain):
+class GradedDomain (Domain):
 
     def __init__(self, complex, degree, keys, shapes):
         self.degree = degree

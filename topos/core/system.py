@@ -1,6 +1,6 @@
 from topos import Hypergraph, Chain, Cell, Shape
 from .field import Field
-from .domain import Domain_k
+from .domain import GradedDomain
 
 import torch
 
@@ -26,7 +26,7 @@ class System :
         #--- Pointers to start of local data ---
         shape = lambda chain : self.shape[chain[-1]]
         self.nerve = [
-            Domain_k(self, k, Nk, shape) for k, Nk in enumerate(N)
+            GradedDomain(self, k, Nk, shape) for k, Nk in enumerate(N)
         ]
     
     def __getitem__(self, degree):
