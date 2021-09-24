@@ -4,19 +4,19 @@ import torch
 
 def face(K, degree, j): 
     def dj (cell): 
-        return K[cell.key.d(j)]
-    pairs = [[dj(a), a] for a in K.nerve[degree]]
+        return K[degree - 1][cell.key.d(j)]
+    pairs = [[dj(a), a] for a in K[degree]]
     fmap_is = eye_is if j < degree else functor_is
     indices = [ij for p in pairs for ij in fmap_is(*p)]
     matrix = torch.sparse_coo_tensor(
         indices=torch.tensor(indices, dtype=torch.long).t(),
         values=torch.ones([len(indices)]),
-        size=[K.size[degree - 1], K.size[degree]]
+        size=[K[degree - 1].size, K[degree].size]
     )
     return matrix
 
 def codifferential(K, degree): 
-    shape = K.size[degree - 1], K.size[degree]
+    shape = K[degree - 1].size, K[degree].size
     delta = torch.sparse_coo_tensor([[], []], [], shape)
     for j in range(0, degree + 1):
         delta += (-1)**j * face(K, degree, j)
@@ -24,6 +24,7 @@ def codifferential(K, degree):
 
 def differential(K, degree):
     return codifferential(K, degree + 1).t()
+
 
 #------ Functorial Maps ------
 
@@ -44,6 +45,8 @@ def functor_is(cb, ca):
         return ca.shape.index(*ys)
     return [[cb.begin + i, ca.begin + index_b(i)] for i in range(cb.size)]
 
+
+#------ Canonical Projection ------
 
 def positions(a, b): 
     """ Position of elements of b in the inclusion b <= a. """

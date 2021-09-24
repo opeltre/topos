@@ -4,21 +4,21 @@ from .vect import Vect
 
 class Field (Vect): 
 
-    def __init__(self, system, degree=0, data=None):
+    def __init__(self, system, degree=0, data=0):
         self.system = system
         self.degree = degree
-        data = data if isinstance(data, torch.Tensor)\
-                else torch.zeros([system.size[degree]])
-        super().__init__(system.size[degree], data)
+        self.domain = system[degree]
+        self.data = data if isinstance(data, torch.Tensor)\
+                else data * torch.ones([domain.size])
 
     def get(self, a):
-        a = self.system[a] if not isinstance(a, Cell) else a
+        a = domain[a] if not isinstance(a, Cell) else a
         return self.data[a.begin:a.end].view(a.shape.n)
 
     def same(self, data=None):
         if isinstance(data, type(None)):
             data = self.data
-        return Field(self.system, self.degree, data)
+        return domain.field(data)
 
     def is_same(self, other): 
         return  self.system == other.system\
@@ -28,14 +28,14 @@ class Field (Vect):
 
     def __str__(self): 
         s = "{\n\n"
-        for c in self.system.nerve[self.degree]:
+        for c in self.domain:
             sc = f"{c} ::"
             pad = len(sc) 
             s += sc + show_tensor(self.get(c), pad) + ",\n\n"
         return s + "}"
     
     def __repr__(self): 
-        return f"{self.degree}-Field {self}"
+        return f"{self.degree} Field {self}"
 
 #--- Show --- 
 

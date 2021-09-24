@@ -2,6 +2,7 @@ from .system import System
 from .field import Field
 import torch
 
+
 class Functional :
 
     def __init__(self, f, degree=0, name="\u033b"):
@@ -27,21 +28,3 @@ class Functional :
 
     def __repr__(self):
         return f"{self.degree} Functional {self}"
-
-class Matrix (Functional): 
-    
-    def __init__(self, mat, degree=0, name="Mat"):
-        self.mat = mat
-        f = lambda d: mat @ d
-        super().__init__(f, degree, name)
-
-    def __matmul__(self, other):
-        if isinstance(other, Matrix):
-            degree = self.degree + other.degree
-            matmul = torch.sparse.mm
-            mat = matmul(self.mat, other.mat)
-            return Matrix(mat, degree)
-        return super().__matmul__(other)
-
-    def __repr__(self):
-        return f"{self.degree} Linear {self}"

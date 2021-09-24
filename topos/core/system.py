@@ -1,12 +1,13 @@
 from topos import Hypergraph, Chain, Cell, Shape
 from .field import Field
+from .domain import Domain_k
 
 import torch
 
 class System : 
     
     def __init__(self, K, shape=2, close=True, sort=True, degree=-1):
-
+        
         #--- Nerve ---
         K = Hypergraph(K) if not isinstance(K, Hypergraph) else K
         K = K.closure() if close else K
@@ -14,6 +15,7 @@ class System :
         if sort: 
             for Nk in N:
                 Nk.sort(key = lambda c : (-len(c[-1]), str(c)))
+        self.degree = len(N)
 
         #--- Shapes of local tensors ---
         E = lambda i: shape if type(shape) == int else shape[i]
@@ -22,35 +24,15 @@ class System :
         }
 
         #--- Pointers to start of local data ---
-        self.size = []
-        self.cells = {}
-        self.nerve = [[] for Nk in N]
-        for k, Nk in enumerate(N):
-            begin = 0
-            for i, c in enumerate(Nk):
-                cell = Cell(c, i, self.shape[c[-1]], begin = begin)
-                self.nerve[k]    += [cell]
-                self.cells[c]     = cell
-                begin            += cell.size
-            self.size += [begin]
+        shape = lambda chain : self.shape[chain[-1]]
+        self.nerve = [
+            Domain_k(self, k, Nk, shape) for k, Nk in enumerate(N)
+        ]
     
-    def zeros(self, degree=0):
-        return Field(self, degree, torch.zeros([self.size[degree]]))
-
-    def ones(self, degree=0):
-        return Field(self, degree, torch.ones([self.size[degree]]))
-
-    def randn(self, degree=0):
-        return Field(self, degree, torch.randn([self.size[degree]]))
-
-    def __getitem__(self, chain): 
-        return self.cells[Chain.read(chain)]
-
-    def index(self, a, *js): 
-        cell = self[a]
-        return cell.begin + cell.shape.index(*js)
+    def __getitem__(self, degree):
+        return self.nerve[degree]
 
     def __repr__(self): 
-        return f"System {self.cells}"
-
-
+        return "System [\n\n" \
+            +  ",\n\n".join([str(Nk) for Nk in self.nerve]) \
+            +  "\n\n]"
