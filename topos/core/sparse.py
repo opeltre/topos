@@ -1,5 +1,7 @@
 import torch
 
+matmul = torch.sparse.mm 
+
 def irange (n): 
     return torch.arange(n, dtype=torch.long)
 

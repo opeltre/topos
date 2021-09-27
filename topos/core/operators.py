@@ -1,5 +1,5 @@
 import torch
-from topos.core.sparse import sparse
+from topos.core.sparse import sparse, eye, matmul
 
 #--- Differentials --- 
 
@@ -32,10 +32,8 @@ def differential(K, degree):
 def zeta(K, degree):
     G = K.hypergraph
     chains = [[] for d in range(degree + 1)]
-    pairs = [[c.key[0], c.key[1]] for c in K[1]]
-    chains[0] = [[[a], [b]] for a, b in pairs]
+    chains[0] = [[[a], [b]] for a in G for b in G.below(a, strict=0)]
     for d in range(1, degree + 1): 
-        #----- N.B: zeta[deg] = 0
         chains[d] = [[[a0] + a1s, [b0] + b1s]   \
                     for a1s, b1s in chains[d-1] \
                     for a0 in G.above(a1s[0])   \
@@ -49,6 +47,16 @@ def zeta(K, degree):
         z += [sparse((n, n), indices)]
     return z
 
+def invert_nil(mat, order=10, tol=1e-10):
+    one = eye(mat.shape[0])
+    x = mat - one 
+    out = one - x
+    k, xk = 2, matmul(x, x)
+    while float(xk.norm()) > tol and k < order:
+        out += (-1)**k * xk
+        xk = matmul(x, xk) 
+        k += 1
+    return out
 
 def mu(K, degree): 
     pass
