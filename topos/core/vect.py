@@ -3,32 +3,39 @@ import torch
 class Vect: 
     """ A base container class for torch 1D-tensors """
 
-    def __init__(self, size, data):
-        self.size = size
-        self.data = data
-
     def same (self, data=None):
-        if not isinstance(data, torch.Tensor):
+        if isinstance(data, type(None)):
             data = self.data
-        return Vect(self, self.size, data)
+        return Vect(self, data)
 
     #--- Arithmetic Operations ---
 
     def __add__(self, other): 
+        if not isinstance(other, Vect):
+            other = self.same(other)
         return self.same(self.data\
-            + (other.data if isinstance(other, Vect) else other))
+            + other.data)
+
+    def __neg__(self):
+        return self.same(- self.data)
 
     def __sub__(self, other): 
+        if not isinstance(other, Vect):
+            other = self.same(other)
         return self.same(self.data\
-            - (other.data if isinstance(other, Vect) else other))
+            - other.data)
 
     def __mul__(self, other): 
+        if not isinstance(other, Vect):
+            other = self.same(other)
         return self.same(self.data\
-            * (other.data if isinstance(other, Vect) else other))
+            * other.data)
 
-    def __div__(self, other): 
+    def __truediv__(self, other): 
+        if not isinstance(other, Vect):
+            other = self.same(other)
         return self.same(self.data\
-            / (other.data if isinstance(other, Vect) else other))
+            / other.data)
 
     def __radd__(self, other): 
         return self.__add__(other)
@@ -40,17 +47,25 @@ class Vect:
         return self.__mul__(other)
 
     def __iadd__(self, other):
-        self.data += other.data if isinstance(other, Vect) else other
+        if not isinstance(other, Vect):
+            other = self.same(other)
+        self.data += other.data 
         return self
 
     def __isub__(self, other):
-        self.data -= other.data if isinstance(other, Vect) else other
+        if not isinstance(other, Vect):
+            other = self.same(other)
+        self.data -= other.data
         return self
 
     def __imul__(self, other):
-        self.data *= other.data if isinstance(other, Vect) else other
+        if not isinstance(other, Vect):
+            other = self.same(other)
+        self.data *= other.data
         return self
 
-    def __idiv__(self, other):
-        self.data /= other.data if isinstance(other, Vect) else other
+    def __itruediv__(self, other):
+        if not isinstance(other, Vect):
+            other = self.same(other)
+        self.data /= other.data
         return self

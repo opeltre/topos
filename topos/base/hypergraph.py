@@ -9,11 +9,13 @@ def toSet (a):
 class Chain (Hashable): 
 
     @classmethod
-    def read(cls, string):
-        if isinstance(string, cls):
-            return string
-        elems = string.split(" > ")
-        return cls(*(Set(e) for e in elems))
+    def read(cls, arg):
+        if isinstance(arg, cls):
+            return arg
+        if isinstance(arg, str):
+            elems = arg.split(" > ")
+            return cls(*(Set(e) for e in elems))
+        return cls(*arg)
 
     def __init__(self, *js): 
         self.degree = len(js) - 1
