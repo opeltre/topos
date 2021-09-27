@@ -29,11 +29,16 @@ class Domain :
         self.normalise = Functional(normalise, 0, "(1 / \u03a3)")
 
         #--- Gibbs states ---
-        def expm (data):
+        def exp_ (data):
             return torch.exp(-data)
-        self.expm = self.map(expm, "(e-)")
-        self.gibbs = self.normalise @ self.expm
+        self.exp_ = self.map(exp_, "(e-)")
+        self.gibbs = self.normalise @ self.exp_
         self.gibbs.rename("(e- / \u03a3 e-)")
+
+        #--- Energy --- 
+        def _ln (data):
+            return - torch.log(data)
+        self._ln = self.map(_ln, "(-ln)")
 
     def index(self, a, *js): 
         cell = self[a]
