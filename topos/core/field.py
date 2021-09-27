@@ -9,7 +9,7 @@ class Field (Vect):
         self.degree = degree
         self.domain = system[degree]
         self.data = data if isinstance(data, torch.Tensor)\
-                else data * torch.ones([domain.size])
+                else data * torch.ones([self.domain.size])
 
     def get(self, a):
         a = domain[a] if not isinstance(a, Cell) else a
@@ -18,7 +18,7 @@ class Field (Vect):
     def same(self, data=None):
         if isinstance(data, type(None)):
             data = self.data
-        return domain.field(data)
+        return self.domain.field(data)
 
     def is_same(self, other): 
         return  self.system == other.system\

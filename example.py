@@ -9,15 +9,27 @@ K = System(("i:j", "j:k"))
 # K = System(("i:j", "j:k", "k:l"))
 # K = System(("i:j:k", "i:k:l", "j:k:l"))
 
-mat_d = differential(K, 0)
-
-d = Matrix(mat_d, 1, "d")
-delta = Matrix(mat_d.t(), -1, "d*")
-
-L0, L1 = delta @ d, d @ delta
+#--- differential ---
 
 u = K[0].randn() 
+du = K.d[0] @ u
+
+#--- codifferential ---
 
 phi = K[1].randn()
+dt_phi = K.delta[1] @ phi
 
-du = d(u)
+#--- laplacian ---
+
+L0, L1 = K.delta[1] @ K.d[0], K.d[0] @ K.delta[1]
+
+#--- Gibbs density
+
+exp = K[0].map(torch.exp)
+e_u = exp(-u)
+rho = K[0].gibbs(u)
+
+#--- zeta ---
+
+h = K[0].ones()
+H = K.zeta[0] @ h

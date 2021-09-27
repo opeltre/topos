@@ -16,6 +16,9 @@ class Vect:
         return self.same(self.data\
             + other.data)
 
+    def __neg__(self):
+        return self.same(- self.data)
+
     def __sub__(self, other): 
         if not isinstance(other, Vect):
             other = self.same(other)
@@ -28,7 +31,7 @@ class Vect:
         return self.same(self.data\
             * other.data)
 
-    def __div__(self, other): 
+    def __truediv__(self, other): 
         if not isinstance(other, Vect):
             other = self.same(other)
         return self.same(self.data\
@@ -61,7 +64,7 @@ class Vect:
         self.data *= other.data
         return self
 
-    def __idiv__(self, other):
+    def __itruediv__(self, other):
         if not isinstance(other, Vect):
             other = self.same(other)
         self.data /= other.data

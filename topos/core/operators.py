@@ -52,14 +52,11 @@ def invert_nil(mat, order=10, tol=1e-10):
     x = mat - one 
     out = one - x
     k, xk = 2, matmul(x, x)
-    while float(xk.norm()) > tol and k < order:
+    while float(xk.norm()) > tol and k <= order:
         out += (-1)**k * xk
         xk = matmul(x, xk) 
         k += 1
     return out
-
-def mu(K, degree): 
-    pass
 
 #------ Normalisation ------
 
