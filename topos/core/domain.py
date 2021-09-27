@@ -1,13 +1,18 @@
 from topos import Cell, Chain
 from .vect import Vect
 from .field import Field
+from .functional import Functional
+from .matrix import Matrix
+from .operators import local_masses
 import torch
 
 class Domain : 
 
     def __init__(self, keys, shape):
+
         if callable(shape):
             shape = {k: shape(k) for k in keys}
+
         #--- Pointers to start of local data ---
         self.cells = {}
         begin = 0
@@ -16,6 +21,19 @@ class Domain :
             self.cells[k]     = cell
             begin            += cell.size
         self.size = begin
+
+        #--- Normalisation ---
+        sigma = Matrix(local_masses(self))
+        def normalise(field):
+            return field / sigma(field)
+        self.normalise = Functional(normalise, 0, "(1 / \u03a3)")
+
+        #--- Gibbs states ---
+        def expm (data):
+            return torch.exp(-data)
+        self.expm = self.map(expm, "(e-)")
+        self.gibbs = self.normalise @ self.expm
+        self.gibbs.rename("(e- / \u03a3 e-)")
 
     def index(self, a, *js): 
         cell = self[a]
@@ -26,6 +44,9 @@ class Domain :
 
     def __getitem__(self, key):
         return self.cells[key]
+
+    def map(self, f, name="map \u033b"):
+        return Functional.map(f, 0, name)
 
     def field(self, data):
         return Vect(self, data)
