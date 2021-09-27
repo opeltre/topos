@@ -2,7 +2,9 @@ from topos import Hypergraph, Chain, Cell, Shape
 from .field import Field
 from .domain import GradedDomain
 
-from .operators import differential, zeta, invert_nil
+from .operators import face, codifferential, zeta, invert_nil
+
+from .functional import Functional
 from .matrix import Matrix
 
 import torch
@@ -36,8 +38,8 @@ class System :
         ]
 
         #--- Topological operators ---
-        d = [differential(self, i) for i in range(self.degree)]
-        delta = [di.t() for di in d][::-1] 
+        delta = [codifferential(self, i + 1) for i in range(self.degree)]
+        d = [dti.t() for dti in delta][::-1] 
         self.d = [Matrix(di, 1, "d") for di in d] + [0]
         self.delta = [0] + [Matrix(dti, -1, "d*") for dti in delta]
 
@@ -47,7 +49,15 @@ class System :
         self.zeta = [Matrix(zti, 0, "\u03b6") for zti in zt]
         self.mu = [Matrix(mui, 0, "\u03bc") for mui in mu]
 
+        #--- Effective Energy gradient --- 
+        d1 = face(self, 1, 1).t()
+        d0 = face(self, 1, 0).t()
+        def Deff (U): 
+            return d0 @ U + torch.log(d1 @ torch.exp(- U))
+        self.Deff = Functional.map(Deff, 1, "\u018a")
+
     def __getitem__(self, degree):
+        """ Return the domain instance at a given degree. """
         return self.nerve[degree]
 
     def __repr__(self): 

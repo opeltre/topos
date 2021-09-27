@@ -14,7 +14,9 @@ coming from pytorch.*
 See [example.py](example.py)
 
 ```py
->>> u = K.randn(degree=0)
+>>> K = System(("i:j", "j:k"))
+
+>>> u = K[0].randn()
 >>> u
 0 Field {
 

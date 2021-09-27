@@ -10,7 +10,7 @@ class Functional :
             target = field.system[field.degree + degree]
             data = f(field.data)
             return target.field(data)
-        return cls(map_f, 0, name)
+        return cls(map_f, degree, name)
 
     def __init__(self, f, degree=0, name="\u033b"):
         self.call = f if callable(f) else lambda x : x.same(f)
@@ -25,9 +25,10 @@ class Functional :
             return self(other)
         if isinstance(other, Functional):
             degree = self.degree + other.degree
-            f = lambda d: self.call(other.call(d))
+            def compose (data):
+                return self.call(other.call(data))
             name = f"{self.name} . {other.name}"
-            return self.__class__(f, degree, name)
+            return self.__class__(compose, degree, name)
 
     def rename(self, name):
         self.name = name
