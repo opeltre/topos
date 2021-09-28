@@ -2,7 +2,7 @@ from topos import Hypergraph, Chain, Cell, Shape
 from .field import Field
 from .domain import GradedDomain
 
-from .operators import face, codifferential, zeta, invert_nil
+from .operators import face, codifferential, zeta, invert_nil, nabla
 
 from .functional import Functional
 from .matrix import Matrix
@@ -55,6 +55,11 @@ class System :
         def Deff (U): 
             return d0 @ U + torch.log(d1 @ torch.exp(- U))
         self.Deff = Functional.map(Deff, 1, "\u018a")
+
+    def nabla(self, p, degree=0):
+        """ Return the tangent map of Deff at p. """ 
+        mat = nabla(self, degree, p.data)
+        return Matrix(mat, 1, "\u2207_p")
 
     def __getitem__(self, degree):
         """ Return the domain instance at a given degree. """
