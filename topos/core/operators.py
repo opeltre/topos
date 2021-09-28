@@ -1,5 +1,5 @@
 import torch
-from topos.core.sparse import sparse, eye, matmul
+from topos.core.sparse import matrix, eye, matmul, diag
 
 
 #------ Canonical Projection ------
@@ -37,6 +37,17 @@ def extend_is(cb, ca):
     return [[cb.begin + i, ca.begin + index_b(i)] for i in range(cb.size)]
 
 
+#------ Pullback of `last : K[n] -> K[0]` ---
+
+def pull_last(K, degree):
+    if degree == 0:
+        return eye(K[0].size)
+    indices = [ij for ca in K[degree]\
+                  for ij in eye_is(ca, K[0][[ca.key[-1]]])]
+    shape = K[degree].size, K[0].size
+    return matrix(shape, indices)
+
+
 #------ Normalisation ------
 
 def local_masses(domain):
@@ -68,6 +79,9 @@ def face(K, degree, j):
     )
     return matrix
 
+def coface(K, degree, j):
+    return face(K, degree + 1, j).t()
+
 def codifferential(K, degree): 
     """ Codifferential from K[d] to K[d - 1]. """
     shape = K[degree - 1].size, K[degree].size
@@ -80,7 +94,20 @@ def differential(K, degree):
     """ Differential from K[d] to K[d + 1]. """
     return codifferential(K, degree + 1).t()
 
-
+def nabla(K, degree, p):
+    #--- conditional expectations on last coface ---
+    n, m = K[degree].size, K[degree + 1].size
+    weight   = pull_last(K, degree) @ p
+    coweight = pull_last(K, degree + 1) @ (1 / p)
+    mm = matmul
+    dn = coface(K, degree, degree)
+    dn_expect = mm(mm(diag(m, coweight), dn), diag(n, weight))
+    #--- first cofaces ---
+    d = coface(K, degree, 0)
+    for j in range(1, degree + 1):
+        d += (-1) ** j * coface(K, degree, j)
+    return d + (-1) ** (degree + 1) * dn_expect
+        
 #------ Combinatorics ------
 
 def zeta(K, degree):
@@ -99,7 +126,7 @@ def zeta(K, degree):
         cells = [[K[d][ca], K[d][cb]] for ca, cb in chains[d]]
         indices = [ij for p in cells for ij in extend_is(*p)]
         n = K[d].size
-        z += [sparse((n, n), indices)]
+        z += [matrix((n, n), indices)]
     return z
 
 def invert_nil(mat, order=10, tol=1e-10):
