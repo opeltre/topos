@@ -74,6 +74,9 @@ These include (implemented):
 - the effective energy gradient `K.Deff` from 0-fields to 1-fields
 - its tangent map `K.nabla(p)` at a consistent belief `p`. 
 
+See [1][gsi21] and [2][phd] for a complete description of these operators 
+and their role in the design of belief propagation algorithms. 
+
 ## Example: belief network on graphs
 
 See [example.py](example.py)
@@ -107,3 +110,14 @@ See [example.py](example.py)
 
 }
 ``` 
+
+# References 
+
+[1] : Peltre, _Belief Propagation as Diffusion_, 2021, GSI'21 proceedings,
+[arXiv:2107.12230][gsi21]
+
+[2] : Peltre, _Message-Passing Algorithms and Homology_, 2020, PhD preprint,
+[arXiv:2009.11631][phd]
+
+[gsi21]: https://arxiv.org/abs/2107.12230
+[phd]:   https://arxiv.org/abs/2009.11631
