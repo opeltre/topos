@@ -50,7 +50,7 @@ variables in the region `a`
 A 1-Field `phi` is a collection of tensors indexed by 1-chains 
 such that `phi[a > b]` is a function on the state of variables in `b`. 
 
-![fields](assets/img/fields.png)
+![fields](assets/img/field.png)
 
 ```py
 >>> u   = K[0].zeros() 
@@ -109,3 +109,8 @@ See [example.py](example.py)
 
 }
 ``` 
+<style>
+img {
+    max-height: 150px
+}
+</style>
