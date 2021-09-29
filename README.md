@@ -35,8 +35,7 @@ K = System(("i:j:k", "j:k:l", "i:k:l")), close=True)
 When a `System` instance is created, all inclusions relations 
 are computed to yield the [nerve][nerve] of the hypergraph. 
 
-<img alt="nerve" src="assets/img/nerve.png"
-     style="max-width: 250px">
+![nerve](assets/img/nerve.png)
 
 A collection of topological and combinatorial operators 
 are moreover computed, acting on Field instances. 
@@ -51,8 +50,7 @@ variables in the region `a`
 A 1-Field `phi` is a collection of tensors indexed by 1-chains 
 such that `phi[a > b]` is a function on the state of variables in `b`. 
 
-<img alt="fields" src="assets/img/field.png"
-     style="max-width: 75%">
+![fields](assets/img/fields.png)
 
 ```py
 >>> u   = K[0].zeros() 
