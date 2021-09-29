@@ -39,7 +39,7 @@ class System :
 
         #--- Topological operators ---
         delta = [codifferential(self, i + 1) for i in range(self.degree)]
-        d = [dti.t() for dti in delta][::-1] 
+        d = [dti.t() for dti in delta] 
         self.d = [Matrix(di, 1, "d") for di in d] + [0]
         self.delta = [0] + [Matrix(dti, -1, "d*") for dti in delta]
 
