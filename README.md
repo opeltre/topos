@@ -111,6 +111,6 @@ See [example.py](example.py)
 ``` 
 <style>
 img {
-    max-height: 150px
+    max-width: 250px
 }
 </style>
