@@ -59,8 +59,6 @@ such that `phi[a > b]` is a function on the state of variables in `b`.
 torch.tensor([-0.5114, 0.5331])
 ```
 
-TODO: `__setitem__` and other initializers (dict, lambdas...)
-
 ### Operators  
 
 There is a collection of natural operators acting on such
@@ -109,8 +107,3 @@ See [example.py](example.py)
 
 }
 ``` 
-<style>
-img {
-    width: 250px
-}
-</style>
