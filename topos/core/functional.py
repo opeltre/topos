@@ -25,10 +25,10 @@ class Functional :
             return self(other)
         if isinstance(other, Functional):
             degree = self.degree + other.degree
-            def compose (data):
-                return self.call(other.call(data))
+            def compose (field):
+                return self.call(other.call(field))
             name = f"{self.name} . {other.name}"
-            return self.__class__(compose, degree, name)
+            return Functional(compose, degree, name)
 
     def rename(self, name):
         self.name = name
