@@ -113,11 +113,16 @@ See [example.py](example.py)
 
 # References 
 
-[1] : Peltre, _Belief Propagation as Diffusion_, 2021, GSI'21 proceedings,
-[arXiv:2107.12230][gsi21]
+[1] : Peltre, _Belief Propagation as Diffusion_ (2021).
+GSI'21 proceedings, [arXiv:2107.12230][gsi21]
 
-[2] : Peltre, _Message-Passing Algorithms and Homology_, 2020, PhD preprint,
-[arXiv:2009.11631][phd]
+[2] : Peltre, _Message-Passing Algorithms and Homology_ (2020).
+PhD preprint, [arXiv:2009.11631][phd]
+
+[3] : Yedidia, Freeman, Weiss, _Generalized Belief Propagation_ (2000).
+NeurIPS 2000, [text here][YFW00]
 
 [gsi21]: https://arxiv.org/abs/2107.12230
 [phd]:   https://arxiv.org/abs/2009.11631
+[YFW00]: https://https://proceedings.neurips.cc/paper/1832-generalized-belief-propagation.pdf
+
