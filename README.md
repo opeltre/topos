@@ -2,6 +2,23 @@
 
 [hypergraph]: https://en.wikipedia.org/wiki/Hypergraph
 [nerve]: https://en.wikipedia.org/wiki/Nerve_(category_theory)
+[divergence]: https://en.wikipedia.org/wiki/Divergence
+
+This library implements topological and statistical structures 
+introduced in my PhD thesis [[2]][phd] for the
+study of message-passing algorithms. 
+
+There exists natural boundary operators on statistical systems, 
+generalising gradient and [divergence], that allow to 
+define statistical diffusion equations 
+that improve belief propagation (BP) algorithms. 
+
+BP algorithms were originally introduced to efficiently 
+estimate the marginals of a high dimensional probability distribution 
+(usually performing better than Monte Carlo methods), 
+but our geometrical picture leads to new algorithms with even
+more interesting applications. 
+
 
 ## Installation 
 
@@ -74,8 +91,9 @@ These include (implemented):
 - the effective energy gradient `K.Deff` from 0-fields to 1-fields
 - its tangent map `K.nabla(p)` at a consistent belief `p`. 
 
-See [1][gsi21] and [2][phd] for a complete description of these operators 
-and their role in the design of belief propagation algorithms. 
+See [[1]][gsi21] and [[2]][phd] for a complete description of 
+these operators and their role in the design of 
+belief propagation algorithms. 
 
 ## Example: belief network on graphs
 
