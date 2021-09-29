@@ -12,7 +12,7 @@ class Field (Vect):
                 else data * torch.ones([self.domain.size])
 
     def get(self, a):
-        a = domain[a] if not isinstance(a, Cell) else a
+        a = self.domain[a] if not isinstance(a, Cell) else a
         return self.data[a.begin:a.end].view(a.shape.n)
 
     def same(self, data=None):

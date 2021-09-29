@@ -40,6 +40,9 @@ def extend_is(cb, ca):
 #------ Pullback of `last : K[n] -> K[0]` ---
 
 def pull_last(K, degree):
+    """ 
+    Map fields on K[0] to K[d] evaluating last element of the chain. 
+    """
     if degree == 0:
         return eye(K[0].size)
     indices = [ij for ca in K[degree]\
@@ -95,6 +98,7 @@ def differential(K, degree):
     return codifferential(K, degree + 1).t()
 
 def nabla(K, degree, p):
+    """ Differential with conditional expectations. """
     #--- conditional expectations on last coface ---
     n, m = K[degree].size, K[degree + 1].size
     weight   = pull_last(K, degree) @ p
