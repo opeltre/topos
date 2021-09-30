@@ -3,8 +3,10 @@ from .vect import Vect
 from .field import Field
 from .functional import Functional
 from .matrix import Matrix
-from .operators import local_masses
+from .operators import from_scalar
 import torch
+
+matmul = torch.sparse.mm
 
 class Domain : 
 
@@ -22,10 +24,14 @@ class Domain :
             begin            += cell.size
         self.size = begin
 
+        #--- From/To scalar fields ---
+        extend = from_scalar(self)
+        sigma = extend.t()
+
         #--- Normalisation ---
-        sigma = Matrix(local_masses(self))
+        j_sigma = Matrix(matmul(extend, sigma), 0)
         def normalise(field):
-            return field / sigma(field)
+            return field / j_sigma(field)
         self.normalise = Functional(normalise, 0, "(1 / \u03a3)")
 
         #--- Gibbs states ---
