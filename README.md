@@ -5,13 +5,13 @@
 [divergence]: https://en.wikipedia.org/wiki/Divergence
 
 This library implements topological and statistical structures 
-introduced in my PhD thesis [[2]][phd] for the
+considered in [[2]][phd] for the
 study of message-passing algorithms. 
 
 There exists natural boundary operators on statistical systems, 
 generalising gradient and [divergence], that allow to 
 define statistical diffusion equations 
-that improve belief propagation (BP) algorithms. 
+improving belief propagation (BP) algorithms. 
 
 BP algorithms were originally introduced to efficiently 
 estimate the marginals of a high dimensional probability distribution 

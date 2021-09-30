@@ -11,10 +11,6 @@ class Field (Vect):
         self.data = data if isinstance(data, torch.Tensor)\
                 else data * torch.ones([self.domain.size])
 
-    def get(self, a):
-        a = self.domain[a] if not isinstance(a, Cell) else a
-        return self.data[a.begin:a.end].view(a.shape.n)
-
     def same(self, data=None):
         if isinstance(data, type(None)):
             data = self.data
@@ -23,6 +19,30 @@ class Field (Vect):
     def is_same(self, other): 
         return  self.system == other.system\
             and self.degree == other.degree
+
+    def get(self, a):
+        a = self.domain[a] if not isinstance(a, Cell) else a
+        return self.data[a.begin:a.end].view(a.shape.n)
+
+    def __getitem__(self, a):
+        return self.get(a)
+
+    def __setitem__(self, a, va):
+        a = self.domain[a] if not isinstance(a, Cell) else a
+        try:
+            if isinstance (va, torch.Tensor):
+                data = va.reshape([a.size])
+            else: 
+                data = va * torch.ones([a.size])
+            self.data[a.begin:a.end] = data
+        except: 
+            raise TypeError(f"scalar or size {a.size} tensor expected")
+
+    def norm(self):
+        return torch.sqrt((self.data ** 2).sum())
+
+    def sum(self):
+        return self.data.sum()
 
     #--- Show ---
 

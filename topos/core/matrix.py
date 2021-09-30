@@ -37,3 +37,6 @@ class Matrix (Functional, Vect):
 
     def __repr__(self):
         return f"{self.degree} Linear {self}"
+
+    def __neg__(self):
+        return super().__neg__().rename(f"- {self.name}")

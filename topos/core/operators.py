@@ -65,6 +65,21 @@ def local_masses(domain):
         values = torch.ones([len(indices)]),
         size = [domain.size, domain.size])
 
+def from_scalar(domain):
+    """
+    Extension from scalar fields to tensor valued fields. 
+    """
+    indices = [[i, a.idx] for a in domain\
+                          for i in range(a.begin, a.end)]
+    shape = [domain.size, len(domain.cells)]
+    return matrix(shape, indices)
+
+def to_scalar(domain):
+    """
+    Local normalisation factors, as scalar values.
+    """
+    return from_scalar(domain).t()
+
 
 #--- Differentials --- 
 
