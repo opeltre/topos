@@ -11,11 +11,13 @@ import torch
 
 class System : 
     
-    def __init__(self, K, shape=2, close=True, sort=True, degree=-1):
+    def __init__(self, K, shape=2, degree=-1, close=1, sort=1, void=1):
        
         #--- Closure for `cap` ---
         K = Hypergraph(K) if not isinstance(K, Hypergraph) else K
         K = K.closure() if close else K
+        if not void: 
+            K = Hypergraph((r for r in K if len(r) > 0))
         self.hypergraph = K
 
         #--- Nerve ---
