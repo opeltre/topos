@@ -38,6 +38,12 @@ class Field (Vect):
         except: 
             raise TypeError(f"scalar or size {a.size} tensor expected")
 
+    def norm(self):
+        return torch.sqrt((self.data ** 2).sum())
+
+    def sum(self):
+        return self.data.sum()
+
     #--- Show ---
 
     def __str__(self): 
