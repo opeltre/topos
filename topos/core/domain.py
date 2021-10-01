@@ -1,9 +1,9 @@
-from topos import Cell, Chain
+from topos.base import join_cells, Chain
 from .vect import Vect
 from .field import Field
 from .functional import Functional
 from .matrix import Matrix
-from .operators import from_scalar
+from .operators import from_scalar, restrict
 import torch
 
 matmul = torch.sparse.mm
@@ -15,14 +15,8 @@ class Domain :
         if callable(shape):
             shape = {k: shape(k) for k in keys}
 
-        #--- Pointers to start of local data ---
-        self.cells = {}
-        begin = 0
-        for i, k in enumerate(keys):
-            cell = Cell(k, i, shape[k], begin = begin)
-            self.cells[k]     = cell
-            begin            += cell.size
-        self.size = begin
+        #--- Pointers to local data ---
+        self.cells, self.size = join_cells(keys, shape)
 
         #--- From/To scalar fields ---
         extend = from_scalar(self)
@@ -45,10 +39,8 @@ class Domain :
         def _ln (data):
             return - torch.log(data)
         self._ln = self.map(_ln, "(-ln)")
-
-    def index(self, a, *js): 
-        cell = self[a]
-        return cell.begin + cell.shape.index(*js)
+    
+    #--- Cells ---
 
     def __iter__(self):
         return self.cells.values().__iter__()
@@ -56,8 +48,11 @@ class Domain :
     def __getitem__(self, key):
         return self.cells[key]
 
-    def map(self, f, name="map \u033b"):
-        return Functional.map(f, 0, name)
+    def index(self, a, *js): 
+        cell = self[a]
+        return cell.begin + cell.shape.index(*js)
+
+    #--- Field Creation ---
 
     def field(self, data):
         return Vect(self, data)
@@ -70,14 +65,23 @@ class Domain :
 
     def randn(self):
         return self.field(torch.randn(self.size))
+    
+    #--- Functors ---
+
+
+    def map(self, f, name="map \u033b"):
+        return Functional.map(f, 0, name)
+
+    #--- Show --- 
 
     def __str__(self):
         return "{"  +\
-               ", ".join([str(ck) for k, ck in self.cells.items()]) +\
+               ", ".join([str(ck) for ck in self]) +\
                "}"
 
     def __repr__(self):
         return "Domain"
+
 
 class GradedDomain (Domain):
 

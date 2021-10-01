@@ -1,4 +1,4 @@
-from topos import Hypergraph, Chain, Cell, Shape
+from topos.base import Hypergraph, Chain, Cell, Shape
 from .field import Field
 from .domain import GradedDomain
 

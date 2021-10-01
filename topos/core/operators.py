@@ -80,6 +80,17 @@ def to_scalar(domain):
     """
     return from_scalar(domain).t()
 
+#--- Restriction / Embedding ---
+
+def restrict(domain, subdomain): 
+    """
+    Restriction matrix. 
+    """
+    pairs = [[cb, domain.cells[cb.key]] for cb in subdomain]
+    indices = [[cb.begin + i, ca.begin + i]\
+                for cb, ca in pairs\
+                for i in range(cb.size)]
+    return matrix([subdomain.size, domain.size], indices)
 
 #--- Differentials --- 
 
