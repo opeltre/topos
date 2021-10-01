@@ -1,6 +1,7 @@
 from topos.base import Hypergraph, Chain, Cell, Shape
+
+from .domain import Domain, GradedDomain, EmptyDomain
 from .field import Field
-from .domain import Domain, EmptyDomain
 
 from .operators import face, codifferential, zeta, invert_nil, nabla
 
@@ -30,7 +31,7 @@ class System :
         N = K.nerve(degree, sort=sort)
         self.degree = len(N) - 1
         shape = lambda chain : self.shape[chain[-1]]
-        self.nerve = [Domain(Nk, shape, k) for k, Nk in enumerate(N)]
+        self.nerve = [GradedDomain(Nk, shape, k) for k, Nk in enumerate(N)]
 
         #--- Topological operators ---
         delta = [codifferential(self, i + 1) for i in range(self.degree)]

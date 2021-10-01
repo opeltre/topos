@@ -8,7 +8,6 @@ import torch
 
 matmul = torch.sparse.mm
 
-
 class Domain : 
 
     def __init__(self, keys, shape, degree=0):
@@ -30,6 +29,7 @@ class Domain :
             shape = {k : Shape() for k in keys}
         elif callable(shape):
             shape = {k: shape(k) for k in keys}
+        self.shape = shape
         self.cells, self.size = join_cells(keys, shape)
 
         #--- From/To scalar fields ---
@@ -73,10 +73,23 @@ class Domain :
     def pull(self, src, g, name="map*"):
         """ Pull-back of g from src to domain. """
         mat = pull(src, self, g)
-        return Linear([src, g], mat, name)
+        return Linear([self, src], mat, name)
 
-    def restrict(self, src):
-        return self.pull(src)
+    def push(self, src, f, name="map."):
+        mat = pull(src, self, g).t()
+        return Linear([src, self], mat, name)
+
+    def restrict(self, subdomain):
+        if not isinstance(subdomain, Domain):
+            shape = {a: self[a].shape for a in self.cells} 
+            keys = [self[k].key for k in subdomain]
+            subdomain = Domain(keys, shape, self.degree)
+        def incl (cb):
+            return cb.key
+        return self.pull(subdomain, incl)
+
+    def embed(self, subdomain):
+        return self.restrict(self, subdomain).t()
 
     #--- Field Creation ---
 
@@ -110,6 +123,15 @@ class Domain :
     def __repr__(self):
         return f"Domain {self}"
 
+class GradedDomain (Domain):
+
+    def __init__(self, keys, shape, degree=0):
+        self.degree = degree
+        shape = {Chain.read(k): shape(k) for k in keys}
+        super().__init__(shape.keys(), shape, degree)
+
+    def __getitem__(self, key): 
+        return super().__getitem__(Chain.read(key))
 
 class EmptyDomain (Domain):
 

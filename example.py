@@ -1,35 +1,36 @@
-from topos import Hypergraph, Set, Chain
+from topos.base import Hypergraph, Set, Chain
 from topos import System
 import torch
 
 from topos.core.operators import face, differential, codifferential
-from topos import Matrix
+from topos import Linear
 
-K = System(("i:j", "j:k"))
+K = System(("i:j", "j:k", "k:l"))
 # K = System(("i:j", "j:k", "k:l"))
 # K = System(("i:j:k", "i:k:l", "j:k:l"))
 
-#--- differential ---
-
+# : Potential 
 u = K[0].randn() 
-du = K.d[0] @ u
+# : Local energy 
+U = K.zeta(u)
+# : Belief (local Gibbs state)
+p = K[0].gibbs(u)
 
-#--- codifferential ---
+#--- differential : (in)consistency ---
+dp = K.d(p)
 
-phi = K[1].randn()
-dt_phi = K.delta[1] @ phi
+#--- codifferential : energy transport ---
 
-#--- laplacian ---
+def diffusion (u, eps=1, nit=10) : 
+    for k in range(nit):
+        U   = K.zeta(u)
+        #   : Effective energy gradient 
+        Phi = K.Deff(U)
+        #   : (Bethe) Heat flux
+        phi = -eps * K.mu(Phi)
+        #   : Energy conservation
+        u  += K.delta(phi) 
+        print(Phi.norm())
 
-L0, L1 = K.delta[1] @ K.d[0], K.d[0] @ K.delta[1]
-
-#--- Gibbs density
-
-exp = K[0].map(torch.exp)
-e_u = exp(-u)
-rho = K[0].gibbs(u)
-
-#--- zeta ---
-
-h = K[0].ones()
-H = K.zeta[0] @ h
+def project(A, B):
+    pull = A.pull(B)
