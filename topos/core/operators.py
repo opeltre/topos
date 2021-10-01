@@ -1,5 +1,6 @@
 import torch
 from topos.core.sparse import matrix, eye, matmul, diag
+from topos.base import Chain
 
 
 #------ Canonical Projection ------
@@ -39,16 +40,25 @@ def extend_is(cb, ca):
 
 #------ Pullback of `last : K[n] -> K[0]` ---
 
+def pull (A, B, f=None):
+    """
+    Pullback matrix of a map f: A -> B between domain keys.
+    """
+    if not callable(f):
+        f = lambda x: x.key
+    indices = [ij for ca in A\
+                for ij in eye_is(ca, B[f(ca)])]
+    return matrix([A.size, B.size], indices)
+
 def pull_last(K, degree):
     """ 
     Map fields on K[0] to K[d] evaluating last element of the chain. 
     """
     if degree == 0:
         return eye(K[0].size)
-    indices = [ij for ca in K[degree]\
-                  for ij in eye_is(ca, K[0][[ca.key[-1]]])]
-    shape = K[degree].size, K[0].size
-    return matrix(shape, indices)
+    def last(chain):
+        return ca.key[-1]
+    return pullback(K[d], K[0], last)
 
 
 #------ Normalisation ------
@@ -153,7 +163,8 @@ def zeta(K, degree):
                     if (b0 <= a0 and not b0 <= a1s[0])]
     z = []
     for d in range(0, degree + 1):
-        cells = [[K[d][ca], K[d][cb]] for ca, cb in chains[d]]
+        cd = [[Chain.read(ca), Chain.read(cb)] for ca, cb in chains[d]]
+        cells = [[K[d][ca], K[d][cb]] for ca, cb in cd]
         indices = [ij for p in cells for ij in extend_is(*p)]
         n = K[d].size
         z += [matrix((n, n), indices)]

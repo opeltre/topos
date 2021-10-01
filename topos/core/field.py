@@ -4,10 +4,9 @@ from .vect import Vect
 
 class Field (Vect): 
 
-    def __init__(self, system, degree=0, data=0):
-        self.system = system
+    def __init__(self, domain, data, degree=0):
+        self.domain = domain
         self.degree = degree
-        self.domain = system[degree]
         self.data = data if isinstance(data, torch.Tensor)\
                 else data * torch.ones([self.domain.size])
 
@@ -15,10 +14,6 @@ class Field (Vect):
         if isinstance(data, type(None)):
             data = self.data
         return self.domain.field(data)
-
-    def is_same(self, other): 
-        return  self.system == other.system\
-            and self.degree == other.degree
 
     def get(self, a):
         a = self.domain[a] if not isinstance(a, Cell) else a

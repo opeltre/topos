@@ -85,7 +85,7 @@ class Hypergraph (Set):
     def intercone (self, a, c, strict=1):
         return (b for b in self.below(a) if not b <= toSet(c))
 
-    def nerve (self, degree = -1): 
+    def nerve (self, degree = -1, sort=1): 
         N = [[Chain(a) for a in self]]
         d = degree
         while d != 0:
@@ -95,6 +95,9 @@ class Hypergraph (Set):
                 break
             else:
                 N += [Nd]
+        if sort: 
+            for Nk in N:
+                Nk.sort(key = lambda c : (-len(c[-1]), str(c)))
         return N
 
     def add(self, elem): 

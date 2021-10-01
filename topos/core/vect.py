@@ -3,11 +3,6 @@ import torch
 class Vect: 
     """ A base container class for torch 1D-tensors """
 
-    def same (self, data=None):
-        if isinstance(data, type(None)):
-            data = self.data
-        return Vect(self, data)
-
     #--- Arithmetic Operations ---
 
     def __add__(self, other): 

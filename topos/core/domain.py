@@ -1,77 +1,105 @@
-from topos.base import join_cells, Chain
+from topos.base import join_cells, Chain, Shape
 from .vect import Vect
 from .field import Field
 from .functional import Functional
-from .matrix import Matrix
-from .operators import from_scalar, restrict
+from .linear import Linear
+from .operators import from_scalar, pull
 import torch
 
 matmul = torch.sparse.mm
 
+
 class Domain : 
 
-    def __init__(self, keys, shape):
+    def __init__(self, keys, shape, degree=0):
+        """
+        Create a domain with hashable keys and given shapes.
 
-        if callable(shape):
+        Domains hold a dictionnary of Cell objects,
+        that are essentially pointers to index ranges 
+        of size `n1 * ... * nd` for shapes `(n1, ..., nd)`. 
+
+        Params: - keys  : [Hashable]
+        ------  - shape : {keys : Shape} | keys -> Shape
+
+        """
+        self.degree = degree
+
+        #--- Join Cells ---
+        if shape == None:
+            shape = {k : Shape() for k in keys}
+        elif callable(shape):
             shape = {k: shape(k) for k in keys}
-
-        #--- Pointers to local data ---
         self.cells, self.size = join_cells(keys, shape)
 
         #--- From/To scalar fields ---
         extend = from_scalar(self)
-        sigma = extend.t()
-
-        #--- Normalisation ---
-        j_sigma = Matrix(matmul(extend, sigma), 0)
+        sums = Linear([self], matmul(extend, extend.t()))
         def normalise(field):
-            return field / j_sigma(field)
-        self.normalise = Functional(normalise, 0, "(1 / \u03a3)")
+            return field / sums(field)
+        self.normalise = Functional([self], normalise, "(1 / \u03a3)")
 
-        #--- Gibbs states ---
-        def exp_ (data):
-            return torch.exp(-data)
-        self.exp_ = self.map(exp_, "(e-)")
-        self.gibbs = self.normalise @ self.exp_
-        self.gibbs.rename("(e- / \u03a3 e-)")
-
-        #--- Energy --- 
+        #--- Gibbs states and energy ---
         def _ln (data):
             return - torch.log(data)
+        def exp_ (data):
+            return torch.exp(-data)
         self._ln = self.map(_ln, "(-ln)")
-    
-    #--- Cells ---
+        self.exp_ = self.map(exp_, "(e-)")
+        self.gibbs = (self.normalise @ self.exp_)\
+                     .rename("(e- / \u03a3 e-)")
+
+    #--- Local pointers ---
 
     def __iter__(self):
+        """ Yield cells. """
         return self.cells.values().__iter__()
 
     def __getitem__(self, key):
+        """ Retrieve a cell from its key. """
         return self.cells[key]
 
-    def index(self, a, *js): 
-        cell = self[a]
+    def index(self, key, *js): 
+        """ Get pointer to coordinate (j0, ..., jn) from cell at key."""
+        cell = self[key]
         return cell.begin + cell.shape.index(*js)
+
+    #--- Functors ---
+
+    def map(self, f, name="map \u033b"):
+        """ Map a function acting on torch.Tensor to fields. """
+        return Functional.map([self], f)
+
+    def pull(self, src, g, name="map*"):
+        """ Pull-back of g from src to domain. """
+        mat = pull(src, self, g)
+        return Linear([src, g], mat, name)
+
+    def restrict(self, src):
+        return self.pull(src)
 
     #--- Field Creation ---
 
     def field(self, data):
-        return Vect(self, data)
+        """ Create a field from data vector. """
+        return Field(self, data, self.degree)
 
     def zeros(self):
+        """ Return the unit of + field 0. """
         return self.field(torch.zeros(self.size))
 
     def ones(self):
+        """ Return the unit of * field 1. """
         return self.field(torch.ones(self.size))
 
     def randn(self):
+        """ Return a field with normally distributed values. """
         return self.field(torch.randn(self.size))
+
+    def uniform(self):
+        """ Return uniform local probabilities. """
+        return self.gibbs(self.zeros())
     
-    #--- Functors ---
-
-
-    def map(self, f, name="map \u033b"):
-        return Functional.map(f, 0, name)
-
     #--- Show --- 
 
     def __str__(self):
@@ -80,18 +108,14 @@ class Domain :
                "}"
 
     def __repr__(self):
-        return "Domain"
+        return f"Domain {self}"
 
 
-class GradedDomain (Domain):
+class EmptyDomain (Domain):
 
-    def __init__(self, complex, degree, keys, shapes):
-        self.degree = degree
-        self.complex = complex
-        super().__init__(keys, shapes)
+    def __init__(self):
+        super().__init__([''], shape={'': Shape()})
 
     def field(self, data):
-        return Field(self.complex, self.degree, data)
-    
-    def __getitem__(self, key):
-        return self.cells[Chain.read(key)]
+        return Vect(self, torch.tensor([0.]))
+        
