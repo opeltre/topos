@@ -42,24 +42,24 @@ but can be supplied as a dictionnary.
 A system can for example be a graph (all regions are pairs) 
 or a higher dimensional instance, called a [hypergraph][hypergraph]. 
 For generalized belief propagation (GBP) to run well,
-the underlying hypergraph should be closed under intersection (default). 
+the underlying hypergraph should be closed under intersection. 
 
 ```py
 from topos import System
-K = System(("i:j:k", "j:k:l", "i:k:l")), close=True)
+K = System.closure(("i:j:k", "j:k:l", "i:k:l"))
 ```
 
-When a `System` instance is created, all inclusions relations 
+When a `System` instance is created, all inclusion relations 
 are computed to yield the [nerve][nerve] of the hypergraph. 
 
 ![nerve](assets/img/nerve.png)
 
 A collection of topological and combinatorial operators 
-are moreover computed, acting on Field instances. 
+are computed: they act on Field instances. 
 
 ### Fields 
 
-A 0-Field `u` is a collection of tensors indexed by regions 
+A 0-Field `u` is a collection of tensors indexed over regions 
 such that `u[a]` is a function on the state of 
 variables in the region `a` 
 (that is, a d-dimensional tensor when a is of size d)

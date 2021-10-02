@@ -1,93 +1,197 @@
-from topos import Cell, Chain
+from topos.base import join_cells, Chain, Shape, Cell
 from .vect import Vect
 from .field import Field
 from .functional import Functional
-from .matrix import Matrix
-from .operators import from_scalar
+from .linear import Linear
+from .operators import from_scalar, pullback, eye
 import torch
 
 matmul = torch.sparse.mm
 
 class Domain : 
 
-    def __init__(self, keys, shape):
-
-        if callable(shape):
-            shape = {k: shape(k) for k in keys}
-
-        #--- Pointers to start of local data ---
-        self.cells = {}
-        begin = 0
-        for i, k in enumerate(keys):
-            cell = Cell(k, i, shape[k], begin = begin)
-            self.cells[k]     = cell
-            begin            += cell.size
-        self.size = begin
-
-        #--- From/To scalar fields ---
-        extend = from_scalar(self)
-        sigma = extend.t()
-
-        #--- Normalisation ---
-        j_sigma = Matrix(matmul(extend, sigma), 0)
-        def normalise(field):
-            return field / j_sigma(field)
-        self.normalise = Functional(normalise, 0, "(1 / \u03a3)")
-
-        #--- Gibbs states ---
-        def exp_ (data):
-            return torch.exp(-data)
-        self.exp_ = self.map(exp_, "(e-)")
-        self.gibbs = self.normalise @ self.exp_
-        self.gibbs.rename("(e- / \u03a3 e-)")
-
-        #--- Energy --- 
-        def _ln (data):
-            return - torch.log(data)
-        self._ln = self.map(_ln, "(-ln)")
-
-    def index(self, a, *js): 
-        cell = self[a]
-        return cell.begin + cell.shape.index(*js)
+    def __init__(self, cells, degree=0, size=None):
+        self.degree = degree
+        self.cells  = cells
+        self.size = size if size else\
+                    max((c.end for c in cells.values())) 
 
     def __iter__(self):
+        """ Yield cells. """
         return self.cells.values().__iter__()
 
-    def __getitem__(self, key):
+    def get(self, key):
+        """ Retrieve a cell from its key. """
         return self.cells[key]
 
+    def __getitem__(self, key):
+        """ Retrieve a cell from its key. """
+        if type(key) == int:
+            return self
+        return self.get(key)
+
+    def index(self, key, *js): 
+        """ Get pointer to coordinate (j0, ..., jn) from cell at key."""
+        cell = self[key]
+        return cell.begin + cell.shape.index(*js)
+
+    #--- Functors ---
+
     def map(self, f, name="map \u033b"):
-        return Functional.map(f, 0, name)
+        """ Map a function acting on torch.Tensor to fields. """
+        return Functional.map([self], f, name)
 
-    def field(self, data):
-        return Vect(self, data)
+    def pull(self, src, g, name="map*"):
+        """ Pull-back of g from src to domain. """
+        mat = pullback(src, self, g)
+        return Linear([self, src], mat, name)
 
-    def zeros(self):
-        return self.field(torch.zeros(self.size))
+    def push(self, src, f, name="map."):
+        mat = pull(src, self, g).t()
+        return Linear([src, self], mat, name)
 
-    def ones(self):
-        return self.field(torch.ones(self.size))
+    def restrict(self, subdomain, name="Res"):
+        if not isinstance(subdomain, Domain):
+            shape = {a: self[a].shape for a in self.cells} 
+            keys = [self[k].key for k in subdomain]
+            subdomain = Sheaf(keys, shape, self.degree)
+        def incl (cb):
+            return cb.key
+        return self.pull(subdomain, incl, name)
 
-    def randn(self):
-        return self.field(torch.randn(self.size))
+    def embed(self, subdomain, name="Emb"):
+        return self.restrict(subdomain).t().rename(name)
+
+    def eye(self):
+        return Linear([self], eye(self.size), "Id")
+
+    #--- Field Creation ---
+
+    def field(self, data, degree=0):
+        """ Create a field from data vector. """
+        return Field(self, data, self.degree)
+
+    def zeros(self, degree=0):
+        """ Return the unit of + field 0. """
+        return self.field(0, degree)
+
+    def ones(self, degree=0):
+        """ Return the unit of * field 1. """
+        return self.field(1, degree)
+
+    def randn(self, degree=0):
+        """ Return a field with normally distributed values. """
+        return self.field(torch.randn(self[degree].size), degree)
+
+    def uniform(self, degree=0):
+        """ Return uniform local probabilities. """
+        return self.gibbs(self.zeros(degree))
+    
+    #--- Show --- 
 
     def __str__(self):
         return "{"  +\
-               ", ".join([str(ck) for k, ck in self.cells.items()]) +\
+               ", ".join([str(ck) for ck in self]) +\
                "}"
 
     def __repr__(self):
-        return "Domain"
+        return f"Domain {self}"
 
-class GradedDomain (Domain):
 
-    def __init__(self, complex, degree, keys, shapes):
-        self.degree = degree
-        self.complex = complex
-        super().__init__(keys, shapes)
+class Sheaf (Domain) : 
+    def __init__(self, keys, shape=None, degree=0):
+        """
+        Create a domain with hashable keys and given shapes.
 
-    def field(self, data):
-        return Field(self.complex, self.degree, data)
+        Domains hold a dictionnary of Cell objects,
+        that are essentially pointers to index ranges 
+        of size `n1 * ... * nd` for shapes `(n1, ..., nd)`. 
+
+        Params: - keys  : [Hashable]
+        ------  - shape : {keys : Shape} | keys -> Shape
+
+        """
+
+        self.trivial = (shape == None)
+        self.scalars = self.__class__(keys) if not self.trivial else self
+
+        #--- Join Cells ---
+        if shape == None:
+            shape = {k : Shape() for k in keys}
+        elif callable(shape):
+            shape = {k: shape(k) for k in keys}
+        cells, size = join_cells(keys, shape)
+
+        super().__init__(cells, degree, size=size)
+
+        
+        #--- From/To scalar fields ---
+        src, J = self.scalars, from_scalar(self)
+        extend = Linear([src, self], J, "J")
+        sums   = Linear([self, src], J.t(), "\u03a3")
+        #--- Normalisation ---
+        norm    = Functional([self], lambda f: f/sums(f), "(1 / \u03a3)")
+        #--- Energies / log-likelihoods ---
+        _ln     = self.map(lambda d: -torch.log(d), "(-ln)")
+        #--- Gibbs states / densities ---
+        exp_    = self.map(lambda d: torch.exp(-d), "(e-)")
+        gibbs   = (norm @ exp_).rename("(e- / \u03a3 e-)")
+        
+        self.maps = {
+            "extend"    : extend,
+            "sums"      : sums  ,
+            "normalise" : norm  ,
+            "_ln"       : _ln   ,   
+            "exp_"      : exp_  ,
+            "gibbs"     : gibbs      
+        }
+        for k, fk in self.maps.items():
+            setattr(self, k, fk)
+
+    def __repr__(self):
+        return f"Sheaf  {self}" if not self.trivial else f"Domain {self}"
+
+#--- System Fibers ---
+
+class Simplicial (Sheaf) : 
+    """ Domain with simplicial Chain keys """
+
+    def __init__(self, keys, shape=None, degree=0):
+        chains = [Chain.read(k) for k in keys]
+        shape  = {Chain.read(k): shape(k) for k in keys} if shape\
+                else None
+        super().__init__(chains, shape, degree)
     
-    def __getitem__(self, key):
-        return self.cells[Chain.read(key)]
+    def get(self, key):
+        return super().get(Chain.read(key))
+
+    def __repr__(self):
+        return f"{self.degree} {super().__repr__()}"
+
+
+#--- Scalar Domain --- 
+
+class Trivial (Domain) :
+    """ Domain with point fibers. """
+
+    def __init__(self, keys, degree=0):
+        self.degree = degree
+        self.shape = {k: Shape() for k in keys}
+        self.cells, self.size = join_cells(keys, self.shape)
+
+#--- Unit Object ---
+
+class Point (Domain): 
+    """ Point Domain spanning field of scalars R. """
+
+    def __init__(self, degree=0):
+        super().__init__({'()': Cell('()', 0, Shape())}, degree)
+
+
+#--- Null Object ---
+
+class Empty (Point):
+    """ Empty Domain spanning the null vector space {0}. """
+
+    def field(self, data=None):
+        return super().field(torch.tensor([0.]), self.degree)
