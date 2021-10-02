@@ -95,7 +95,8 @@ These include (implemented):
 
 See [[1]](#ref1)  and [[2]](#ref2) for a better description of 
 these operators and their role in the design of
-belief propagation algorithms. In particular, have a look at [the algorithms [I]][alg_table]
+belief propagation algorithms. 
+In particular, have a look at [the algorithms [I]][alg_table]
 and the [notation table [II]][not_table]
 
 ## Example: belief network on graphs
@@ -105,7 +106,7 @@ See [example.py](example.py)
 ```py
 >>> K = System(("i:j", "j:k"))
 
->>> u = K[0].randn()
+>>> u = K.randn(0)
 >>> u
 0 Field {
 
@@ -119,10 +120,10 @@ See [example.py](example.py)
 
 }
 
->>> d
+>>> K.d
 1 Linear d
 
->>> d(u)
+>>> K.d(u)
 1 Field {
 
 (i:j) > (j) ::       [ 2.3497, -0.0106],
