@@ -62,7 +62,8 @@ are also computed: they act on Field instances.
 
 A 0-Field `u` is a collection of tensors indexed over regions 
 such that `u[a]` is joint observable on variables in `a`.
-```
+
+```py
 >>> u = K.zeros(0) 
 >>> u["j:k"]
 torch.tensor([[.0, .0],
