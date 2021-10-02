@@ -34,10 +34,11 @@ git clone https://github.com/opeltre/topos
 
 ### Systems 
 
+![nerve](assets/img/nerve.png)
+
 System instances describe collections of variables (vertices) 
 along with their allowed joint measurements (cells or regions). 
-The number of states `N["i"]` for each variable `"i"` is 2 by default,
-but can be supplied as a dictionnary.
+Each variable is assumed binary (2 states) by default.
 
 A system can for example be a graph (all regions are pairs) 
 or a higher dimensional instance, called a [hypergraph][hypergraph]. 
@@ -52,26 +53,27 @@ K = System.closure(("i:j:k", "j:k:l", "i:k:l"))
 When a `System` instance is created, all inclusion relations 
 are computed to yield the [nerve][nerve] of the hypergraph. 
 
-![nerve](assets/img/nerve.png)
-
 A collection of topological and combinatorial operators 
-are computed: they act on Field instances. 
+are also computed: they act on Field instances. 
 
 ### Fields 
 
+![fields](assets/img/fields.png)
+
 A 0-Field `u` is a collection of tensors indexed over regions 
-such that `u[a]` is a function on the state of 
-variables in the region `a` 
-(that is, a d-dimensional tensor when a is of size d)
+such that `u[a]` is joint observable on variables in `a`.
+```
+>>> u = K.zeros(0) 
+>>> u["j:k"]
+torch.tensor([[.0, .0],
+              [.0, .0]])
+```
 
 A 1-Field `phi` is a collection of tensors indexed by 1-chains 
 such that `phi[a > b]` is a function on the state of variables in `b`. 
 
-![fields](assets/img/fields.png)
-
 ```py
->>> u   = K[0].zeros() 
->>> phi = K[1].randn()
+>>> phi = K.randn(1)
 >>> phi["j:k > k"]
 torch.tensor([-0.5114, 0.5331])
 ```
@@ -83,17 +85,18 @@ statistical systems, revealing a rich interplay with topology
 and combinatorics. 
 
 These include (implemented):
-- a differential operator `K.d[k]` from k-fields to (k+1)-fields
-- a codifferential operator `K.delta[k+1]` from (k+1)-fields to k-fields
-- the zeta transform `K.zeta[k]` acting on k-fields
-- the Möbius transform `K.mu[k]` inverting `K.zeta[k]`
-- the Gibbs state map `K[k].gibbs` mapping fields to local probabilities
+- (+1)-graded differential operator `K.d`
+- (-1)-graded codifferential operator `K.delta`
+- graded zeta transform `K.zeta` 
+- graded Möbius transform `K.mu` inverting `K.zeta`
+- Gibbs state map `K.gibbs` mapping observables to local probabilities
 - the effective energy gradient `K.Deff` from 0-fields to 1-fields
 - its tangent map `K.nabla(p)` at a consistent belief `p`. 
 
-See [[1]][gsi21] and [[2]][phd] for a complete description of 
-these operators and their role in the design of 
-belief propagation algorithms. 
+See [[1]](#ref1)  and [[2]](#ref2) for a better description of 
+these operators and their role in the design of
+belief propagation algorithms. In particular, have a look at [the algorithms [I]][alg_table]
+and the [notation table [II]][not_table]
 
 ## Example: belief network on graphs
 
@@ -131,16 +134,20 @@ See [example.py](example.py)
 
 # References 
 
-[1] : Peltre, _Belief Propagation as Diffusion_ (2021).
+<span id="ref1"></span>
+[1] : Peltre - _Belief Propagation as Diffusion_ (2021).
 GSI'21 proceedings, [arXiv:2107.12230][gsi21]
 
-[2] : Peltre, _Message-Passing Algorithms and Homology_ (2020).
+<span id="ref2"></span>
+[2] : Peltre - _Message-Passing Algorithms and Homology_ (2020).
 PhD preprint, [arXiv:2009.11631][phd]
 
-[3] : Yedidia, Freeman, Weiss, _Generalized Belief Propagation_ (2000).
+<span id="ref3"></span>
+[3] : Yedidia, Freeman, Weiss - _Generalized Belief Propagation_ (2000).
 NeurIPS 2000, [text here][YFW00]
 
 [gsi21]: https://arxiv.org/abs/2107.12230
 [phd]:   https://arxiv.org/abs/2009.11631
 [YFW00]: https://https://proceedings.neurips.cc/paper/1832-generalized-belief-propagation.pdf
-
+[not_table]: https://arxiv.org/pdf/2009.11631#page=4
+[alg_table]: https://arxiv.org/pdf/2107.12230#page=7
