@@ -96,8 +96,9 @@ These include (implemented):
 See [[1]](#ref1)  and [[2]](#ref2) for a better description of 
 these operators and their role in the design of
 belief propagation algorithms. 
-In particular, have a look at [the algorithms [I]][alg_table]
-and the [notation table [II]][not_table]
+
+(In particular, have a look at [algorithms][alg_table]
+and [notation table][not_table]
 
 ## Example: belief network on graphs
 
@@ -145,7 +146,7 @@ PhD preprint, [arXiv:2009.11631][phd]
 
 <span id="ref3"></span>
 [3] : Yedidia, Freeman, Weiss - _Generalized Belief Propagation_ (2000).
-NeurIPS 2000, [text here][YFW00]
+NeurIPS 2000, [full text][YFW00]
 
 [gsi21]: https://arxiv.org/abs/2107.12230
 [phd]:   https://arxiv.org/abs/2009.11631
