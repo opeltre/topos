@@ -30,6 +30,8 @@ def extend_is(cb, ca):
     """ 
     Cylindrical extension indices from cell ca to cell cb. 
     """
+    if cb.size == ca.size:
+        return eye_is(cb, ca)
     pos = positions(cb.key[-1], ca.key[-1])
     def index_b(ia): 
         xs = cb.shape.coords(ia)
@@ -40,7 +42,7 @@ def extend_is(cb, ca):
 
 #------ Pullback of `last : K[n] -> K[0]` ---
 
-def pull (A, B, f=None):
+def pullback(A, B, f=None):
     """
     Pullback matrix of a map f: A -> B between domain keys.
     """
@@ -58,7 +60,7 @@ def pull_last(K, degree):
         return eye(K[0].size)
     def last(chain):
         return ca.key[-1]
-    return pullback(K[d], K[0], last)
+    return pullback(K[degree], K[0], last)
 
 
 #------ Normalisation ------

@@ -22,3 +22,6 @@ class Graded:
 
     def __truediv__(self, other):
         return self.same([xi / yi for xi, yi in zip(self, other)])
+
+    def __repr__(self):
+        return f"{self.degree} {super().__repr__()}"

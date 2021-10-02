@@ -10,10 +10,20 @@ class Field (Vect):
         self.data = data if isinstance(data, torch.Tensor)\
                 else data * torch.ones([self.domain.size])
 
-    def same(self, data=None):
-        if isinstance(data, type(None)):
-            data = self.data
-        return self.domain.field(data)
+    def same(self, other=None):
+        #--- Copy ---
+        if isinstance(other, type(None)):
+            return self.domain.field(self.data)
+        #--- Create ---
+        if not isinstance (other, Field):
+            return self.domain.field(other)
+        #--- Pass ---
+        if self.domain == other.domain:
+            return other
+        #--- Extend ---
+        if self.domain.scalars.size == other.domain.size:
+            return self.domain.extend(other)
+
 
     def get(self, a):
         a = self.domain[a] if not isinstance(a, Cell) else a
