@@ -193,5 +193,5 @@ class Point (Domain):
 class Empty (Point):
     """ Empty Domain spanning the null vector space {0}. """
 
-    def field(self, data=None):
+    def field(self, data=None, degree=0):
         return super().field(torch.tensor([0.]), self.degree)

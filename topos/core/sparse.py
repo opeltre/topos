@@ -11,6 +11,9 @@ def diag (n, values):
         values,
         [n, n])
 
+def zero(n, m): 
+    return matrix([n, m], [])
+
 def eye(n): 
     return diag(n, torch.ones([n]))
 

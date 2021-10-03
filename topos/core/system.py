@@ -23,7 +23,7 @@ class Complex (Domain):
 
         #--- Topological operators ---
         delta = [codifferential(self, i + 1) for i in range(self.degree)]
-        d     = [dti.t() for dti in delta] 
+        d     = [dti.t() for dti in delta]
         self.d      = GradedLinear([self], d + [0]      , 1 , "d")
         self.delta  = GradedLinear([self], [0] + delta  , -1, "d*")
         
