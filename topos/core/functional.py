@@ -19,7 +19,20 @@ class Functional :
             data = f(field.data)
             return target.field(data)
         return cls(domains, map_f, name)
+
+    @classmethod 
+    def unit (cls, domains, y, name="\u033b"):
+        target = domains[-1]
+        name = (str(y), name)[isinstance(y, (Field, torch.Tensor))]
+        data = y.data if isinstance(y, Field) else y
+        def ret_y(field):
+            return target.field(data)
+        return cls(domains, ret_y, name)
     
+    @classmethod 
+    def null (cls, domains):
+        return cls.unit(domains, 0)
+
     #--- Call and Composition ---
 
     def __call__(self, field):
@@ -80,11 +93,25 @@ class GradedFunctional (Graded, Functional):
             return target.field(data)
         return cls(domains, map_f, name)
     
-    #--- Call and Composition --- 
+    #--- Components ---
 
-    def __call__(self, field):
-        return self[field.degree](field)
+    def null(self, d):
+        src, tgt = [self.src[d], self.tgt[d + self.degree]]
+        return Functional.null([src, tgt])
+        
+    def __getitem__(self, d):
+        return  self.grades[d]\
+                if d >= 0 and d <= self.degree\
+                else self.null(d)        
+
+    #--- Call and Composition --- 
     
+    def __call__(self, field):
+        d = field.degree
+        return self[d](field)\
+               if (d > 0 and d <= self.degree)      \
+               else self.tgt[d + self.degree].zeros()
+
     def compose (self, other):
         src, tgt = other.src, self.tgt
         deg = self.degree + other.degree

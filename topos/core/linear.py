@@ -1,17 +1,34 @@
 from .functional import Functional, GradedFunctional
 from .vect import Vect
-from .sparse import eye
+from .sparse import eye, zero
 
 import torch
 
 class Linear (Functional, Vect): 
     
-    def __init__(self, domains, mat, name="Mat"):
-        self.data = mat
-        tgt = domains[-1]
-        def matmul(x):
+    def __init__(self, domains, mat=0, name="Mat"):
+
+        src, tgt = domains[0], domains[-1]
+        
+        #-- Zero matrix --
+        if isinstance(mat, int) and mat == 0:
+            name = "0"
+            mat  = zero(tgt.size, src.size)
+        #-- Scalars * Identity --
+        if not isinstance(mat, torch.Tensor) and tgt == src:
+            name = str(mat)
+            mat  = mat * eye(tgt.size)
+
+        #-- Action on fields
+        def matvec(x):
             return tgt.field(mat @ x.data)
-        super().__init__(domains, matmul, name)
+
+        self.data = mat
+        super().__init__([src, tgt], matvec, name)
+    
+    @classmethod
+    def null(cls, domains):
+        return cls(domains, 0, "0")
 
     def same(self, data=None): 
         if isinstance(data, type(None)):
@@ -59,6 +76,9 @@ class GradedLinear (GradedFunctional):
                 if not isinstance(mi, Linear) else mi\
                 for i, mi in enumerate(mats)]
         super().__init__(domains, fs, degree, name)
+    
+    def null(self, i):
+        return Linear([self.src[i], self.tgt[i + self.degree]])
 
     #--- Show ---
 

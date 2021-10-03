@@ -1,7 +1,7 @@
 class Graded: 
 
     def __getitem__(self, i):
-        return self.grades[i]
+        return self.grades[i] 
 
     def __iter__(self): 
         return self.grades.__iter__()
