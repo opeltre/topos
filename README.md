@@ -99,7 +99,7 @@ these operators and their role in the design of
 belief propagation algorithms. 
 
 (In particular, have a look at [algorithms][alg_table]
-and [notation table][not_table]
+and [notation table][not_table])
 
 ## Example: belief network on graphs
 
