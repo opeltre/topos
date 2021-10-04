@@ -1,12 +1,14 @@
 from topos.base import Hypergraph, Chain, Cell, Shape
 
-from .domain import Domain, Simplicial, Empty
-from .field import Field
+from .domain    import Domain
+from .cartesian import Empty
+from .sheaf     import Simplicial
 
-from .operators import face, codifferential, zeta, invert_nil, nabla
+from topos.core import\
+     Field, Linear, GradedLinear, Functional, GradedFunctional 
 
-from .functional import Functional, GradedFunctional
-from .linear import Linear, GradedLinear
+from topos.core.operators import\
+    face, codifferential, zeta, invert_nil, nabla
 
 import torch
 
