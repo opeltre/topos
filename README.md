@@ -10,12 +10,10 @@ study of message-passing algorithms.
 
 There exists natural boundary operators on statistical systems, 
 generalising gradient and [divergence], leading to diffusion equations 
-that improve belief propagation (BP) algorithms. 
-
+that improve belief propagation (BP) algorithms.
 BP algorithms were originally introduced to efficiently 
 estimate the marginals of a high dimensional probability distribution 
-(usually performing better than Monte Carlo methods), 
-but our geometrical picture leads to new algorithms with even
+(usually better than Monte Carlo). This geometrical picture leads to new algorithms with even
 more interesting applications. 
 
 
