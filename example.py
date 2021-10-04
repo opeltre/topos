@@ -1,25 +1,47 @@
-from topos.base import Hypergraph, Set, Chain
 from topos import System
 import torch
 
-from topos.core.operators import face, differential, codifferential
-from topos import Linear
+K = System.closure(("i:k", "j:k", "k:l"))
 
-K = System.closure(("i:j", "j:k", "k:l"))
-# K = System(("i:j", "j:k", "k:l"))
-# K = System(("i:j:k", "i:k:l", "j:k:l"))
 
-# : Potential 
-u = K[0].randn() 
-# : Local energy 
-U = K.zeta(u)
-# : Belief (local Gibbs state)
-p = K[0].gibbs(u)
+"""----------- Parameters --------------------------
 
-#--- differential : (in)consistency ---
-dp = K.d(p)
+        p[a](xa) = exp(-H[a](xa)) / Za  
+                 where
+                   H[a](xa) = Sum{b <= a}  h[b](xb)
+                
+"""
+h = K.randn(0)      # Local potentials: 0-Field of local tensors
+H = K.zeta(h)       # Local hamiltonians (sums of inner potentials)
+p = K.gibbs(H)      # Local beliefs (local Gibbs states)
 
-#--- codifferential : energy transport ---
+
+
+"""----------- Consistency -------------------------
+   
+    Local beliefs are consistent if and only if 
+    for all inclusion 'i:k > k'
+""" 
+p["k"] == p["i:k"].sum(dim=[0])    
+
+""" The differential d measures local inconsistencies:
+   
+        d: Field(K[0]) -> Field(K[1]) -> ... 
+"""
+dp = K.d(p)                     
+dp['i:k > k']   == p['k'] - p['i:k'].sum(dim=[0])
+dp.degree       == 1
+
+""" Uniform beliefs are always consistent: """
+
+K.d @ K[0].uniform() == K[1].zeros()
+
+
+
+"""------------ Transport ---------------------------
+   
+   
+"""
 
 def diffusion (u, eps=1, nit=10) : 
     for k in range(nit):
@@ -31,6 +53,3 @@ def diffusion (u, eps=1, nit=10) :
         #   : Energy conservation
         u  += K.delta(phi) 
         print(Phi.norm())
-
-def project(A, B):
-    pull = A.pull(B)
