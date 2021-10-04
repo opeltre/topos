@@ -45,7 +45,7 @@ class Complex (Domain):
     def lift (self, f, name="name", src=None, tgt=None):
         src = src if src else self
         tgt = tgt if tgt else tgt
-        fs = [Ni.__getattribute__(f) for Ni in self] 
+        fs = [Ni.__getattribute__(f) for Ni in self.grades] 
         return GradedLinear([src, tgt], fs, 0, name)\
             if isinstance(fs[0], Linear)\
             else GradedFunctional([src, tgt], fs, 0, name=name)
@@ -57,7 +57,9 @@ class Complex (Domain):
         return self.grades[degree]
 
     def __iter__(self):
-        return self.grades.__iter__()
+        for Kd in self.grades:
+            for cell in Kd:
+                yield cell
 
     def field (self, data=None, degree=0):
         return self[degree].field(data)
@@ -73,7 +75,10 @@ class Complex (Domain):
 
 class Nerve (Complex): 
     """
-    Simplicial nerve of a hypergraph.
+    Simplicial nerve N[d](K, E) of a sheaf E over a covering K.
+
+    Combinatorial operations on the partial order of K = N[0]
+    are extended to higher degrees [see K.zeta and K.mu].
     """
     
     @classmethod

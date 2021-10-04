@@ -67,15 +67,23 @@ class Linear (Functional, Vect):
             self.data.t(),
             name = f"{self}*")
 
+
 class GradedLinear (GradedFunctional):
+    """
+    Graded Linear operators.
+
+    An array `L = [L0, ..., Ld]` of linear operators 
+    acting on a k-field `f` by:
+
+        L(f) = L @ f = L[k] @ f
+        
+    """
     
-    def __init__(self, domains, mats, degree=0, name="Mat"):
-        arr = [(domains[0][i], domains[-1][i + degree])\
-                for i in range(len(mats))] 
-        fs  = [Linear(arr[i], mi, name) \
-                if not isinstance(mi, Linear) else mi\
-                for i, mi in enumerate(mats)]
-        super().__init__(domains, fs, degree, name)
+    def __init__(self, Ks, mats, degree=0, name="Mat"):
+        """
+        Create a graded operator from an array of matrices.
+        """
+        super().__init__(Ks, mats, degree, name, cls=Linear)
     
     def null(self, i):
         return Linear([self.src[i], self.tgt[i + self.degree]])

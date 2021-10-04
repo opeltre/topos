@@ -34,6 +34,13 @@ class Domain :
         """ Get pointer to coordinate (j0, ..., jn) from cell at key."""
         cell = self[key]
         return cell.begin + cell.shape.index(*js)
+    
+    #--- Restricted domain to a subset of keys --- 
+
+    def restriction(self, keys):
+        keys  = [self.get(k).key for k in keys]
+        shape = {k: self.get(k).shape for k in keys}
+        return self.__class__(keys, shape, self.degree)
 
     #--- Functors ---
 
@@ -41,26 +48,23 @@ class Domain :
         """ Map a function acting on torch.Tensor to fields. """
         return Functional.map([self], f, name)
 
-    def pull(self, src, g, name="map*"):
-        """ Pull-back of g from src to domain. """
+    def pull(self, src, g=None, name="map*"):
+        """ Pull-back of g : src -> domain. """
         mat = pullback(src, self, g)
         return Linear([self, src], mat, name)
 
-    def push(self, src, f, name="map."):
-        mat = pull(src, self, g).t()
-        return Linear([src, self], mat, name)
+    def push(self, tgt, f=None, name="map."):
+        """ Push-forward of f : domain -> tgt. """
+        mat = pullback(self, tgt, f).t()
+        return Linear([self, tgt], mat, name)
 
-    def restrict(self, subdomain, name="Res"):
-        if not isinstance(subdomain, Domain):
-            shape = {a: self[a].shape for a in self.cells} 
-            keys = [self[k].key for k in subdomain]
-            subdomain = Sheaf(keys, shape, self.degree)
-        def incl (cb):
-            return cb.key
-        return self.pull(subdomain, incl, name)
+    def res (self, keys, name="Res"):
+        subdomain = keys if isinstance(keys, Domain)\
+                    else self.restriction(keys)
+        return self.pull(subdomain, None, name)  
 
     def embed(self, subdomain, name="Emb"):
-        return self.restrict(subdomain).t().rename(name)
+        return self.res(subdomain).t().rename(name)
 
     def eye(self):
         return Linear([self], eye(self.size), "Id")
@@ -168,7 +172,6 @@ class Simplicial (Sheaf) :
     def __repr__(self):
         return f"{self.degree} {super().__repr__()}"
 
-
 #--- Scalar Domain --- 
 
 class Trivial (Domain) :
@@ -195,3 +198,5 @@ class Empty (Point):
 
     def field(self, data=None, degree=0):
         return super().field(torch.tensor([0.]), self.degree)
+
+#--- Disjoint Unions --- 

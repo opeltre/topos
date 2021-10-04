@@ -69,39 +69,45 @@ class Functional :
 
 class GradedFunctional (Graded, Functional):
 
-    def __init__(self, Ks, fs, degree=0, name="\u033b"):
+    def __init__(self, Ks, fs, degree=0, name="\u033b", cls=None):
         """ 
         Create a graded functional between complexes Ks = [src, target].
         """
-        self.src = Ks[0]
-        self.tgt = Ks[-1]
-        self.degree = degree
-        arr = [[self.src[i], self.tgt[i + degree]]\
-               for i in range(len(fs))]
+        src, tgt, d = Ks[0], Ks[-1], degree
+        Func        = Functional if not cls else cls
+        self.degree = d
         self.grades = [
-            Functional(arr[i], fi, name = f"{name}[{i}]")\
-            if not isinstance(fi, Functional) else fi\
+            Func([src[i], tgt[i + d]], fi, name = name)\
+            if not isinstance(fi, Func) else fi\
             for i, fi in enumerate(fs)]
-        self.name = name
+
+        def call (field):
+            d = field.degree
+            print(f"call at {d}")
+            return self[d](field)
+
+        super().__init__([src, tgt], call, name)
 
     @classmethod
-    def map(cls, domains, f, name="\u033b"):
-        """ Create functional from a torch.Tensor function. """
-        target = domains[-1]
-        def map_f(field):
-            data = f(field.data)
-            return target.field(data)
-        return cls(domains, map_f, name)
+    def map(cls, domains, fs, degree=0, name="\u033b"):
+        """
+        Create a graded functional from an array of torch.Tensor functions.
+        """
+        d = self.degree
+        src, tgt = domains[0], domains[-1]
+        map_fs = [lambda u : tgt[i + d].field(fi(u.data))\
+                  for i, fi in enumerate(fs)]
+        return cls([src, tgt], map_fs, name)
     
     #--- Components ---
 
     def null(self, d):
         src, tgt = [self.src[d], self.tgt[d + self.degree]]
-        return Functional.null([src, tgt])
+        return self.null([src, tgt])
         
     def __getitem__(self, d):
         return  self.grades[d]\
-                if d >= 0 and d <= self.degree\
+                if d >= 0 and d < len(self.grades)\
                 else self.null(d)        
 
     #--- Call and Composition --- 
@@ -109,7 +115,7 @@ class GradedFunctional (Graded, Functional):
     def __call__(self, field):
         d = field.degree
         return self[d](field)\
-               if (d > 0 and d <= self.degree)      \
+               if (d >= 0 and d < len(self.grades))\
                else self.tgt[d + self.degree].zeros()
 
     def compose (self, other):
