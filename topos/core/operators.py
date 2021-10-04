@@ -22,13 +22,13 @@ def positions(a, b):
 
 def eye_is(cb, ca):
     """
-    Identity indices from cell ca to cell cb (identical shapes).
+    Identity indices from fiber ca to fiber cb (identical shapes).
     """
     return [[cb.begin + i, ca.begin + i] for i in range(cb.size)]
 
 def extend_is(cb, ca):
     """ 
-    Cylindrical extension indices from cell ca to cell cb. 
+    Cylindrical extension indices from fiber ca to fiber cb. 
     """
     if cb.size == ca.size:
         return eye_is(cb, ca)
@@ -82,7 +82,7 @@ def from_scalar(domain):
     """
     indices = [[i, a.idx] for a in domain\
                           for i in range(a.begin, a.end)]
-    shape = [domain.size, len(domain.cells)]
+    shape = [domain.size, len(domain.fibers)]
     return matrix(shape, indices)
 
 def to_scalar(domain):
@@ -97,7 +97,7 @@ def restrict(domain, subdomain):
     """
     Restriction matrix. 
     """
-    pairs = [[cb, domain.cells[cb.key]] for cb in subdomain]
+    pairs = [[cb, domain.fibers[cb.key]] for cb in subdomain]
     indices = [[cb.begin + i, ca.begin + i]\
                 for cb, ca in pairs\
                 for i in range(cb.size)]
@@ -107,8 +107,8 @@ def restrict(domain, subdomain):
 
 def face(K, degree, j): 
     """ Face map from K[d] to K[d - 1]. """
-    def dj (cell): 
-        return K[degree - 1][cell.key.d(j)]
+    def dj (fiber): 
+        return K[degree - 1][fiber.key.d(j)]
     pairs = [[dj(a), a] for a in K[degree]]
     fmap_is = eye_is if j < degree else extend_is
     indices = [ij for p in pairs for ij in fmap_is(*p)]
@@ -165,8 +165,8 @@ def zeta(K, degree):
     z = []
     for d in range(0, degree + 1):
         cd = [[Chain.read(ca), Chain.read(cb)] for ca, cb in chains[d]]
-        cells = [[K[d][ca], K[d][cb]] for ca, cb in cd]
-        indices = [ij for p in cells for ij in extend_is(*p)]
+        fibers = [[K[d][ca], K[d][cb]] for ca, cb in cd]
+        indices = [ij for p in fibers for ij in extend_is(*p)]
         n = K[d].size
         z += [matrix((n, n), indices)]
     return z

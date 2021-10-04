@@ -1,4 +1,3 @@
-from topos.base import join_cells, Chain, Shape, Cell
 from topos.core import Field, Functional, Linear
 from topos.core.operators import from_scalar, pullback, eye
 
@@ -12,31 +11,37 @@ class Domain :
     that are pointers to index ranges. 
     """
 
-    def __init__(self, cells, degree=0, size=None):
+    def __init__(self, fibers, degree=0, size=None):
         self.degree = degree
-        self.cells  = cells
+        self.fibers  = fibers
         self.size = size if size else\
-                    max((c.end for c in cells.values())) 
+                    max((c.end for c in fibers.values())) 
 
     def __iter__(self):
-        """ Yield cells. """
-        return self.cells.values().__iter__()
+        """ Yield fibers. """
+        return self.fibers.values().__iter__()
 
     def get(self, key):
-        """ Retrieve a cell from its key. """
-        return self.cells[key]
+        """ Retrieve a fiber from its key. """
+        return self.fibers[key]
 
     def __getitem__(self, key):
-        """ Retrieve a cell from its key. """
+        """ Retrieve a fiber from its key. """
         if type(key) == int:
             return self
         return self.get(key)
 
-    def index(self, key, *js): 
-        """ Get pointer to coordinate (j0, ..., jn) from cell at key."""
-        cell = self[key]
-        return cell.begin + cell.shape.index(*js)
+    #--- Index of indices ---
+
+    def range(self, d=0):
+        """ Represent the domain mapped to its range of indices. """
+        return self.field(torch.arange(self[d].size), d)
     
+    def index(self, key, *js): 
+        """ Get pointer to coordinate (j0, ..., jn) from fiber at key."""
+        fiber = self.get(key)
+        return fiber.begin + fiber.shape.index(*js)
+
     #--- Restricted domain to a subset of keys --- 
 
     def restriction(self, keys):

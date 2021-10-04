@@ -5,7 +5,7 @@ class Boundary :
 
     @classmethod
     def closure(cls, K, vertices):
-        regions  = K[0].cells.keys()
+        regions  = K[0].fibers.keys()
         b        = vertices if isinstance(vertices, Set)\
                     else Set(vertices) 
         boundary = Hypergraph((r & b for r in regions))

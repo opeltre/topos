@@ -1,14 +1,22 @@
 import torch
-from topos.base import Cell
+from topos.base import Fiber
 from .vect import Vect
 
 class Field (Vect): 
 
-    def __init__(self, domain, data, degree=0):
+    def __init__(self, domain, data=0., degree=0):
         self.domain = domain
         self.degree = degree
-        self.data = data if isinstance(data, torch.Tensor)\
-                else data * torch.ones([self.domain.size])
+        if isinstance(data, list):
+            self.data = torch.tensor(data) 
+        elif isinstance(data, torch.Tensor):
+            self.data = data
+        elif isinstance(data, (int, float)):
+            self.data = data * torch.ones([self.domain.size])
+        else:
+            raise TypeError(
+                f"unsupported data type: {type(data)}\n"\
+                +"use: torch.Tensor, float, [float]...")
 
     def same(self, other=None):
         #--- Copy ---
@@ -24,16 +32,15 @@ class Field (Vect):
         if self.domain.scalars.size == other.domain.size:
             return self.domain.extend(other)
 
-
     def get(self, a):
-        a = self.domain[a] if not isinstance(a, Cell) else a
+        a = self.domain.get(a) if not isinstance(a, Fiber) else a
         return self.data[a.begin:a.end].view(a.shape.n)
 
     def __getitem__(self, a):
         return self.get(a)
 
     def __setitem__(self, a, va):
-        a = self.domain[a] if not isinstance(a, Cell) else a
+        a = self.domain[a] if not isinstance(a, Fiber) else a
         try:
             if isinstance (va, torch.Tensor):
                 data = va.reshape([a.size])

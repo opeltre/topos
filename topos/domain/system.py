@@ -1,4 +1,4 @@
-from topos.base import Hypergraph, Chain, Cell, Shape
+from topos.base import Hypergraph, Chain, Fiber, Shape
 
 from .domain    import Domain
 from .cartesian import Empty

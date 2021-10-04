@@ -1,6 +1,6 @@
 from .domain import Domain 
 
-from topos.base import join_cells, Chain, Shape, Cell
+from topos.base import Chain, Shape, Fiber, Hypergraph
 from topos.core import Field, Functional, Linear
 from topos.core.operators import from_scalar
 
@@ -8,31 +8,51 @@ import torch
 
 class Sheaf (Domain) : 
     """
-    Sheaves hold a dictionnary of `Fiber` objects.
+    Sheaves hold a dictionnary of Fiber objects.
 
     Each fiber is a pointer to an index range
     of size `n1 * ... * nd` for a shape `(n1, ..., nd)`.
+
+    See Sheaf.range() for a visual representation of indices.
     """
+
+    @classmethod
+    def closure(cls, hypergraph, shape=None, degree=0, void=1):
+        K = hypergraph if isinstance(hypergraph, Hypergraph)\
+            else Hypergraph(hypergraph)
+        K = K.closure()
+        if not void:
+            K = Hypergraph((r for r in K if len(r)))
+        return cls.free(K, shape, degree)
+            
+    
+    @classmethod
+    def free(cls, hypergraph, shape=None, degree=0):
+        #--- Shapes of local tensors ---
+        K = hypergraph if isinstance(hypergraph, Hypergraph)\
+            else Hypergraph(hypergraph)
+        def getshape (region): 
+            js = region.list()
+            Es = [shape if type(shape) == int else shape[j] for j in js]
+            return Shape(*Es)
+        return cls(K, getshape if shape else None, degree)
+
 
     def __init__(self, keys, shape=None, degree=0):
         """
-        Create a domain with hashable keys and given shapes.
-
-        Params: - keys  : [Hashable]
-        ------  - shape : {keys : Shape} | keys -> Shape
-
+        Create a sheaf from a dictionary of fiber shapes.
         """
         self.trivial = (shape == None)
         self.scalars = self.__class__(keys) if not self.trivial else self
 
-        #--- Join Cells ---
+        #--- Join Fibers ---
         if shape == None:
             shape = {k : Shape() for k in keys}
         elif callable(shape):
             shape = {k: shape(k) for k in keys}
-        cells, size = join_cells(keys, shape)
+        fibers, size = Fiber.join(keys, shape)
 
-        super().__init__(cells, degree, size=size)
+        super().__init__(fibers, degree, size=size)
 
         
         #--- From/To scalar fields ---

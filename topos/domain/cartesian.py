@@ -1,5 +1,5 @@
 from .domain import Domain 
-from topos.base import Shape, Cell
+from topos.base import Shape, Fiber
 
 #--- Scalar Domain --- 
 
@@ -9,7 +9,7 @@ class Trivial (Domain) :
     def __init__(self, keys, degree=0):
         self.degree = degree
         self.shape = {k: Shape() for k in keys}
-        self.cells, self.size = join_cells(keys, self.shape)
+        self.fibers, self.size = Fiber.join(keys, self.shape)
 
 #--- Unit Object ---
 
@@ -17,7 +17,7 @@ class Point (Domain):
     """ Point Domain spanning field of scalars R. """
 
     def __init__(self, degree=0):
-        super().__init__({'()': Cell('()', 0, Shape())}, degree)
+        super().__init__({'()': Fiber('()', shape=[])}, degree)
 
 
 #--- Null Object ---
