@@ -9,9 +9,8 @@ considered in [[2]][phd] for the
 study of message-passing algorithms. 
 
 There exists natural boundary operators on statistical systems, 
-generalising gradient and [divergence], that allow to 
-define statistical diffusion equations 
-improving belief propagation (BP) algorithms. 
+generalising gradient and [divergence], leading to diffusion equations 
+that improve belief propagation (BP) algorithms. 
 
 BP algorithms were originally introduced to efficiently 
 estimate the marginals of a high dimensional probability distribution 
