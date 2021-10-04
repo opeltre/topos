@@ -1,6 +1,6 @@
-from .domain import Domain 
+from .domain    import Domain 
 
-from topos.base import Chain, Shape, Fiber, Hypergraph
+from topos.base import Shape, Fiber, Simplex, Hypergraph
 from topos.core import Field, Functional, Linear
 from topos.core.operators import from_scalar
 
@@ -27,10 +27,12 @@ class Sheaf (Domain) :
             
     
     @classmethod
-    def free(cls, hypergraph, shape=None, degree=0):
+    def free(cls, K, shape=None, degree=0):
+        """
+        Free sheaf over K with shapes F[i:j] = F[i] * F[j].
+        """
         #--- Shapes of local tensors ---
-        K = hypergraph if isinstance(hypergraph, Hypergraph)\
-            else Hypergraph(hypergraph)
+        K = K if isinstance(K, Hypergraph) else Hypergraph(K)
         def getshape (region): 
             js = region.list()
             Es = [shape if type(shape) == int else shape[j] for j in js]
@@ -38,27 +40,34 @@ class Sheaf (Domain) :
         return cls(K, getshape if shape else None, degree)
 
 
-    def __init__(self, keys, shape=None, degree=0):
+    def __init__(self, keys, shape=None, degree=0, ftype=Fiber):
         """
         Create a sheaf from a dictionary of fiber shapes.
         """
+        self.degree  = degree
         self.trivial = (shape == None)
-        self.scalars = self.__class__(keys) if not self.trivial else self
+
+        #--- Sheaf({"a": [3, 2], ...}) ---
+        if isinstance(keys, dict):
+            shape = {ftype.read(k): Ek for k, Ek in keys.items()}
+            keys  = list(shape.keys())
 
         #--- Join Fibers ---
-        if shape == None:
-            shape = {k : Shape() for k in keys}
-        elif callable(shape):
-            shape = {k: shape(k) for k in keys}
-        fibers, size = Fiber.join(keys, shape)
-
-        super().__init__(fibers, degree, size=size)
-
+        self.ftype  = ftype
+        self.fibers, self.size = ftype.join(keys, shape)
         
-        #--- From/To scalar fields ---
+        #--- Trivialise sheaf ---
+        if 'scalars' not in self.__dir__():
+            self.scalars = self if self.trivial else\
+                self.__class__(keys)
+        
+        #--- From/to scalars ---
         src, J = self.scalars, from_scalar(self)
         extend = Linear([src, self], J, "J")
         sums   = Linear([self, src], J.t(), "\u03a3")
+    
+        #   =   =   Statistics  =   =   =
+
         #--- Normalisation ---
         norm    = Functional([self], lambda f: f/sums(f), "(1 / \u03a3)")
         #--- Energies / log-likelihoods ---
@@ -78,22 +87,15 @@ class Sheaf (Domain) :
         for k, fk in self.maps.items():
             setattr(self, k, fk)
 
-    def __repr__(self):
-        return f"Sheaf  {self}" if not self.trivial else f"Domain {self}"
 
-#--- System Fibers ---
+#--- Simplical Fibers ---
 
 class Simplicial (Sheaf) : 
-    """ Domain with simplicial Chain keys """
-
-    def __init__(self, keys, shape=None, degree=0):
-        chains = [Chain.read(k) for k in keys]
-        shape  = {Chain.read(k): shape(k) for k in keys} if shape\
-                else None
-        super().__init__(chains, shape, degree)
     
-    def get(self, key):
-        return super().get(Chain.read(key))
+    """ Sheaf with simplicial keys. """
+
+    def __init__(self, keys, shape=None, degree=0, **kwargs):
+        super().__init__(keys, shape, degree, ftype=Simplex, **kwargs)
 
     def __repr__(self):
         return f"{self.degree} {super().__repr__()}"

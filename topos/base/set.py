@@ -43,7 +43,16 @@ class Iterable:
 
 
 class Set (Iterable, Hashable, set):
-
+    
+    @classmethod
+    def read(cls, key):
+        if isinstance(key, cls):
+            return key
+        elems = key.split(':') if len(key) > 0 else []\
+                if isinstance(key, str)\
+                else elems
+        return cls(elems)
+            
     def __init__(self, elems=(), sep=':'):
         self.sep = sep 
         if type(elems) == str:

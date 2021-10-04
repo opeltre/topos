@@ -1,28 +1,32 @@
+from topos.base import Fiber
 from topos.core import Field, Functional, Linear
 from topos.core.operators import from_scalar, pullback, eye
 
 import torch
 
-class Domain : 
+class Domain: 
     """
     Base class for Sheaves. 
 
-    Domains hold a dictionnary of `Fiber` objects,
-    that are pointers to index ranges. 
+    Domains hold a dictionnary to Fiber objects, 
+    which are pointers to an index range. 
+
+    N.B: abstract class, instantiate through a subclass.
+
+    Subclasses should implement attributes: 
+
+        .size   : int
+        .degree : int   | None    
+        .ftype  : Fiber | Simplex | ... 
+        .fibers : {Fiber} 
+
+    This keeps Sheaf.__init__ routines separate from
+    the interface. 
     """
-
-    def __init__(self, fibers, degree=0, size=None):
-        self.degree = degree
-        self.fibers  = fibers
-        self.size = size if size else\
-                    max((c.end for c in fibers.values())) 
-
-    def __iter__(self):
-        """ Yield fibers. """
-        return self.fibers.values().__iter__()
 
     def get(self, key):
         """ Retrieve a fiber from its key. """
+        key = self.ftype.read(key)
         return self.fibers[key]
 
     def __getitem__(self, key):
@@ -31,17 +35,21 @@ class Domain :
             return self
         return self.get(key)
 
-    #--- Index of indices ---
+    def __iter__(self):
+        """ Yield fibers. """
+        return self.fibers.values().__iter__()
 
-    def range(self, d=0):
-        """ Represent the domain mapped to its range of indices. """
-        return self.field(torch.arange(self[d].size), d)
-    
+    #--- Index range ---
+
     def index(self, key, *js): 
         """ Get pointer to coordinate (j0, ..., jn) from fiber at key."""
         fiber = self.get(key)
         return fiber.begin + fiber.shape.index(*js)
 
+    def range(self, d=None):
+        """ Represent the domain mapped to its range of indices. """
+        return self.field(torch.arange(self[d].size), d)
+    
     #--- Restricted domain to a subset of keys --- 
 
     def restriction(self, keys):
@@ -104,8 +112,6 @@ class Domain :
         return "{"  +\
                ", ".join([str(ck) for ck in self]) +\
                "}"
-
+    
     def __repr__(self):
         return f"Domain {self}"
-
-

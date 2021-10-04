@@ -3,8 +3,19 @@ from topos.base import Fiber
 from .vect import Vect
 
 class Field (Vect): 
+    """
+    Scalar functions on the fibers of a domain. 
+
+    Fields are internally linked to a torch 1D-tensor 
+    of the size of the domain.
+    """
 
     def __init__(self, domain, data=0., degree=0):
+        """ 
+        Create a d-field on a domain from numerical data. 
+
+        See Domain.field. 
+        """
         self.domain = domain
         self.degree = degree
         if isinstance(data, list):
@@ -19,6 +30,9 @@ class Field (Vect):
                 +"use: torch.Tensor, float, [float]...")
 
     def same(self, other=None):
+        """ 
+        Create another field on the same domain.
+        """
         #--- Copy ---
         if isinstance(other, type(None)):
             return self.domain.field(self.data)
@@ -33,13 +47,22 @@ class Field (Vect):
             return self.domain.extend(other)
 
     def get(self, a):
+        """
+        Local component on the fiber of a.
+        """
         a = self.domain.get(a) if not isinstance(a, Fiber) else a
         return self.data[a.begin:a.end].view(a.shape.n)
 
     def __getitem__(self, a):
+        """
+        Local component on the fiber of a.
+        """
         return self.get(a)
 
     def __setitem__(self, a, va):
+        """
+        Update a local fiber component.
+        """
         a = self.domain[a] if not isinstance(a, Fiber) else a
         try:
             if isinstance (va, torch.Tensor):
@@ -51,9 +74,15 @@ class Field (Vect):
             raise TypeError(f"scalar or size {a.size} tensor expected")
 
     def norm(self):
+        """
+        Euclidean norm of the underlying vector.
+        """
         return torch.sqrt((self.data ** 2).sum())
 
     def sum(self):
+        """ 
+        Sum of scalar components.
+        """
         return self.data.sum()
 
     #--- Show ---
@@ -61,13 +90,14 @@ class Field (Vect):
     def __str__(self): 
         s = "{\n\n"
         for c in self.domain:
-            sc = f"{c} ::"
+            sc = f"  {c} ::"
             pad = len(sc) 
             s += sc + show_tensor(self.get(c), pad) + ",\n\n"
         return s + "}"
     
     def __repr__(self): 
-        return f"{self.degree} Field {self}"
+        prefix = self.degree if self.degree != None else ""
+        return f"{prefix} Field {self}"
 
 #--- Show --- 
 
