@@ -20,36 +20,42 @@ def positions(a, b):
 
 #------ Functorial Maps ------
 
+def pull_is(cb, ca, f):
+    """
+    Pullback indices from fiber ca to fiber cb by f_is.
+    """
+    return [[cb.begin + i, ca.begin + f(i)] for i in range(cb.size)]
+
 def eye_is(cb, ca):
     """
     Identity indices from fiber ca to fiber cb (identical shapes).
     """
     return [[cb.begin + i, ca.begin + i] for i in range(cb.size)]
+    return pull_is(cb, ca, None)
 
 def extend_is(cb, ca):
     """ 
     Cylindrical extension indices from fiber ca to fiber cb. 
     """
-    if cb.size == ca.size:
+    if cb.size == ca.size: 
         return eye_is(cb, ca)
-    pos = positions(cb.key[-1], ca.key[-1])
-    def index_b(ia): 
-        xs = cb.shape.coords(ia)
-        ys = [xs[p] for p in pos]
-        return ca.shape.index(*ys)
-    return [[cb.begin + i, ca.begin + index_b(i)] for i in range(cb.size)]
+    pos  = positions(cb.key[-1], ca.key[-1])
+    return pull_is(cb, ca, cb.shape.res(*pos))
 
 
-#------ Pullback of `last : K[n] -> K[0]` ---
+#------ Pullbacks ---
 
-def pullback(A, B, f=None):
+def pullback(A, B, f=None, fmap=None):
     """
     Pullback matrix of a map f: A -> B between domain keys.
     """
-    f = f if callable(f) else lambda x:x
-    indices = [ij for cb in B\
-                for ij in eye_is(A.get(f(cb.key)), cb)]
+    f    = f if callable(f)       else lambda x:x
+    fmap = fmap if callable(fmap) else lambda cb, ca: lambda x:x
+    indices = [ij for ca in A\
+                  for ij in pull_is(ca, B.get(f(ca.key)), fmap(ca))]
     return matrix([A.size, B.size], indices)
+
+#------ Pullback of `last : K[n] -> K[0]` ---
 
 def pull_last(K, degree):
     """ 

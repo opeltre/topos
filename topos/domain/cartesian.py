@@ -54,12 +54,23 @@ class Product (Sheaf):
     def __getitem__(self, d=0):
         return self if d == None else\
                self.grades[d]
-    
+   
     def projection(self, d):
         def res_d (key):
             return key[d]
-        return res_d
-        
+        def res_fmap(fiber):
+            shape = Shape(*[self[j].get(kj).size\
+                           for j, kj in enumerate(fiber.key)])
+            return shape.p(d)
+        return res_d, res_fmap
+
+    def j(self, d):
+        p, pmap = self.projection(d)
+        return self[d].pull(self, p, "p*", fmap=pmap)
+
+    def p(self, d):
+        return self.j(d).t()
+    
     def get(self, key, *keys):
         if isinstance(key, Sequence):
             return self.fibers[key]

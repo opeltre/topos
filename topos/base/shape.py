@@ -29,6 +29,19 @@ class Shape :
             js += [q]
         return js
 
+    def p(self, d):
+        def proj_d(i):
+            x = self.coords(i)
+            return x[d]
+        return proj_d
+
+    def res(self, *ds):
+        def res_ds(i):
+            x   = self.coords(i)
+            tgt = Shape([self.n[d] for d in ds])
+            return tgt.index(*[x[d] for d in ds])
+        return res_ds
+
     def __iter__(self):
         return self.n.__iter__()
     

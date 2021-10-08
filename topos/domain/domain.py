@@ -75,14 +75,14 @@ class Domain:
         """ Map a function acting on torch.Tensor to fields. """
         return Functional.map([self], f, name)
 
-    def pull(self, src, g=None, name="map*"):
+    def pull(self, src, g=None, name="map*", fmap=None):
         """ Pull-back of g : src -> domain. """
-        mat = pullback(src, self, g)
+        mat = pullback(src, self, g, fmap)
         return Linear([self, src], mat, name)
 
-    def push(self, tgt, f=None, name="map."):
+    def push(self, tgt, f=None, name="map.", fmap=None):
         """ Push-forward of f : domain -> tgt. """
-        mat = pullback(self, tgt, f).t()
+        mat = pullback(self, tgt, f, fmap).t()
         return Linear([self, tgt], mat, name)
 
     def res (self, keys, name="Res"):
@@ -113,7 +113,8 @@ class Domain:
 
     def randn(self, degree=None):
         """ Return a field with normally distributed values. """
-        return self.field(torch.randn(self[degree].size), degree)
+        tgt = self if degree == None else self[degree]
+        return tgt.field(torch.randn(tgt.size), degree)
 
     def uniform(self, degree=None):
         """ Return uniform local probabilities. """
