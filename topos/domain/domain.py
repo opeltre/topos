@@ -60,7 +60,7 @@ class Domain:
     def range(self, d=None):
         """ Represent the domain mapped to its range of indices. """
         tgt = self if d == None else self[d]
-        return tgt.field(torch.arange(tgt.size), tgt.degree)
+        return tgt.field(torch.arange(tgt.size), d)
     
     #--- Restricted domain to a subset of keys --- 
 
