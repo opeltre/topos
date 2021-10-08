@@ -134,3 +134,4 @@ class GradedFunctional (Graded, Functional):
             if i + other.degree < len(self.grades)]
         name = f"{self} . {other}"
         return self.__class__([src, tgt], circ, deg, name) 
+

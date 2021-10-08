@@ -88,6 +88,13 @@ class GradedLinear (GradedFunctional):
     def null(self, i):
         return Linear([self.src[i], self.tgt[i + self.degree]])
 
+    def t(self): 
+        d    = self.degree
+        name = f'{self}*'
+        ts   = [self.null(i).t() for i in range(d)]\
+             + [fi.t() for fi in self.grades]
+        return self.__class__([self.tgt, self.src], ts, -d, name) 
+
     #--- Show ---
 
     def __repr__(self):
