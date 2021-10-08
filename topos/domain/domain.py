@@ -61,15 +61,18 @@ class Domain:
         """ Represent the domain mapped to its range of indices. """
         tgt = self if d == None else self[d]
         return tgt.field(torch.arange(tgt.size), d)
-    
-    #--- Restricted domain to a subset of keys --- 
+   
+    #--- Subdomain --- 
 
     def restriction(self, keys):
+        """ Domain restricted to a subset of keys. """
+        if isinstance(keys, Domain):
+            keys = keys.keys()
         keys  = [self.get(k).key for k in keys]
         shape = {k: self.get(k).shape for k in keys}
         return self.__class__(keys, shape, self.degree)
 
-    #--- Functors ---
+    #--- Functoriality ---
 
     def map(self, f, name="map \u033b"):
         """ Map a function acting on torch.Tensor to fields. """
@@ -86,20 +89,23 @@ class Domain:
         return Linear([self, tgt], mat, name)
 
     def res (self, keys, name="Res"):
+        """ Restriction matrix to a subdomain. """
         tgt = keys if isinstance(keys, Domain)\
                    else self.restriction(keys)
         return self.pull(tgt, None, name)  
 
     def embed(self, subdomain, name="Emb"):
+        """ Embedding matrix from a subdomain. """
         return self.res(subdomain).t().rename(name)
 
     def eye(self):
+        """ Identity matrix."""
         return Linear([self], eye(self.size), "Id")
 
     #--- Field Creation ---
 
     def field(self, data, degree=None):
-        """ Create a field from data vector. """
+        """ Create a field from numerical data. """
         d = self.degree if degree == None else degree 
         return Field(self, data, d)
 

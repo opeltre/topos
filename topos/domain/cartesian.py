@@ -104,15 +104,22 @@ class Sum (Sheaf):
     def __getitem__(self, d=0):
         return self if d == None else\
                self.grades[d]
+
+    def get(self, key, d=None):
+        if d == None:
+            return self.fibers[Sequence.read(key)]
+        return self[d].get(key)
     
-    def lift(self, f, name="name", src=None, tgt=None):
-        src = getattr(self, src) if src else self
-        tgt = getattr(self, tgt) if tgt else tgt
-        fs = [getattr(Ni, f) for Ni in self.grades] 
-        return GradedLinear([src, tgt], fs, 0, name)\
-            if isinstance(fs[0], Linear)\
-            else GradedFunctional([src, tgt], fs, 0, name=name)
-        
+    #--- Subdomain ---
+    
+    def restriction(self, Ks):
+        """ Restriction to a subset of keys. """
+        return self.__class__(*
+            (self[d].restriction(Kd) for d, Kd in enumerate(Ks))
+        )
+
+    #--- Functoriality --- 
+
     def embedding(self, d):
         def emb_d (k):
             return  Sequence.read((str(d), k))
@@ -124,11 +131,25 @@ class Sum (Sheaf):
     def j (self, d):
         return self.p(d).t()
 
+    def pull(self, src, g=None, name="map*", fmap=None):
+        if not isinstance(src, Sum):
+            return super().pull(src, g, name, fmap)
+        gs = [self[i].pull(si, g[i] if g!= None else g)\
+                     for i, si in enumerate(src.grades)]
+        return GradedLinear([self, src], gs, 0, name)
+    
+    #--- Lifts --- 
+
+    def lift(self, f, name="name", src=None, tgt=None):
+        src = getattr(self, src) if src else self
+        tgt = getattr(self, tgt) if tgt else tgt
+        fs = [getattr(Ni, f) for Ni in self.grades] 
+        return GradedLinear([src, tgt], fs, 0, name)\
+            if isinstance(fs[0], Linear)\
+            else GradedFunctional([src, tgt], fs, 0, name=name)
+   
+    #--- Fields --- 
+
     def field(self, data, d=None):
         return Field(self, data, d) if d == None\
                 else self[d].field(data, d)
-
-    def get(self, key, d=None):
-        if d == None:
-            return self.fibers[Sequence.read(key)]
-        return self[d].get(key)

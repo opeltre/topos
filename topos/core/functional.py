@@ -110,13 +110,20 @@ class GradedFunctional (Graded, Functional):
                 if d >= 0 and d < len(self.grades)\
                 else self.null(d)        
 
+    def items(self): 
+        return enumerate(self.grades)
+
     #--- Call and Composition --- 
     
     def __call__(self, field):
         d = field.degree
-        return self[d](field)\
-               if (d >= 0 and d < len(self.grades))\
-               else self.tgt[d + self.degree].zeros()
+        if d != None:
+            return self[d](field)\
+                   if (d >= 0 and d < len(self.grades))\
+                   else self.tgt[d + self.degree].zeros()
+        src, tgt = self.src, self.tgt
+        return tgt.field(torch.cat(
+            [(fd @ src.p(d) @ field).data for d, fd in self.items()]))
 
     def compose (self, other):
         src, tgt = other.src, self.tgt

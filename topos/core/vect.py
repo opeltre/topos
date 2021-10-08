@@ -10,6 +10,11 @@ class Vect:
         A, B = u.domain, v.domain
         return  (u, u.same(v), u) if A.size >= B.size else\
                 (v.same(u), v, v) 
+    
+    #--- Scalar product ---
+
+    def __matmul__(self, other):
+        return (self.data * other.data).sum()
 
     #--- Arithmetic Operations ---
 

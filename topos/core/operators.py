@@ -50,7 +50,7 @@ def pullback(A, B, f=None, fmap=None):
     Pullback matrix of a map f: A -> B between domain keys.
     """
     f    = f if callable(f)       else lambda x:x
-    fmap = fmap if callable(fmap) else lambda cb, ca: lambda x:x
+    fmap = fmap if callable(fmap) else lambda ca: lambda x:x
     indices = [ij for ca in A\
                   for ij in pull_is(ca, B.get(f(ca.key)), fmap(ca))]
     return matrix([A.size, B.size], indices)
