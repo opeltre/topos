@@ -4,9 +4,11 @@ from .set           import Set
 
 class Fiber (Hashable): 
 
-    @staticmethod
-    def read (key):
-        return Set.read(key)
+    @classmethod
+    def read (cls, key):
+        if isinstance(key, cls):
+            return key.key
+        return key
 
     @classmethod
     def join(cls, keys, shape=None):

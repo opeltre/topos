@@ -40,26 +40,22 @@ class Sheaf (Domain) :
         return cls(K, getshape if shape else None, degree)
 
 
-    def __init__(self, keys, shape=None, degree=0, ftype=Fiber):
+    def __init__(self, keys, shape=None, degree=None, ftype=Fiber):
         """
         Create a sheaf from a dictionary of fiber shapes.
         """
-        self.degree  = degree
-        self.trivial = (shape == None)
+        self.trivial = (shape == None) and not isinstance(keys, dict)
 
-        #--- Sheaf({"a": [3, 2], ...}) ---
-        if isinstance(keys, dict):
-            shape = {ftype.read(k): Ek for k, Ek in keys.items()}
-            keys  = list(shape.keys())
+        super().__init__(keys, shape, degree, ftype)
 
-        #--- Join Fibers ---
-        self.ftype  = ftype
-        self.fibers, self.size = ftype.join(keys, shape)
-        
         #--- Trivialise sheaf ---
         if 'scalars' not in self.__dir__():
-            self.scalars = self if self.trivial else\
-                self.__class__(keys)
+            if self.trivial: 
+                self.scalars = self
+            elif isinstance(keys, dict):
+                self.scalars = self.__class__(keys.keys(), degree=degree)
+            else: 
+                self.scalars = self.__class__(keys, degree=degree)
         
         #--- From/to scalars ---
         src, J = self.scalars, from_scalar(self)
@@ -87,6 +83,11 @@ class Sheaf (Domain) :
         for k, fk in self.maps.items():
             setattr(self, k, fk)
 
+    def __repr__(self):
+        p1 = self.degree if self.degree != None else ''
+        p2 = "Domain" if self.trivial else "Sheaf"
+        return f"{p1} {p2} {self}"
+
 
 #--- Simplical Fibers ---
 
@@ -96,6 +97,3 @@ class Simplicial (Sheaf) :
 
     def __init__(self, keys, shape=None, degree=0, **kwargs):
         super().__init__(keys, shape, degree, ftype=Simplex, **kwargs)
-
-    def __repr__(self):
-        return f"{self.degree} {super().__repr__()}"

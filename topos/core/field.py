@@ -1,6 +1,17 @@
-import torch
-from topos.base import Fiber
 from .vect import Vect
+
+from topos.base   import Fiber
+
+import torch
+
+class FieldError (Exception):
+
+    def __init__(self, m1, m2):
+        print ("-" * 55 + "\n" +\
+              f"[Field]: {m1}\n" + f"\t {m2}\n" + "-" * 55)
+        super().__init__()
+
+
 
 class Field (Vect): 
     """
@@ -10,24 +21,30 @@ class Field (Vect):
     of the size of the domain.
     """
 
-    def __init__(self, domain, data=0., degree=0):
+    def __init__(self, domain, data=0., degree=None):
         """ 
         Create a d-field on a domain from numerical data. 
 
         See Domain.field. 
         """
         self.domain = domain
+        self.size   = domain.size + (domain.size == 0)
         self.degree = degree
         if isinstance(data, list):
             self.data = torch.tensor(data) 
         elif isinstance(data, torch.Tensor):
             self.data = data
         elif isinstance(data, (int, float)):
-            self.data = data * torch.ones([self.domain.size])
+            self.data = data * torch.ones([self.size])
         else:
-            raise TypeError(
-                f"unsupported data type: {type(data)}\n"\
-                +"use: torch.Tensor, float, [float]...")
+            raise FieldError(
+                    f"Unsupported data type: {type(data)}",
+                    "use torch.Tensor, float, [float]...")
+        self.data = self.data.flatten()
+        if self.data.shape[0] != self.size:
+            raise FieldError(
+                    f"Could not coerce to domain size {domain.size}",
+                    f"invalid input shape {list(self.data.shape)}")
 
     def same(self, other=None):
         """ 
@@ -88,6 +105,8 @@ class Field (Vect):
     #--- Show ---
 
     def __str__(self): 
+        if self.domain.size == 0:
+            return "{}"
         s = "{\n\n"
         for c in self.domain:
             sc = f"  {c} ::"

@@ -106,7 +106,8 @@ class Nerve (Complex):
         self.hypergraph = K
         N = K.nerve(degree, sort=sort)
         E = shape if shape else None
-        self.nerve  = [Simplicial(Nk, E, k) for k, Nk in enumerate(N)]
+        self.nerve  = [Simplicial(Nk, E, degree=k)\
+                       for k, Nk in enumerate(N)]
         self.degree = len(N) - 1
 
         super().__init__(self.nerve)

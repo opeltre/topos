@@ -11,18 +11,29 @@ class Domain:
     Domains hold a dictionnary to Fiber objects, 
     which are pointers to an index range. 
 
-    N.B: abstract class, instantiate through a subclass.
-
     Subclasses should implement attributes: 
 
         .size   : int
         .degree : int   | None    
         .ftype  : Fiber | Simplex | ... 
         .fibers : {Fiber} 
-
-    This keeps Sheaf.__init__ routines separate from
-    the interface. 
     """
+    
+    def __init__(self, keys, shape=None, degree=None, ftype=Fiber):
+
+        self.degree  = degree
+
+        #--- Domain({"a": [3, 2], ...}) => sheaf ---
+        if isinstance(keys, dict):
+            shape = {ftype.read(k): Ek for k, Ek in keys.items()}
+            keys  = list(shape.keys())
+        #--- Domain(["a", "b", ...]) => trivial sheaf ---
+        else:
+            keys  = [ftype.read(k) for k in keys]
+
+        #--- Join Fibers ---
+        self.ftype  = ftype
+        self.fibers, self.size = ftype.join(keys, shape)
 
     def get(self, key):
         """ Retrieve a fiber from its key. """
@@ -48,7 +59,8 @@ class Domain:
 
     def range(self, d=None):
         """ Represent the domain mapped to its range of indices. """
-        return self.field(torch.arange(self[d].size), d)
+        tgt = self if d == None else self[d]
+        return tgt.field(torch.arange(tgt.size), tgt.degree)
     
     #--- Restricted domain to a subset of keys --- 
 
@@ -86,25 +98,27 @@ class Domain:
 
     #--- Field Creation ---
 
-    def field(self, data, degree=0):
+    def field(self, data, degree=None):
         """ Create a field from data vector. """
-        return Field(self, data, self.degree)
+        d = self.degree if degree == None else degree 
+        return Field(self, data, d)
 
-    def zeros(self, degree=0):
+    def zeros(self, degree=None):
         """ Return the unit of + field 0. """
         return self.field(0, degree)
 
-    def ones(self, degree=0):
+    def ones(self, degree=None):
         """ Return the unit of * field 1. """
         return self.field(1, degree)
 
-    def randn(self, degree=0):
+    def randn(self, degree=None):
         """ Return a field with normally distributed values. """
         return self.field(torch.randn(self[degree].size), degree)
 
-    def uniform(self, degree=0):
+    def uniform(self, degree=None):
         """ Return uniform local probabilities. """
-        return self.gibbs(self.zeros(degree))
+        tgt = self if degree == None else self[degree]
+        return tgt.gibbs(self.zeros(degree))
     
     #--- Show --- 
 
