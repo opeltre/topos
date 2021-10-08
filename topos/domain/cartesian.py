@@ -1,6 +1,8 @@
 from .sheaf import Sheaf
 from topos.base import Shape, Fiber, Sequence
 from topos.core import Field
+from topos.core import Linear, GradedLinear,\
+                       Functional, GradedFunctional
 
 from itertools import product
 
@@ -86,8 +88,9 @@ class Sum (Sheaf):
         self.grades  = list(sheaves)
         self.rank    = len(sheaves) - 1
         self.trivial = not sum((not f.trivial for f in sheaves))
-        self.scalars = self if self.trivial else\
-                       self.__class__(*(f.scalars for f in self.grades))
+        if "scalars" not in self.__dir__() and not self.trivial:
+            self.scalars =\
+                self.__class__(*(f.scalars for f in self.grades))
 
         #--- Join fibers ---
         shape = {
@@ -102,6 +105,14 @@ class Sum (Sheaf):
         return self if d == None else\
                self.grades[d]
     
+    def lift(self, f, name="name", src=None, tgt=None):
+        src = getattr(self, src) if src else self
+        tgt = getattr(self, tgt) if tgt else tgt
+        fs = [getattr(Ni, f) for Ni in self.grades] 
+        return GradedLinear([src, tgt], fs, 0, name)\
+            if isinstance(fs[0], Linear)\
+            else GradedFunctional([src, tgt], fs, 0, name=name)
+        
     def embedding(self, d):
         def emb_d (k):
             return  Sequence.read((str(d), k))
