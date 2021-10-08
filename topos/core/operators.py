@@ -47,8 +47,8 @@ def pullback(A, B, f=None):
     Pullback matrix of a map f: A -> B between domain keys.
     """
     f = f if callable(f) else lambda x:x
-    indices = [ij for ca in A\
-                for ij in eye_is(ca, B.get(f(ca.key)))]
+    indices = [ij for cb in B\
+                for ij in eye_is(A.get(f(cb.key)), cb)]
     return matrix([A.size, B.size], indices)
 
 def pull_last(K, degree):

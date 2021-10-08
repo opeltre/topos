@@ -86,9 +86,9 @@ class Domain:
         return Linear([self, tgt], mat, name)
 
     def res (self, keys, name="Res"):
-        subdomain = keys if isinstance(keys, Domain)\
-                    else self.restriction(keys)
-        return self.pull(subdomain, None, name)  
+        tgt = keys if isinstance(keys, Domain)\
+                   else self.restriction(keys)
+        return self.pull(tgt, None, name)  
 
     def embed(self, subdomain, name="Emb"):
         return self.res(subdomain).t().rename(name)

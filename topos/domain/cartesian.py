@@ -36,7 +36,7 @@ class Product (Sheaf):
         self.trivial = not sum((not f.trivial for f in sheaves))
         self.scalars = self if self.trivial else\
                        self.__class__(*(f.scalars for f in sheaves))
-
+    
         #--- Product of fibers --- 
         def key(*fibers):
             return Sequence.read([f.key for f in fibers])
@@ -50,11 +50,21 @@ class Product (Sheaf):
             key(*fs): shape(*fs) for fs in product(*sheaves)
         }
         super().__init__(shape, ftype=Sequence)
+
+    def __getitem__(self, d=0):
+        return self if d == None else\
+               self.grades[d]
+    
+    def projection(self, d):
+        def res_d (key):
+            return key[d]
+        return res_d
         
-        def get(self, key, *keys):
-            if isinstance(key, Sequence):
-                return self.fibers[key]
-            return super().get("|".join([key, *keys]))
+    def get(self, key, *keys):
+        if isinstance(key, Sequence):
+            return self.fibers[key]
+        return super().get("|".join([key, *keys]))
+
 
 #--- Coproduct: disjoint Unions --- 
 
@@ -76,10 +86,21 @@ class Sum (Sheaf):
         keys = shape.keys()
         shape = shape if not self.trivial else None
         super().__init__(keys, shape, ftype=Sequence)
-
+        
     def __getitem__(self, d=0):
         return self if d == None else\
                self.grades[d]
+    
+    def embedding(self, d):
+        def emb_d (k):
+            return  Sequence.read((str(d), k))
+        return emb_d
+
+    def p (self, d):
+        return self.pull(self[d], self.embedding(d), name="j*")
+    
+    def j (self, d):
+        return self.p(d).t()
 
     def field(self, data, d=None):
         return Field(self, data, d) if d == None\
