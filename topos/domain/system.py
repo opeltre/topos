@@ -98,15 +98,15 @@ class System (Nerve):
 
     """
     @classmethod
-    def closure(cls, K, shape=2, degree=-1, void=1):
+    def closure(cls, K, shape=2, degree=-1, void=1, free=True):
         """ Closure for `cap`. """
         K = Hypergraph(K) if not isinstance(K, Hypergraph) else K
         K = K.closure() 
         if not void: 
             K = Hypergraph((r for r in K if len(r) > 0))
-        return cls(K, shape, degree)
+        return cls(K, shape, degree, free)
 
-    def __init__(self, K, shape=2, degree=-1, sort=1):
+    def __init__(self, K, shape=2, degree=-1, sort=1, free=True):
         """ System on the nerve of hypergraph K. """
 
         #--- Compute Nerve ---
@@ -123,21 +123,30 @@ class System (Nerve):
             self.scalars = Nerve(*N)
 
         #--- Tensor valued Fields --- 
-        def getshape (chain): 
-            js = chain[-1].list()
-            Es = [shape if type(shape) == int else E[j] for j in js]
-            return Shape(*Es)
-        E = getshape if shape else None
+        if type(shape) == int:
+            E = lambda c : Shape(*[shape for j in c[-1].list()])
+        elif free and callable(shape):
+            E = lambda c : Shape(*[shape(j) for j in c[-1].list()])
+        elif free and isinstance(shape, dict):
+            E = lambda c : Shape(*[shape[j] for j in c[-1].list()])
+        else:
+            E = shape
         NE = [Simplicial(Nk, E, degree=k)\
                        for k, Nk in enumerate(nerve)]
         super().__init__(*NE)
        
         #--- Effective Energy gradient --- 
-        d1 = face(self, 1, 1).t()
-        d0 = face(self, 1, 0).t()
-        def Deff (U): 
-            return d0 @ U + torch.log(d1 @ torch.exp(- U))
-        self.Deff = Functional.map([self[0], self[1]], Deff, "\u018a")
+        if self.rank >= 1:
+            d1 = face(self, 1, 1).t()
+            d0 = face(self, 1, 0).t()
+            def Deff (U): 
+                return d0 @ U + torch.log(d1 @ torch.exp(- U))
+            self.Deff = Functional.map([self[0], self[1]], Deff, "\u018a")
+    
+    def restriction(self, K): 
+        K = Hypergraph(K) if not isinstance(K, Hypergraph) else K
+        shape = {fiber.key[1] : fiber.shape for fiber in self}
+        return self.__class__(K, shape, degree=self.rank, free=False)
 
     def nabla(self, p, degree=0):
         """ Return the tangent map of Deff at p. """ 
