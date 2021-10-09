@@ -126,6 +126,7 @@ def face(K, degree, j):
     return matrix
 
 def coface(K, degree, j):
+    """ Coface map from K[d] to K[d + 1]. """
     return face(K, degree + 1, j).t()
 
 def codifferential(K, degree): 

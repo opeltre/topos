@@ -38,7 +38,7 @@ class Shape :
     def res(self, *ds):
         def res_ds(i):
             x   = self.coords(i)
-            tgt = Shape([self.n[d] for d in ds])
+            tgt = Shape(*[self.n[d] for d in ds])
             return tgt.index(*[x[d] for d in ds])
         return res_ds
 

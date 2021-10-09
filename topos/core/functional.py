@@ -8,6 +8,7 @@ class Functional :
         """ Create functional between domains = [src, tgt]. """
         self.src = domains[0] 
         self.tgt = domains[-1]
+        self.domain = (self.src, self.tgt)
         self.call = f if callable(f) else lambda x : tgt.field(f)
         self.name = name
 

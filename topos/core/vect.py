@@ -8,6 +8,8 @@ class Vect:
         if not isinstance(v, (cls, cls.__class__)):
             return (u, u.same(v), u)
         A, B = u.domain, v.domain
+        if A == B:
+            return (u, v, u)
         return  (u, u.same(v), u) if A.size >= B.size else\
                 (v.same(u), v, v) 
     
@@ -20,22 +22,22 @@ class Vect:
 
     def __add__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c.same(a.data + b.data)
+        return c.same(a.data + b.data, name=f"{self} + {other}")
 
     def __neg__(self):
-        return self.same(- self.data)
+        return self.same(- self.data, name=f"-{self}")
 
     def __sub__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c.same(a.data - b.data)
+        return c.same(a.data - b.data, name=f"{self} - {other}")
 
     def __mul__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c.same(a.data * b.data)
+        return c.same(a.data * b.data, name=f"{self} * {other}")
 
     def __truediv__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c.same(a.data / b.data)
+        return c.same(a.data / b.data, name=f"{self} / {other}")
 
     def __radd__(self, other): 
         return self.__add__(other)

@@ -46,7 +46,7 @@ class Field (Vect):
                     f"Could not coerce to domain size {domain.size}",
                     f"invalid input shape {list(self.data.shape)}")
 
-    def same(self, other=None):
+    def same(self, other=None, name=None):
         """ 
         Create another field on the same domain.
         """

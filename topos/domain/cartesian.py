@@ -134,7 +134,7 @@ class Sum (Sheaf):
     def pull(self, src, g=None, name="map*", fmap=None):
         if not isinstance(src, Sum):
             return super().pull(src, g, name, fmap)
-        gs = [self[i].pull(si, g[i] if g!= None else g)\
+        gs = [self[i].pull(si, g[i] if g!= None else g, name)\
                      for i, si in enumerate(src.grades)]
         return GradedLinear([self, src], gs, 0, name)
     

@@ -8,7 +8,7 @@ from topos.core import\
      Field, Linear, GradedLinear, Functional, GradedFunctional 
 
 from topos.core.operators import\
-    face, codifferential, zeta, invert_nil, nabla
+     coface, codifferential, zeta, invert_nil, nabla
 
 import torch
 
@@ -137,8 +137,8 @@ class System (Nerve):
        
         #--- Effective Energy gradient --- 
         if self.rank >= 1:
-            d1 = face(self, 1, 1).t()
-            d0 = face(self, 1, 0).t()
+            d0 = coface(self, 0, 0)
+            d1 = coface(self, 0, 1)
             def Deff (U): 
                 return d0 @ U + torch.log(d1 @ torch.exp(- U))
             self.Deff = Functional.map([self[0], self[1]], Deff, "\u018a")
