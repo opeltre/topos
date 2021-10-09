@@ -19,13 +19,15 @@ more interesting applications.
 
 ## Installation 
 
-The only requirement should be pytorch: `pip install torch`.
+Run `pip install git+https://github.com/opeltre/topos`
 
-Then clone the repository locally to start using the library. 
+Or clone the repository locally before installing: 
+```sh
+$ git clone https://github.com/opeltre/topos
+$ cd topos
+$ pip install .
+```
 
-```
-git clone https://github.com/opeltre/topos
-```
 
 ## Usage 
 
