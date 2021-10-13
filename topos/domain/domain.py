@@ -93,6 +93,11 @@ class Domain:
         tgt = keys if isinstance(keys, Domain)\
                    else self.restriction(keys)
         return self.pull(tgt, None, name)  
+    
+    def proj (self, keys, name="Proj"):
+        """ Restriction projector. """
+        res = self.res(keys)
+        return (res.t() @ res).rename(name)
 
     def embed(self, subdomain, name="Emb"):
         """ Embedding matrix from a subdomain. """

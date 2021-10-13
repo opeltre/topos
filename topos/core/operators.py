@@ -64,7 +64,7 @@ def pull_last(K, degree):
     if degree == 0:
         return eye(K[0].size)
     def last(chain):
-        return ca.key[-1]
+        return [chain[-1]]
     return pullback(K[degree], K[0], last)
 
 
@@ -148,7 +148,7 @@ def nabla(K, degree, p):
     weight   = pull_last(K, degree) @ p
     coweight = pull_last(K, degree + 1) @ (1 / p)
     mm = matmul
-    dn = coface(K, degree, degree)
+    dn = coface(K, degree, degree + 1)
     dn_expect = mm(mm(diag(m, coweight), dn), diag(n, weight))
     #--- first cofaces ---
     d = coface(K, degree, 0)

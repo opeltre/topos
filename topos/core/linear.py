@@ -13,15 +13,15 @@ class Linear (Functional, Vect):
         """
         Create a Linear operator between domains = [src, tgt].
         """
-        
         src, tgt = domains[0], domains[-1]
         self.degree = degree
         
-        #-- Zero matrix --
+        #-- Null --
         if isinstance(mat, int) and mat == 0:
             name = "0"
             mat  = zero(tgt.size, src.size)
-        #-- Scalars * Identity --
+
+        #-- Identity --
         if not isinstance(mat, torch.Tensor) and tgt == src:
             name = str(mat)
             mat  = mat * eye(tgt.size)
@@ -44,15 +44,13 @@ class Linear (Functional, Vect):
         """
         Return an operator between same domains from a matrix. 
         """
+        src, tgt = self.src, self.tgt
         if isinstance(data, type(None)):
             data = self.data
             name = self.name
         elif isinstance(data, torch.Tensor):
             name = name if name != None else self.name 
-        elif self.data.shape[0] == self.data.shape[1]:
-            name = str(data)
-            data = data * eye(self.data.shape[0])
-        return Linear([self.src, self.tgt], data, name, self.degree)
+        return Linear([src, tgt], data, name, self.degree)
     
     def compose(self, other):
         """

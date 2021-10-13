@@ -3,6 +3,7 @@ from .domain    import Domain
 from topos.base import Shape, Fiber, Simplex, Hypergraph
 from topos.core import Field, Functional, Linear
 from topos.core.operators import from_scalar
+from topos.core.sparse    import eye
 
 import torch
 
@@ -64,20 +65,25 @@ class Sheaf (Domain) :
     
         #   =   =   Statistics  =   =   =
 
-        #--- Normalisation ---
-        norm    = Functional([self], lambda f: f/sums(f), "(1 / \u03a3)")
         #--- Energies / log-likelihoods ---
         _ln     = self.map(lambda d: -torch.log(d), "(-ln)")
+        _lnT    = self.scalars.map(lambda d: -torch.log(d))
         #--- Gibbs states / densities ---
         exp_    = self.map(lambda d: torch.exp(-d), "(e-)")
+        #--- Free energy ---
+        freenrj = _lnT @ sums @ exp_
+        #--- Normalisation ---
+        norm    = Functional([self], lambda f: f/sums(f), "(1 / \u03a3)")
         gibbs   = (norm @ exp_).rename("(e- / \u03a3 e-)")
         
         self.maps = {
+            "id"        : Linear([self], eye(self.size)),
             "extend"    : extend,
             "sums"      : sums  ,
-            "normalise" : norm  ,
             "_ln"       : _ln   ,   
             "exp_"      : exp_  ,
+            "freenrj"   : freenrj,
+            "normalise" : norm  ,
             "gibbs"     : gibbs      
         }
         for k, fk in self.maps.items():

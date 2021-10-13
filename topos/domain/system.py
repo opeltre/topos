@@ -81,7 +81,10 @@ class Nerve (Complex):
         mu = [invert_nil(zti, order=self.rank, tol=0) for zti in zt]
         self.zeta   = GradedLinear([self], zt, 0, "\u03b6")
         self.mu     = GradedLinear([self], mu, 0, "\u03bc")
-
+        
+        #--- Bethe numbers c[b] ---
+        T = self.scalars
+        self.bethe = T.mu[0].t() @ T.ones(0)
 
 class System (Nerve): 
     """ 
