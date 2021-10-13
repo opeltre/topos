@@ -17,5 +17,6 @@ setup(
     packages = ['topos', 
                 'topos.base', 
                 'topos.core',
-                'topos.domain']
+                'topos.domain',
+                'topos.exceptions']
 )

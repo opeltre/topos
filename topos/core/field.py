@@ -1,17 +1,9 @@
 from .vect import Vect
 
 from topos.base   import Fiber
+from topos.exceptions import FieldError
 
 import torch
-
-class FieldError (Exception):
-
-    def __init__(self, m1, m2):
-        print ("-" * 55 + "\n" +\
-              f"[Field]: {m1}\n" + f"\t {m2}\n" + "-" * 55)
-        super().__init__()
-
-
 
 class Field (Vect): 
     """
@@ -20,6 +12,24 @@ class Field (Vect):
     Fields are internally linked to a torch 1D-tensor 
     of the size of the domain.
     """
+    
+    @classmethod
+    def cast2(cls, u, v):
+        """ 
+        Return a triple (u', v', c) aimed at a target constructor c. 
+    
+        Check whether v.domain = u.domain.scalars, 
+        otherwise call Vect.cast2. 
+        """
+        if isinstance(v, u.__class__):
+            if u.domain == v.domain:
+                return u.data, v.data, u.same
+            if u.domain.scalars == v.domain:
+                return u.data, u.domain.extend(v).data, u.same
+            elif v.domain.scalars == u.domain:
+                return v.domain.extend(u).data, v.data, v.same
+        return super().cast2(u, v)
+
 
     def __init__(self, domain, data=0., degree=None):
         """ 
@@ -53,7 +63,7 @@ class Field (Vect):
         #--- Copy ---
         if isinstance(other, type(None)):
             return self.domain.field(self.data)
-        #--- Create ---
+        #--- Create ! scalar values ---
         if not isinstance (other, Field):
             return self.domain.field(other)
         #--- Pass ---
@@ -88,7 +98,7 @@ class Field (Vect):
                 data = va * torch.ones([a.size])
             self.data[a.begin:a.end] = data
         except: 
-            raise TypeError(f"scalar or size {a.size} tensor expected")
+            raise FieldError(f"scalar or size {a.size} tensor expected")
 
     def norm(self):
         """

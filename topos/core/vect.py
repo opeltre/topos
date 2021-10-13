@@ -1,43 +1,56 @@
 import torch
+
+from topos.exceptions import VectError
     
 class Vect: 
     """ A base container class for torch 1D-tensors """
     
     @classmethod
     def cast2(cls, u, v):
-        if not isinstance(v, (cls, cls.__class__)):
-            return (u, u.same(v), u)
-        A, B = u.domain, v.domain
-        if A == B:
-            return (u, v, u)
-        return  (u, u.same(v), u) if A.size >= B.size else\
-                (v.same(u), v, v) 
+        """ 
+        Return a triple (u', v', c) aimed at a target constructor c. 
+
+        The pair (u', v') should represent composable
+        numerical data that can be passed as c(u' `op` v'). 
+        """
+        if isinstance(v, (torch.Tensor, int, float)):
+            return u.data, v, u.same
+        elif isinstance(v, u.__class__):
+            if u.domain == v.domain:
+                return (u.data, v.data, u.same)
+        else:
+            raise VectError(
+                "Could not cast to composable numerical data",
+                f"invalid type pair {type(u), type(v)}")
     
     #--- Scalar product ---
 
     def __matmul__(self, other):
-        return (self.data * other.data).sum()
+        if isinstance(other, self.__class__):
+            return (self.data * other.data).sum()
+        elif isinstance(other, Linear):
+            return other.__class__(self.data @ other.data)
 
     #--- Arithmetic Operations ---
 
     def __add__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c.same(a.data + b.data, name=f"{self} + {other}")
+        return c(a + b, name=f"{self} + {other}")
 
     def __neg__(self):
         return self.same(- self.data, name=f"-{self}")
 
     def __sub__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c.same(a.data - b.data, name=f"{self} - {other}")
+        return c(a - b, name=f"{self} - {other}")
 
     def __mul__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c.same(a.data * b.data, name=f"{self} * {other}")
+        return c(a * b, name=f"{self} * {other}")
 
     def __truediv__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c.same(a.data / b.data, name=f"{self} / {other}")
+        return c(a / b, name=f"{self} / {other}")
 
     def __radd__(self, other): 
         return self.__add__(other)
