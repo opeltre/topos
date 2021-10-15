@@ -1,4 +1,5 @@
 import torch
+import time
 
 from topos.exceptions import VectError
     
@@ -15,14 +16,19 @@ class Vect:
         """
         if isinstance(v, (torch.Tensor, int, float)):
             return u.data, v, u.same
-        elif isinstance(v, u.__class__):
-            if u.domain == v.domain:
-                return (u.data, v.data, u.same)
-        else:
-            raise VectError(
-                "Could not cast to composable numerical data",
-                f"invalid type pair {type(u), type(v)}")
-    
+        if isinstance(v, u.__class__):
+            if not isinstance(u.domain, tuple):
+                if u.domain.size == v.domain.size:
+                    return (u.data, v.data, u.same)
+            else:
+                same = not sum(not du.size == dv.size\
+                            for du, dv in zip(u.domain, v.domain))
+                if same:
+                    return (u.data, v.data, u.same)
+        raise VectError(
+            "Could not cast to composable numerical data",
+            f"invalid type pair {type(u), type(v)}")
+
     #--- Scalar product ---
 
     def __matmul__(self, other):
@@ -35,22 +41,22 @@ class Vect:
 
     def __add__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c(a + b, name=f"{self} + {other}")
+        return c(a + b)
 
     def __neg__(self):
-        return self.same(- self.data, name=f"-{self}")
+        return self.same(- self.data)
 
     def __sub__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c(a - b, name=f"{self} - {other}")
+        return c(a - b)
 
     def __mul__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c(a * b, name=f"{self} * {other}")
+        return c(a * b)
 
     def __truediv__(self, other): 
         a, b, c = self.cast2(self, other)
-        return c(a / b, name=f"{self} / {other}")
+        return c(a / b)
 
     def __radd__(self, other): 
         return self.__add__(other)
@@ -80,3 +86,7 @@ class Vect:
         other = self.same(other)
         self.data /= other.data
         return self
+
+    def __str__(self):
+        return self.name if name in self.__dir__()\
+               else "v"

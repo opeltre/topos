@@ -40,21 +40,26 @@ class Field (Vect):
         self.domain = domain
         self.size   = domain.size + (domain.size == 0)
         self.degree = degree
-        if isinstance(data, list):
-            self.data = torch.tensor(data) 
-        elif isinstance(data, torch.Tensor):
+        
+        #--- Inputs ---
+        if isinstance(data, torch.Tensor):
             self.data = data
+        elif isinstance(data, list):
+            self.data = torch.tensor(data) 
         elif isinstance(data, (int, float)):
             self.data = data * torch.ones([self.size])
         else:
             raise FieldError(
                     f"Unsupported data type: {type(data)}",
                     "use torch.Tensor, float, [float]...")
-        self.data = self.data.flatten()
+    
+        #--- Check shape ---
+        if self.data.shape[0] != self.domain.size:
+            self.data = self.data.flatten()
         if self.data.shape[0] != self.size:
             raise FieldError(
-                    f"Could not coerce to domain size {domain.size}",
-                    f"invalid input shape {list(self.data.shape)}")
+                f"Could not coerce to domain size {domain.size}",
+                f"invalid input shape {list(self.data.shape)}")
 
     def same(self, other=None, name=None):
         """ 
@@ -62,10 +67,10 @@ class Field (Vect):
         """
         #--- Copy ---
         if isinstance(other, type(None)):
-            return self.domain.field(self.data)
-        #--- Create ! scalar values ---
+            return self.__class__(self.domain, self.data, self.degree)
+        #--- Create ---
         if not isinstance (other, Field):
-            return self.domain.field(other)
+            return self.__class__(self.domain, other, self.degree)
         #--- Pass ---
         if self.domain == other.domain:
             return other
