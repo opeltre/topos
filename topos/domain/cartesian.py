@@ -1,5 +1,6 @@
 from .sheaf import Sheaf
-from topos.base import Shape, Fiber, Sequence
+from .domain import Domain
+from topos.base import Shape, Fiber, Sequence, Chain
 from topos.core import Field
 from topos.core import Linear, GradedLinear,\
                        Functional, GradedFunctional
@@ -78,27 +79,35 @@ class Product (Sheaf):
             return self.fibers[key]
         return super().get("|".join([key, *keys]))
 
-
 #--- Coproduct: disjoint Unions --- 
 
-class Sum (Sheaf):
+class Sum (Domain):
     """ Disjoint union of domains. """
 
-    def __init__(self, *sheaves):
+    def __init__(self, *sheaves, keymap=None, sort=False):
         self.grades  = list(sheaves)
         self.rank    = len(sheaves) - 1
-        self.trivial = not sum((not f.trivial for f in sheaves))
+        def is_trivial(f):
+            return f.trivial if isinstance(f, Sheaf) else True
+        self.trivial = not sum((not is_trivial(f) for f in sheaves))
         if "scalars" not in self.__dir__() and not self.trivial:
-            self.scalars =\
+            self.scalars = (
                 self.__class__(*(f.scalars for f in self.grades))
+                if "_scalars" not in self.__dir__() 
+                else self._scalars()
+            )
+        else: 
+            self.scalars = self
 
         #--- Join fibers ---
+        keymap = (lambda i, a: Sequence.read((str(i), a))) if not keymap \
+                 else keymap
         shape = {
-            Sequence.read((str(i), a)): fa.shape \
-                                        for i, Fi in enumerate(sheaves) \
-                                        for a, fa in Fi.fibers.items()} 
-        keys = shape.keys()
-        shape = shape if not self.trivial else None
+            keymap(i, a): fa.shape for i, Fi in enumerate(sheaves) \
+                                   for a, fa in Fi.fibers.items()} 
+        keys = list(shape.keys())
+        if sort: keys.sort(key=sort)
+        shape = shape #if not self.trivial else None
         super().__init__(keys, shape, ftype=Sequence)
         
     def __getitem__(self, d=0):
@@ -153,3 +162,41 @@ class Sum (Sheaf):
     def field(self, data, d=None):
         return Field(self, data, d) if d == None\
                 else self[d].field(data, d)
+
+
+#--- Union : no prefix & possible collision of keys
+
+class Union (Sum):
+
+    def __init__(self, *sheaves, sort=False, ftype=Fiber):
+        super().__init__(*sheaves, keymap=lambda i, a: a, sort=sort)
+        self.ftype = ftype
+
+    def __getitem__(self, key):
+        a = self.ftype.read(key)
+        return self.fibers[a]
+
+    def field(self, data, d=None):
+        return Field(self, data, d) 
+
+#--- Fibration : indexed coproducts
+
+class Fibration (Sum):
+
+    def __init__(self, mapping, sort=False):
+        keys = list(mapping.keys())
+        if sort: keys.sort(key=sort)
+        sheaves = [mapping[k] for k in keys]
+        keymap  = lambda i, a: Chain(keys[i], a)
+        self._scalars = lambda : self.__class__({
+            k: Ak.scalars for k, Ak in mapping.items()
+        }, sort)
+        super().__init__(*sheaves, keymap=keymap)
+        self.mapping = mapping
+    
+    def __getitem__(self, d=None):
+        return self if d == None else self.mapping[d]
+
+    def get(self, key, d=None):
+        return self.fibers[Chain.read(key)] if d == None\
+               else self[d].get(key)

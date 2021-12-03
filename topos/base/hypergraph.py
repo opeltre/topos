@@ -4,23 +4,20 @@ from itertools  import product
 from .hashable  import Hashable
 
 
-def toSet (a):
-    return a if isinstance(a, Set) else Set(a)
+class Poset (Set):
+    """ Partially ordered sets """
 
+    def __init__(self, elems, sep=',', eltype=None, chains=None):
 
-class Hypergraph (Set): 
-    """
-    Hypergraphs 
-    """
-    def __init__(self, elems, sep=',', **kwargs):
+        self.eltype = eltype if eltype else Set
 
         if type(elems) == str:
             elems = elems.split(sep)
-        
-        K = [Set(e) if type(e) == str else e for e in elems]
+         
+        K = [self.eltype.read(e) for e in elems]
 
         self.chains = [(a, b) for a, b in product(K, K) if a > b]\
-                      if "chains" not in kwargs else kwargs["chains"]
+                      if not chains else chains
 
         super().__init__(K, sep)
         
@@ -41,26 +38,29 @@ class Hypergraph (Set):
     def below (self, a, strict=1):
         if not strict: 
             yield a
-        for b in self._below[toSet(a)]:
+        for b in self._below[self.eltype.read(a)]:
             yield b
 
     def above (self, b, strict=1):
         if not strict: 
             yield b
-        for a in self._above[toSet(b)]:
+        for a in self._above[self.eltype.read(b)]:
             yield a
 
     def between (self, a, c): 
-        return (b for b in self.below(a) if b > toSet(c))
+        c = self.eltype.read(c)
+        return (b for b in self.below(a) if b > c)
 
     def intercone (self, a, c, strict=1):
-        return (b for b in self.below(a) if not b <= toSet(c))
+        c = self.eltype.read(c)
+        return (b for b in self.below(a) if not b <= c)
 
-    def nerve (self, degree = -1, sort=1): 
+    def nerve (self, degree = -1, sort=1, strict=1): 
         N = [[Chain(a) for a in self]]
         d = degree
         while d != 0:
-            Nd = [Chain(*c, b) for c in N[-1] for b in self.below(c[-1])] 
+            Nd = [Chain(*c, b) for c in N[-1] \
+                               for b in self.below(c[-1], strict)] 
             d -= 1
             if len(Nd) == 0:
                 break
@@ -71,8 +71,31 @@ class Hypergraph (Set):
                 Nk.sort(key = lambda c : (-len(c[-1]), str(c)))
         return N
 
-    def add(self, elem): 
-        super().add(Set((elem)))
+    def __repr__(self): 
+        elems = [str(e) for e in self]
+        s = ' '.join(elems)
+        return f"Poset {s}"
+
+    def __lt__(self, other): 
+        for a in self:
+            has_sup = False
+            for b in other:
+                if a <= b:
+                    has_sup = True
+                    break
+            if not has_sup:
+                return False
+        return True
+
+
+
+class Hypergraph (Poset): 
+    """
+    Hypergraphs 
+    """
+
+    def __init__(self, elems, sep=',', **kwargs):
+        super().__init__(elems, sep=',', eltype=Set) 
 
     def close(self): 
         """ /!\ mutable """
@@ -99,15 +122,4 @@ class Hypergraph (Set):
         elems = [str(e) for e in self]
         s = ' '.join(elems)
         return f"Hypergraph {s}"
-
-    def __lt__(self, other): 
-        for a in self:
-            has_sup = False
-            for b in other:
-                if a <= b:
-                    has_sup = True
-                    break
-            if not has_sup:
-                return False
-        return True
 

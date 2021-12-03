@@ -56,7 +56,7 @@ class Sheaf (Domain) :
             elif isinstance(keys, dict):
                 self.scalars = self.__class__(keys.keys(), degree=degree)
             else: 
-                self.scalars = self.__class__(keys, degree=degree)
+                self.scalars = self.__class__(keys)
         
         #--- From/to scalars ---
         src, J = self.scalars, from_scalar(self)

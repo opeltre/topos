@@ -39,7 +39,7 @@ class Domain:
         """ Retrieve a fiber from its key. """
         key = self.ftype.read(key)
         return self.fibers[key]
-
+    
     def __getitem__(self, key):
         """ Retrieve a fiber from its key. """
         if type(key) == int:
@@ -49,6 +49,15 @@ class Domain:
     def __iter__(self):
         """ Yield fibers. """
         return self.fibers.values().__iter__()
+    
+    def keys (self):
+        return self.fibers.keys()
+
+    def items (self):
+        return self.fibers.items()
+
+    def shape(self, k):
+        return self[k].shape.n
 
     #--- Index range ---
 

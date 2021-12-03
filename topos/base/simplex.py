@@ -11,7 +11,7 @@ class Seq (Hashable):
         if isinstance(arg, cls):
             return arg
         if isinstance(arg, str):
-            elems = arg.split("|")
+            elems = arg.split("| ")
             return cls(*(e for e in elems))
         return cls(*arg)
 
@@ -28,8 +28,14 @@ class Seq (Hashable):
     def __iter__(self):
         return self.elems.__iter__()
 
+    def __len__(self):
+        return self.degree + 1
+
+    def __gt__(self, other):
+        return set(self) > set(other)
+
     def __str__(self): 
-        return "|".join([str(e) for e in self.elems])
+        return "| ".join([str(e) for e in self.elems])
 
     def __repr__(self):
         return f"{self}"
@@ -48,6 +54,20 @@ class Chain (Seq):
     def __str__(self): 
         return " > ".join([str(e) for e in self.elems])
 
+class Face (Seq): 
+
+    @classmethod
+    def read(cls, arg):
+        if isinstance(arg, cls):
+            return arg
+        if isinstance(arg, str):
+            elems = arg.split(":")
+            return cls(*(e for e in elems if len(e) and e != 'ø'))
+        return cls(*arg)
+
+    def __str__(self): 
+        return (":".join([str(e) for e in self.elems]) 
+                if len(self.elems) else "ø")
 
 #--- Simplicial Fibers ---
 

@@ -17,7 +17,7 @@ class Complex (Sum):
     """
     Simplicial complexes C[i](K, E) over K with values in E. 
 
-    Topological operators d and d* satisfying the (co)differential rule!
+    Topological operators d and d* satisfying the (co)differential rule:
         
         d @ d = 0   and     d* @ d* = 0
 
