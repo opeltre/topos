@@ -78,14 +78,17 @@ class Sheaf (Domain) :
         
         self.maps = {
             "id"        : Linear([self], eye(self.size)),
-            "extend"    : extend,
-            "sums"      : sums  ,
             "_ln"       : _ln   ,   
             "exp_"      : exp_  ,
             "freenrj"   : freenrj,
             "normalise" : norm  ,
             "gibbs"     : gibbs      
         }
+        if not self.trivial: 
+            self.maps |= {
+                "extend"    : extend,
+                "sums"      : sums  
+            }
         for k, fk in self.maps.items():
             setattr(self, k, fk)
 
