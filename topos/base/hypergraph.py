@@ -66,9 +66,9 @@ class Poset (Set):
                 break
             else:
                 N += [Nd]
-        if sort: 
-            for Nk in N:
-                Nk.sort(key = lambda c : (-len(c[-1]), str(c)))
+        if sort:
+            def key(c)  : return tuple((-len(ci), str(ci)) for ci in c)
+            for Nk in N : Nk.sort(key=key)
         return N
 
     def __repr__(self): 
