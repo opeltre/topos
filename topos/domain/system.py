@@ -2,7 +2,7 @@ from topos.base import Hypergraph, Chain, Fiber, Shape
 
 from .domain    import Domain
 from .cartesian import Empty, Sum
-from .sheaf     import Simplicial
+from .sheaf     import Sheaf, Simplicial
 
 from topos.core import\
      Field, Linear, GradedLinear, Functional, GradedFunctional 
@@ -48,7 +48,6 @@ class Complex (Sum):
             key = Chain.read(key)
         return self[key.degree][Chain.read(key)]
 
-
     def __getitem__(self, degree):
         """ Return the domain instance at a given degree. """
         if degree < 0 or degree > self.rank:
@@ -83,7 +82,7 @@ class Nerve (Complex):
         self.mu     = GradedLinear([self], mu, 0, "\u03bc")
         
         #--- Bethe numbers c[b] ---
-        T = self.scalars
+        T = self.scalars if not self.trivial else self
         self.bethe = T.mu[0].t() @ T.ones(0)
 
 class System (Nerve): 
@@ -125,19 +124,26 @@ class System (Nerve):
                            for k, Nk in enumerate(nerve)]
             self.scalars = Nerve(*N)
 
-        #--- Tensor valued Fields --- 
+        #--- Local microstates --- 
+
         if type(shape) == int:
-            E = lambda c : Shape(*[shape for j in c[-1].list()])
-        elif free and callable(shape):
-            E = lambda c : Shape(*[shape(j) for j in c[-1].list()])
-        elif free and isinstance(shape, dict):
-            E = lambda c : Shape(*[shape[j] for j in c[-1].list()])
-        else:
-            E = shape
-        NE = [Simplicial(Nk, E, degree=k)\
+            E = lambda i : shape
+        elif callable(shape):
+            E = lambda i : shape(i)
+        elif isinstance(shape, dict):
+            E = lambda i : shape[i]
+
+        self.microstates = Sheaf({
+            i: [E(i)] for i in K.vertices().list()
+        })
+        
+        #--- Nerve 
+
+        NE = lambda c: Shape(*[E(i) for i in c[-1].list()])
+        nerve = [Simplicial(Nk, NE, degree=k)\
                        for k, Nk in enumerate(nerve)]
-        super().__init__(*NE)
-       
+        super().__init__(*nerve)
+
         #--- Effective Energy gradient --- 
         if self.rank >= 1:
             d0 = coface(self, 0, 0)
