@@ -87,17 +87,21 @@ class Sum (Domain):
     def __init__(self, *sheaves, keymap=None, sort=False):
         self.grades  = list(sheaves)
         self.rank    = len(sheaves) - 1
-        def is_trivial(f):
-            return f.trivial if isinstance(f, Sheaf) else True
-        self.trivial = not sum((not is_trivial(f) for f in sheaves))
+
+        def is_trivial(F):
+            return F.trivial if isinstance(F, Sheaf) else True
+
+        def scalars(F):
+            return F.scalars if "scalars" in F.__dir__() else F
+
+        self.trivial = not sum(not is_trivial(F) for F in sheaves)
+
         if "scalars" not in self.__dir__() and not self.trivial:
             self.scalars = (
-                self.__class__(*(f.scalars for f in self.grades))
+                self.__class__(*(scalars(F) for F in sheaves))
                 if "_scalars" not in self.__dir__() 
                 else self._scalars()
             )
-        else: 
-            self.scalars = self
 
         #--- Join fibers ---
         keymap = (lambda i, a: Sequence.read((str(i), a))) if not keymap \
