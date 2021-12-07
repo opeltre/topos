@@ -33,7 +33,7 @@ dp.degree       == 1
 
 """ N.B: Uniform beliefs are always consistent: """
 
-K.d @ K.uniform(0) == K[1].zeros(1)
+K.d @ K.uniform(0) == K.zeros(1)
 
 
 """------------ Conservation ---------------------------

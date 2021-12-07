@@ -89,7 +89,8 @@ class Field (Vect):
         """
         Local component on the fiber of a.
         """
-        return self.get(a)
+        return (self.data[a] if isinstance(a, int) 
+                             else self.get(a))
 
     def __setitem__(self, a, va):
         """

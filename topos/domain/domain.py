@@ -1,6 +1,6 @@
 from topos.base import Fiber
 from topos.core import Field, Functional, Linear
-from topos.core.operators import from_scalar, pullback, eye
+from topos.core.operators import pullback, eye
 
 import torch
 
@@ -89,12 +89,12 @@ class Domain:
 
     def pull(self, src, g=None, name="map*", fmap=None):
         """ Pull-back of g : src -> domain. """
-        mat = pullback(src, self, g, fmap)
+        mat = pullback([src, self], g, fmap)
         return Linear([self, src], mat, name)
 
     def push(self, tgt, f=None, name="map.", fmap=None):
         """ Push-forward of f : domain -> tgt. """
-        mat = pullback(self, tgt, f, fmap).t()
+        mat = pullback([self, tgt], f, fmap).t()
         return Linear([self, tgt], mat, name)
 
     def res (self, keys, name="Res"):

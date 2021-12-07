@@ -32,7 +32,7 @@ class Linear (Functional, Vect):
 
         self.data = mat
         super().__init__([src, tgt], matvec, name)
-    
+
     @classmethod
     def null(cls, domains):
         """
@@ -77,6 +77,12 @@ class Linear (Functional, Vect):
         """
         return self.same(self.data / other)
 
+    def __getitem__(self, i):
+        if isinstance(i, int):
+            return self.src.field(self.data[i].to_dense())
+        elif isinstance(i, str):
+            return self[self.tgt.index(i)]
+    
     def __repr__(self):
         return f"Linear {self}"
 
