@@ -136,6 +136,8 @@ class System (Nerve):
         self.microstates = Sheaf({
             i: [E(i)] for i in K.vertices().list()
         })
+
+        self.vertices = self.microstates.scalars
         
         #--- Nerve 
 
@@ -161,6 +163,41 @@ class System (Nerve):
         """ Return the tangent map of Deff at p. """ 
         Ds = [nabla(self, d, p.data) for d in range(0, degree + 1)]
         return GradedLinear([self], Ds, 1, "\u2207_p")
+
     
+    def dirac (self, x=None, degree=0):
+        """ Return local dirac masses from a configuration x.
+            
+            K.vertices -> K[degree]
+
+            Parameters:
+            -----------
+                x       :: Field K.vertices     (None)
+                degree  :: Int                  (0)
+
+            Returns:
+            --------
+                dirac_x :: Field K[degree]
+
+            The configuration is uniformly sampled if not given. 
+            
+            Note that `K.dirac(x)` is always a cocycle,
+            and that in general:
+                
+                K.d(K.dirac(x, n)) == 
+                                K.zeros(n + 1) 
+                                if n % 2 == 0 else
+                                K.dirac(n + 1) * (-1)**((n + 1) / 2) 
+        """
+        if isinstance(x, type(None)):
+            E = self.microstates
+            x = E.scalars.field(torch.cat([
+                torch.randint(Ei.shape.size, [1]) for Ei in E
+            ]))
+        dx = self.zeros(0)
+        for a, Ea in self[degree].items():
+            dx[a][tuple(x.get(i).long() for i in a[-1].list())] = 1.
+        return dx
+
     def __repr__(self): 
         return f"System {self}"

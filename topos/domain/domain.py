@@ -34,6 +34,8 @@ class Domain:
         #--- Join Fibers ---
         self.ftype  = ftype
         self.fibers, self.size = ftype.join(keys, shape)
+        self.begin = 0
+        self.end   = self.size
 
     def get(self, key):
         """ Retrieve a fiber from its key. """

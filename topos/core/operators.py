@@ -21,9 +21,15 @@ def positions(a, b):
 
 def pull(cb, ca, f):
     """
-    Pullback indices from fiber ca to fiber cb by f.
+    Pullback of fiber map f : cb -> ca given as Nb x Na indices.
     """
     return [[cb.begin + i, ca.begin + f(i)] for i in range(cb.size)]
+
+def push(cb, ca, f):
+    """
+    Pushforward of fiber map f : ca -> cb given as Nb x Na indices.
+    """
+    return [[cb.begin + f(i), ca.begin + i] for i in range(ca.size)]
 
 def eye(cb, ca):
     """

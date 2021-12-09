@@ -89,8 +89,14 @@ class Field (Vect):
         """
         Local component on the fiber of a.
         """
-        return (self.data[a] if isinstance(a, int) 
-                             else self.get(a))
+        K = self.domain
+        if isinstance(a, int) and "grades" not in K.__dir__():
+            return self.data[a]
+        elif isinstance(a, int):
+            begin = sum(K[i].size for i in range(a))
+            end   = begin + K[a].size
+            return K[a].field(self.data[begin:end])
+        return self.get(a)
 
     def __setitem__(self, a, va):
         """
