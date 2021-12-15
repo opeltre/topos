@@ -1,7 +1,7 @@
 from .domain    import Domain 
 
 from topos.base import Shape, Fiber, Simplex, Hypergraph
-from topos.core import Field, Functional, Linear
+from topos.core import Field, Functional, Linear, sparse
 from topos.core.operators import from_scalar
 from topos.core.sparse    import eye
 
@@ -76,6 +76,24 @@ class Sheaf (Domain) :
         norm    = Functional([self], lambda f: f/sums(f), "(1 / \u03a3)")
         gibbs   = (norm @ exp_).rename("(e- / \u03a3 e-)")
         
+        #--- Local Fourier transforms
+        N = self.size
+        FT, iFT = sparse.Fourier, sparse.iFourier
+        if N:
+            FTs  = [(Ea, FT(Ea.shape))  for a, Ea in self.items()]
+            iFTs = [(Ea, iFT(Ea.shape)) for a, Ea in self.items()]
+
+            ij  = torch.cat([(Fa[0] + Ea.begin).t() for Ea, Fa in FTs])
+            ji  = torch.cat([(Fa[0] + Ea.begin).t() for Ea, Fa in iFTs])
+            Fij = torch.cat([Fa[1] for Ea, Fa in FTs])
+            Fji = torch.cat([Fa[1] for Ea, Fa in iFTs])
+       
+            fft  = sparse.matrix([N, N], ij, Fij) 
+            ifft = sparse.matrix([N, N], ji, Fji)
+        else:
+            fft  = sparse.matrix([0, 0], [])
+            ifft = sparse.matrix([0, 0], [])
+        
         self.maps = {
             "id"        : Linear([self], eye(self.size)),
             "_ln"       : _ln   ,   
@@ -87,7 +105,9 @@ class Sheaf (Domain) :
         if not self.trivial: 
             self.maps |= {
                 "extend"    : extend,
-                "sums"      : sums  
+                "sums"      : sums,
+                "fft"       : Linear([self], fft,  name="Fourier"),
+                "ifft"      : Linear([self], ifft, name="Fourier*")
             }
         for k, fk in self.maps.items():
             setattr(self, k, fk)

@@ -58,7 +58,9 @@ class Shape :
         for j, mj in enumerate(self.mod):
             out += div(i[None,:], mj)
             i    = i % mj
-        return torch.stack(out).t()
+        return (torch.stack(out).t() if len(out) 
+                                     else torch.tensor([[]]))
+            
 
     def p(self, d):
         def proj_d(i):
@@ -74,13 +76,14 @@ class Shape :
         return res_index
 
     def embed(self, *ds):
-        def emb_index (xs):
-            ys = [0] * self.dim
-            for d, x in zip(ds, xs):
-                ys[d] = x
-            return self.index(*ys)
+        mat = torch.zeros([self.dim, len(ds)], dtype=torch.long)
+        for i, d in enumerate(ds):
+            mat[d, i] = 1
+        def emb_index(x):
+            y = (mat @ x if x.dim() == 1. 
+                         else (mat @ x.T).T)
+            return int(self.index(y))
         return emb_index
-            
 
     def __iter__(self):
         return self.n.__iter__()

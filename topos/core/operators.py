@@ -38,15 +38,19 @@ def eye(cb, ca):
     return [[cb.begin + i, ca.begin + i] for i in range(cb.size)]
     return pull(cb, ca, None)
 
-def extend(cb, ca):
+def extend(ca, cb):
     """ 
-    Cylindrical extension indices from fiber ca to fiber cb. 
+    Cylindricbl extension indices from fiber cb to fiber ca. 
     """
-    if cb.size == ca.size: 
-        return eye(cb, ca)
-    pos  = positions(cb.key[-1], ca.key[-1])
-    return pull(cb, ca, cb.shape.res(*pos))
+    if ca.size == cb.size: 
+        return eye(ca, cb)
+    pos  = positions(ca.key[-1], cb.key[-1])
+    return pull(ca, cb, ca.shape.res(*pos))
 
+def interaction(cb, ca):
+    pos = positions(ca.key[-1], cb.key[-1])
+    emb = ca.shape.embed(*pos)
+    return pull(cb, ca, lambda i: emb(1 + cb.shape.coords(i)))
 
 #------ Pullbacks ---
 
@@ -164,8 +168,8 @@ def nabla(K, degree, p):
         
 #------ Combinatorics ------
 
-def zeta(K, degree):
-    """ Zeta transform: automorphism of K[d]. """
+def zeta_chains(K, degree):
+    """ Support of the zeta transform. """
     G = K.hypergraph
     chains = [[] for d in range(degree + 1)]
     chains[0] = [[[a], [b]] for a in G for b in G.below(a, strict=0)]
@@ -175,10 +179,15 @@ def zeta(K, degree):
                     for a0 in G.above(a1s[0])   \
                     for b0 in G.above(b1s[0])   \
                     if (b0 <= a0 and not b0 <= a1s[0])]
-    z = []
+    return [
+        [[Chain.read(ca), Chain.read(cb)] for ca, cb in cd]\
+                                          for cd in chains]
+
+def zeta(K, degree):
+    """ Zeta transform: automorphism of K[d]. """
+    z, chains = [], zeta_chains(K, degree)
     for d in range(0, degree + 1):
-        cd = [[Chain.read(ca), Chain.read(cb)] for ca, cb in chains[d]]
-        fibers = [[K[d][ca], K[d][cb]] for ca, cb in cd]
+        fibers = [[K[d][ca], K[d][cb]] for ca, cb in chains[d]]
         indices = [ij for p in fibers for ij in extend(*p)]
         n = K[d].size
         z += [sparse.matrix((n, n), indices)]

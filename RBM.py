@@ -74,12 +74,3 @@ def evalRBM (f, *xs):
     ])
     return dots.sum()
 
-#-- Fourier ---
-
-def Fourier (N):
-    kx = torch.tensor([ k * x for k in range(N) for x in range(N)])
-    F  = torch.exp(2j * math.pi * kx / N)
-    return F.reshape([N, N]) / math.sqrt(N)
-
-F = Fourier(2)
-x = torch.tensor([-1, 1]).cfloat()

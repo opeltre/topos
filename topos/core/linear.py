@@ -1,6 +1,6 @@
 from .functional import Functional, GradedFunctional
 from .vect import Vect
-from .sparse import eye, zero
+from .sparse import eye, zero, matmul
 
 import torch
 
@@ -28,6 +28,8 @@ class Linear (Functional, Vect):
 
         #-- Action on fields
         def matvec(x):
+            if torch.is_complex(mat) and not torch.is_complex(x.data):
+                return tgt.field(mat @ x.data.cfloat())
             return tgt.field(mat @ x.data)
 
         self.data = mat
@@ -57,7 +59,6 @@ class Linear (Functional, Vect):
         Return the composed operator, multiplying matrices.
         """
         tgt, src = self.tgt, other.src
-        matmul = torch.sparse.mm
         mat = matmul(self.data, other.data)
         return Linear([src, tgt], mat, f"{self} . {other}")
 

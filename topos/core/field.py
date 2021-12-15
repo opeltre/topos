@@ -61,6 +61,17 @@ class Field (Vect):
                 f"Could not coerce to domain size {domain.size}",
                 f"invalid input shape {list(self.data.shape)}")
 
+    
+    def long    (self): return self.same(self.data.long())
+    def float   (self): return self.same(self.data.float())
+    def cfloat  (self): return self.same(self.data.cfloat())
+
+    def real    (self): return (self if not torch.is_complex(self.data)
+                                     else self.same(self.data.real))
+    def imag    (self): return (self.same(0)
+                                     if not torch.is_complex(self.data)
+                                     else self.same(self.data.imag))
+
     def same(self, other=None, name=None):
         """ 
         Create another field on the same domain.
