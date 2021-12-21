@@ -40,12 +40,17 @@ def eye(cb, ca):
 
 def extend(ca, cb):
     """ 
-    Cylindricbl extension indices from fiber cb to fiber ca. 
+    Cylindrical extension indices from fiber cb to fiber ca. 
     """
     if ca.size == cb.size: 
         return eye(ca, cb)
     pos  = positions(ca.key[-1], cb.key[-1])
     return pull(ca, cb, ca.shape.res(*pos))
+
+def embed_interaction (cb, ca):
+    pos = positions(ca.key[-1], cb.key[-1])
+    emb = ca.shape.embed(*pos)
+    return lambda i: emb(1 + cb.shape.coords(i))
 
 def interaction(cb, ca):
     pos = positions(ca.key[-1], cb.key[-1])

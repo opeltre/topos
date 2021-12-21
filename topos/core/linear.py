@@ -1,6 +1,6 @@
 from .functional import Functional, GradedFunctional
 from .vect import Vect
-from .sparse import eye, zero, matmul
+from .sparse import eye, zero, matmul, diag
 
 import torch
 
@@ -83,7 +83,27 @@ class Linear (Functional, Vect):
             return self.src.field(self.data[i].to_dense())
         elif isinstance(i, str):
             return self[self.tgt.index(i)]
-    
+   
+    def __mul__(self, other):
+        if not isinstance(other, Linear):
+            D = other.domain
+            w = diag(D.size, other.data)
+            if D == self.src:
+                out = matmul(self.data, w)
+            return self.same(out)
+        return super().__mul__(other)
+
+    def __rmul__(self, other):
+        if not isinstance(other, Linear):
+            D = other.domain
+            w = diag(D.size, other.data)
+            if D == self.tgt:
+                out = matmul(w, self.data)
+            return self.same(out)
+        return super().__rmul__(other)
+            
+
+
     def __repr__(self):
         return f"Linear {self}"
 

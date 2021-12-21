@@ -28,7 +28,6 @@ class Vect:
         raise VectError(
             "Could not cast to composable numerical data",
             f"invalid type pair {type(u), type(v)}")
-
     #--- Scalar product ---
 
     def __matmul__(self, other):
@@ -51,12 +50,19 @@ class Vect:
         return c(a - b)
 
     def __mul__(self, other): 
-        a, b, c = self.cast2(self, other)
-        return c(a * b)
+        try:
+            a, b, c = self.cast2(self, other)
+            return c(a * b)
+        except VectError:
+            return other.__rmul__(self)
 
     def __truediv__(self, other): 
         a, b, c = self.cast2(self, other)
         return c(a / b)
+
+    def __rtruediv__(self, other):
+        a, b, c = self.cast2(self, other)
+        return c(b / a)
 
     def __radd__(self, other): 
         return self.__add__(other)
@@ -86,6 +92,18 @@ class Vect:
         other = self.same(other)
         self.data /= other.data
         return self
+    
+    #--- Numeric data types ---
+
+    def long    (self): return self.same(self.data.long())
+    def float   (self): return self.same(self.data.float())
+    def cfloat  (self): return self.same(self.data.cfloat())
+
+    def real    (self): return (self if not torch.is_complex(self.data)
+                                     else self.same(self.data.real))
+    def imag    (self): return (self.same(0)
+                                     if not torch.is_complex(self.data)
+                                     else self.same(self.data.imag))
 
     def __str__(self):
         return self.name if name in self.__dir__()\

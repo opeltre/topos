@@ -27,7 +27,7 @@ class Field (Vect):
             if u.domain.scalars == v.domain:
                 return u.data, u.domain.extend(v).data, u.same
             elif v.domain.scalars == u.domain:
-                return v.domain.extend(u).data, v.data, v.same
+                return v.domain.extend(u).data, v.data, v.same 
         return super().cast2(u, v)
 
 
@@ -60,17 +60,6 @@ class Field (Vect):
             raise FieldError(
                 f"Could not coerce to domain size {domain.size}",
                 f"invalid input shape {list(self.data.shape)}")
-
-    
-    def long    (self): return self.same(self.data.long())
-    def float   (self): return self.same(self.data.float())
-    def cfloat  (self): return self.same(self.data.cfloat())
-
-    def real    (self): return (self if not torch.is_complex(self.data)
-                                     else self.same(self.data.real))
-    def imag    (self): return (self.same(0)
-                                     if not torch.is_complex(self.data)
-                                     else self.same(self.data.imag))
 
     def same(self, other=None, name=None):
         """ 
