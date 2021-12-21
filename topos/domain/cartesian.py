@@ -1,6 +1,6 @@
 from .sheaf import Sheaf
 from .domain import Domain
-from topos.base import Shape, Fiber, Sequence, Chain
+from topos.base import Shape, Fiber, Sequence, Chain, Seq
 from topos.core import Field
 from topos.core import Linear, GradedLinear,\
                        Functional, GradedFunctional
@@ -104,7 +104,7 @@ class Sum (Domain):
             )
 
         #--- Join fibers ---
-        keymap = (lambda i, a: Sequence.read((str(i), a))) if not keymap \
+        keymap = (lambda i, a: Seq.read((i, a))) if not keymap \
                  else keymap
         shape = {
             keymap(i, a): fa.shape for i, Fi in enumerate(sheaves) \
@@ -131,11 +131,10 @@ class Sum (Domain):
             (self[d].restriction(Kd) for d, Kd in enumerate(Ks))
         )
 
-    #--- Functoriality --- 
+    #--- Universal projections / embeddings --- 
 
     def embedding(self, d):
-        def emb_d (k):
-            return  Sequence.read((str(d), k))
+        def emb_d (k): return  Seq.read((d, k))
         return emb_d
 
     def p (self, d):
@@ -155,7 +154,7 @@ class Sum (Domain):
 
     def lift(self, f, name="name", src=None, tgt=None):
         src = getattr(self, src) if src else self
-        tgt = getattr(self, tgt) if tgt else tgt
+        tgt = getattr(self, tgt) if tgt else self
         fs = [getattr(Ni, f) for Ni in self.grades] 
         return GradedLinear([src, tgt], fs, 0, name)\
             if isinstance(fs[0], Linear)\

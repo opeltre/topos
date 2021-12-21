@@ -1,6 +1,6 @@
 from .cartesian import Empty, Sum
 
-from topos.base import Chain
+from topos.base import Chain, Seq
 from topos.core import GradedLinear
 
 from topos.core.operators import coface, codifferential
@@ -39,9 +39,11 @@ class Complex (Sum):
 
     def get(self, key): 
         """ Retrieve a domain cell from its key. """
+        if isinstance(key, Seq):
+            return self[key[0]][Chain.read(key[1])]
         if not isinstance(key, Chain):
-            key = Chain.read(key)
-        return self[key.degree][Chain.read(key)]
+            chain = Chain.read(key)
+        return self[chain.degree][chain]
 
     def __getitem__(self, degree):
         """ Return the domain instance at a given degree. """
