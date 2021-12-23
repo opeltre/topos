@@ -5,6 +5,8 @@ import torch
 from math import prod
 from torch.fft import fft, ifft
 
+from time import time
+
 def tensor (x) : 
     return x if isinstance(x, torch.Tensor) else torch.tensor(x)
 
@@ -49,20 +51,43 @@ def RBM (names, *shapes):
     })
     return H0
 
-def DeepRBM (cells, shapes):
+class DeepRBM (topos.Sum):
 
-    sort  = lambda face : (len(face), *face)
-    sortN = lambda chain : tuple(sort(f) for f in chain)
+    def __init__(self, cells, shapes): 
 
-    RBMs = [RBM(c, *[shapes[i] for i in c.split(':')]) for c in cells]
-    Z0   = topos.Union(*RBMs, sort=sort)
+        sort  = lambda face : (len(face), *face)
+        sortN = lambda chain : tuple(sort(f) for f in chain)
 
-    G = topos.base.Poset(Z0.fibers.keys(), eltype=topos.base.Face)
-    N1 = G.nerve(1)[1]
-    N1.sort(key=sortN)
-    Z1 = topos.Sheaf({c : Z0[c[-1]].shape for c in N1})
+        RBMs = [RBM(c, *[shapes[i] for i in c.split(':')]) for c in cells]
+        Z0   = topos.Union(*RBMs, sort=sort)
+        Z    = []
 
-    return topos.Sum(Z0, Z1)
+        G = topos.base.Poset(Z0.fibers.keys(), eltype=topos.base.Face)
+        N = G.nerve()
+        for Nk in N: 
+            Nk.sort(key=sortN)
+            Z += [topos.Sheaf({c: Z0[c[-1]].shape for c in Nk})]
+        
+        self.scalars = topos.Sum(*Z)
+        self.derived = topos.Sum(
+                *[topos.Union(Zi, Zj) for Zi, Zj in zip(Z[:-1], Z[1:])])
+        super().__init__(*Z)
+        
+        keys = []
+
+        from time import time
+        t0 = time()
+        for k, fk in self[0].items():
+            for i in range(fk.size):
+                x = fk.shape.coords(i)
+                kx = [f'{str(ki).lower()}{xi}' for ki, xi in zip(k[-1], x)]
+                keys += [':'.join(kx)]
+        t1 = time() 
+        print(t1 - t0)
+        self.fine = topos.System(keys)
+
+        def Deff (U):
+            pass
 
 def evalRBM (f, *xs):
     RBM   = f.domain
@@ -73,4 +98,7 @@ def evalRBM (f, *xs):
         dot(f[a], *(X[i] for i in a)) for a in cells
     ])
     return dots.sum()
+
+if __name__ == '__main__':
+    K = DeepRBM(['X:Y', 'Y:Z'], {'X': [8], 'Y': [8], 'Z': [8]})
 
