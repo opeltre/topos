@@ -1,7 +1,7 @@
 from .hashable import Hashable
 import torch
 
-class Shape :
+class Shape (Hashable):
 
     def __init__(self, *ns):
         self.dim = len(ns)

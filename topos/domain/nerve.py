@@ -26,3 +26,12 @@ class Nerve (Complex):
         T = self.scalars if not self.trivial else self
         self.bethe = T.mu[0].t() @ T.ones(0)
 
+        #--- Conjugate operators ---
+        if not self.trivial:
+            N = self.extend @ self.sums @ self.ones()
+            cozt = [(1/N[i]) * (zti * N[i]) for i, zti \
+                                            in enumerate(self.zeta)]
+            comu = [(1/N[i]) * (mui * N[i]) for i, mui \
+                                            in enumerate(self.mu)]
+            self.cozeta = GradedLinear([self], cozt, 0, "[\u03b6]")
+            self.comu   = GradedLinear([self], comu, 0, "[\u03bc]")

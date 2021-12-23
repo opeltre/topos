@@ -53,12 +53,15 @@ class Domain:
         return self.fibers.values().__iter__()
     
     def keys (self):
+        """ Yield keys. """
         return self.fibers.keys()
 
     def items (self):
+        """ Yield key, fiber pairs. """
         return self.fibers.items()
 
     def shape(self, k):
+        """ Return fiber shape at key k. """
         return self[k].shape.n
 
     #--- Index range ---
@@ -90,28 +93,52 @@ class Domain:
         return Functional.map([self], f, name)
 
     def pull(self, src, g=None, name="map*", fmap=None):
-        """ Pull-back of g : src -> domain. """
+        """ Pull-back of g : src.keys -> domain.keys. 
+            
+            Returns a Linear : domain -> src instance.
+
+            Parameters:
+            ---------- 
+                src     :: Domain   (source of g)
+                g       :: src.keys -> domain.keys 
+                name    :: str
+                fmap    :: a -> src[a] -> domain[a]
+        """
         mat = pullback([src, self], g, fmap)
         return Linear([self, src], mat, name)
 
     def push(self, tgt, f=None, name="map.", fmap=None):
-        """ Push-forward of f : domain -> tgt. """
+        """ Push-forward of f : domain.keys -> tgt.keys.
+
+            Returns a Linear : domain -> tgt instance. 
+            
+            See domain.pull (transpose operator) for more info.
+        """
         mat = pullback([self, tgt], f, fmap).t()
         return Linear([self, tgt], mat, name)
 
     def res (self, keys, name="Res"):
-        """ Restriction matrix to a subdomain. """
+        """ Restriction operator on a subdomain. 
+
+            This is the pullback of an embedding of keys.
+        """
         tgt = keys if isinstance(keys, Domain)\
                    else self.restriction(keys)
         return self.pull(tgt, None, name)  
     
     def proj (self, keys, name="Proj"):
-        """ Restriction projector. """
+        """ Projector operator on the span of a subdomain. 
+            
+            Equivalent to `domain.res(keys).t() @ domain.res(keys)`.
+        """
         res = self.res(keys)
         return (res.t() @ res).rename(name)
 
     def embed(self, subdomain, name="Emb"):
-        """ Embedding matrix from a subdomain. """
+        """ Embedding operator from a subdomain. 
+
+            Equivalent to `domain.res(keys).t()`.
+        """
         return self.res(subdomain).t().rename(name)
 
     def eye(self):

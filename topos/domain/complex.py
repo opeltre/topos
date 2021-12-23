@@ -31,7 +31,7 @@ class Complex (Sum):
         #--- Lift functorial maps to all degrees --- 
         self.lifts = {}
         for k, fk in self.grades[0].maps.items():
-            tgt = "scalars" if k == "sums"   else None
+            tgt = "scalars" if k in ["sums", "means"] else None
             src = "scalars" if k == "extend" else None
             self.lifts[k] = self.lift(k, fk.name, src, tgt)
         for k, lfk in self.lifts.items():

@@ -116,7 +116,7 @@ class Field (Vect):
         """
         Euclidean norm of the underlying vector.
         """
-        return torch.sqrt((self.data ** 2).sum())
+        return torch.sqrt((self.data.abs() ** 2).sum())
 
     def sum(self):
         """ 

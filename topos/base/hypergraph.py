@@ -1,8 +1,8 @@
 from .set import Set
-from .simplex   import Chain
-from itertools  import product
+from .simplex   import Chain, Seq
 from .hashable  import Hashable
 
+from itertools  import product
 
 class Poset (Set):
     """ Partially ordered sets """
@@ -71,10 +71,9 @@ class Poset (Set):
             for Nk in N : Nk.sort(key=key)
         return N
 
-    def __repr__(self): 
-        elems = [str(e) for e in self]
-        s = ' '.join(elems)
-        return f"Poset {s}"
+    def __mul__(self, other):
+        elems = (Seq(a, b) for a, b in product(self, other))
+        return Poset(elems, eltype=Seq)
 
     def __lt__(self, other): 
         for a in self:
@@ -87,6 +86,11 @@ class Poset (Set):
                 return False
         return True
 
+    def __repr__(self): 
+        elems = [str(e) for e in self]
+        s = ' '.join(elems)
+        return f"Poset {s}"
+
 
 
 class Hypergraph (Poset): 
@@ -96,11 +100,6 @@ class Hypergraph (Poset):
 
     def __init__(self, elems, sep=',', **kwargs):
         super().__init__(elems, sep=',', eltype=Set) 
-
-    def close(self): 
-        """ /!\ mutable """
-        self |= self.closure()
-        return self
 
     def closure (self): 
         C = set()

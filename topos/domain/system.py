@@ -4,7 +4,8 @@ from .sheaf import Sheaf, Simplicial
 from topos.base import Hypergraph, Shape
 from topos.core import Functional, Linear, GradedLinear
 from topos.core import sparse
-from topos.core.operators import coface, nabla, zeta_chains, interaction
+from topos.core.operators import coface, nabla, zeta_chains,\
+                                 interaction, embed_interaction
 
 import torch
 
@@ -12,13 +13,11 @@ class System (Nerve):
     """ 
     Simplicial nerve N[d](K, E) of a free sheaf E over K.
 
-
     The local shape of region `a` in K =~ N[0](K, E) is given by:
 
         E[a] = (E[i] for i in a)
     
     i.e. E[a] is the cartesian product of the E[i]'s. 
-
     Each chain `a0 > ... > ad` in N[d](K, E) is then assigned a shape:
         
         E[a0 > ... > ad] = E[ad]
@@ -87,7 +86,18 @@ class System (Nerve):
         
         self.cocycles = Z
         
-        #--- Projection to interaction subspaces ---
+        #--- Cocycle representation (for measures) ---
+        
+        resZ = []
+        for Zd, Kd in zip(Z.grades, self.grades):
+            nat   = lambda a: embed_interaction(Zd[a.key], Kd[a.key])
+            resZ += [Kd.pull(Zd, None, "Res Z", nat)]
+        ResZ = GradedLinear([self, Z], resZ, 0, "Res Z")
+        self.res_Z = ResZ
+        self.to_cocycle   = ResZ @ self.fft 
+        self.from_cocycle = self.cozeta @ self.ifft @ ResZ.t()
+
+        #--- Coboundary representation (for potentials) ---
         
         Is = []
         pairs = zeta_chains(self, self.rank)
@@ -99,7 +109,8 @@ class System (Nerve):
             mat = sparse.matrix([Zd.size, Kd.size], ij)
             Is += [Linear([Kd, Zd], mat, name="I") @ Kd.fft]
 
-        self.int = GradedLinear([self, Z], Is, name="I")
+        self.interaction = GradedLinear([self, Z], Is, name="I")
+        self.from_interaction = self.ifft @ self.res_Z.t() 
     
     def nabla(self, p, degree=0):
         """ Tangent map of Deff at local beliefs p. """ 

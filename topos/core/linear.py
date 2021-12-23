@@ -99,7 +99,7 @@ class Linear (Functional, Vect):
             w = diag(D.size, other.data)
             if D == self.tgt:
                 out = matmul(w, self.data)
-            return self.same(out)
+                return self.same(out)
         return super().__rmul__(other)
             
 

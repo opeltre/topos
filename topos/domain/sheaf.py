@@ -62,6 +62,10 @@ class Sheaf (Domain) :
         src, J = self.scalars, from_scalar(self)
         extend = Linear([src, self], J, "J")
         sums   = Linear([self, src], J.t(), "\u03a3")
+        if not self.trivial:
+            sizes  = extend @ sums @ self.ones()
+            means  = (1/sizes) * sums
+
     
         #   =   =   Statistics  =   =   =
 
@@ -78,10 +82,14 @@ class Sheaf (Domain) :
         
         #--- Local Fourier transforms
         N = self.size
-        FT, iFT = sparse.Fourier, sparse.iFourier
+        FT, iFT = {}, {}
+        for a, Ea in self.items(): 
+            if Ea.shape not in FT:   
+                FT[Ea.shape]  = sparse.Fourier(Ea.shape)
+                iFT[Ea.shape] = sparse.iFourier(Ea.shape)
         if N:
-            FTs  = [(Ea, FT(Ea.shape))  for a, Ea in self.items()]
-            iFTs = [(Ea, iFT(Ea.shape)) for a, Ea in self.items()]
+            FTs  = [(Ea, FT[Ea.shape])  for a, Ea in self.items()]
+            iFTs = [(Ea, iFT[Ea.shape]) for a, Ea in self.items()]
 
             ij  = torch.cat([(Fa[0] + Ea.begin).t() for Ea, Fa in FTs])
             ji  = torch.cat([(Fa[0] + Ea.begin).t() for Ea, Fa in iFTs])
@@ -106,6 +114,7 @@ class Sheaf (Domain) :
             self.maps |= {
                 "extend"    : extend,
                 "sums"      : sums,
+                "means"     : means,
                 "fft"       : Linear([self], fft,  name="Fourier"),
                 "ifft"      : Linear([self], ifft, name="Fourier*")
             }
@@ -121,8 +130,8 @@ class Sheaf (Domain) :
 #--- Simplical Fibers ---
 
 class Simplicial (Sheaf) : 
-    
+ 
     """ Sheaf with simplicial keys. """
-
+    
     def __init__(self, keys, shape=None, degree=0, **kwargs):
         super().__init__(keys, shape, degree, ftype=Simplex, **kwargs)

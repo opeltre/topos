@@ -5,7 +5,10 @@ from .fiber     import Fiber
 #--- Simplicial Keys ---
 
 class Seq (Hashable):
+    """ Product keys.
 
+        Seq <= Ord with lexicographic order
+    """
     @classmethod
     def read(cls, arg):
         if isinstance(arg, cls):
@@ -32,7 +35,10 @@ class Seq (Hashable):
         return self.degree + 1
 
     def __gt__(self, other):
-        return set(self) > set(other)
+        for ai, bi in zip(self, other):
+            if ai > bi  : return True
+            if ai != bi : return False
+        return False
 
     def __str__(self): 
         return "| ".join([str(e) for e in self.elems])
@@ -41,6 +47,8 @@ class Seq (Hashable):
         return f"{self}"
 
 class Chain (Seq): 
+    """ Ordered sequence keys
+    """ 
 
     @classmethod
     def read(cls, arg):
@@ -55,6 +63,7 @@ class Chain (Seq):
         return " > ".join([str(e) for e in self.elems])
 
 class Face (Seq): 
+    """ Simplicial keys """
 
     @classmethod
     def read(cls, arg):
@@ -64,6 +73,10 @@ class Face (Seq):
             elems = arg.split(":")
             return cls(*(e for e in elems if len(e) and e != 'ø'))
         return cls(*arg)
+
+    def __gt__(self, other):
+        """ Inclusion """
+        return set(self) > set(other)
 
     def __str__(self): 
         return (":".join([str(e) for e in self.elems]) 

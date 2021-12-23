@@ -77,8 +77,6 @@ def Fourier (shape):
     ij, Fij = iFourier(shape)
     return ij.flip(0), Fij.conj() / shape.size
 
-
-
 #--- Complex data ---
 
 def from_complex (mat):
