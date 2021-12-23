@@ -7,7 +7,7 @@ with open('./requirements.txt', 'r') as f:
 
 setup(
     name    ='topos',
-    version ='0.1',
+    version ='0.2',
     description ="Statistics and Topology",
     author      ="Olivier Peltre",
     author_email='opeltre@gmail.com',
