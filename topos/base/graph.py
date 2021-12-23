@@ -14,8 +14,10 @@ def SymGroup (n):
         cat([s[:n-1-i], last, s[n-1-i:]]) for i in range(n) \
     ]) for s in Sn_1 ])
 
+
 def astensor (js):
     return torch.tensor(js) if not isinstance(js, torch.Tensor) else js
+
 
 class Graph :
     
@@ -54,4 +56,9 @@ class Graph :
         
     def __getitem__(self, i):
         return self.grades[i]
-        
+
+if __name__ == '__main__':
+    G = Graph([0, 1, 2, 3], 
+              [[0, 1], [1, 2], [2, 0], [1, 3]],
+              [[0, 1, 2]])
+
