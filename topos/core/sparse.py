@@ -42,12 +42,33 @@ def matrix(shape, indices, values=1., t=True):
     elif not isinstance(indices, torch.Tensor) and len(indices):
         indices = torch.tensor(indices, dtype=torch.long)
     if t: 
-        indices = indices.t()
+       indices = indices.t()
     if not isinstance(values, torch.Tensor):
         values = values * torch.ones([len(indices[0])])
     return torch.sparse_coo_tensor(indices, values, size=shape)
 
-#-- Fourier ---
+def tensor(shape, indices, values=1., t=True):
+    return matrix(shape, indices, values, t)
+
+#--- Reshape ---
+
+def complete_shape(ns, shape):
+    if -1 in ns:
+        idx, prod = 0, 1
+        for i, ni in enumerate(ns):
+            if ni != -1: prod *= ni
+            else:        idx   = i
+        ns[idx] = shape.size // prod
+    return ns
+
+def reshape(ns, t):
+    src = Shape(*t.size())
+    tgt = Shape(*complete_shape(ns, src))
+    t = t.coalesce()
+    ij = tgt.coords(src.index(t.indices().T))
+    return tensor(ns, ij, t.values())
+
+#--- Fourier ---
 
 def floordiv (a, b):
     return torch.div(a, b, rounding_mode='floor')
