@@ -219,45 +219,71 @@ class Nerve (Complex):
         if d == 0:
             return zt0
         
-
-        zt0_ = [zti.coalesce().indices()[0] for zti in zt0]
-        A_ = [Ai.coalesce().indices()[0] for Ai in A]
-        
         # i0 -> i1 
         # j0 -> j1
-        t0 = time()
         #--- Yield arrows sourcing from j0 <= i0 ---
         edge0 = A.indices()
-        lower = zt0.index_select(0, edge0[0]).coalesce().indices()
-        edge1 = A.index_select(0, lower[1]).coalesce().indices()
+
+        lower = col_select(zt0, edge0[0])
+        edge1 = col_select(A, lower[1])
+
         #--- Reindex arrows accordingly ---
         lower = lower[:,edge1[0]]
         edge0 = edge0[:,lower[0]]
         i0, i1  = edge0[0], edge0[1]
         j0, j1  = lower[1], edge1[1]
 
-        t1 = time()
-        print(f'lower: {t1 - t0}')
-
         #--- Check that i1 >= j1 and not i1 >= j0 ---
-        zt0_ = sparse.reshape([-1], zt0)
-        mask1 = zt0_.index_select(0, N[0] * i1 + j1).to_dense()
-        mask2 = zt0_.index_select(0, N[0] * i1 + j0).to_dense()
-        t2 = time()
-        print(f'filtered: {t2 - t1}')
+        zt0_ = sparse.reshape([-1], zt0).coalesce()
 
-        nz = (mask1 * (1 - mask2)).nonzero().view([-1])
+        mask1 = filter_idx(zt0_, N[0] * i1 + j1)
+        mask2 = filter_idx(zt0_, N[0] * i1 + j0)
+
+        nz = (mask1 * (~mask2)).nonzero().view([-1])
         
         #--- Remaining quadruples ---
         i0i1 = edge0.index_select(1, nz)
         j0j1 = stack([j0, j1]).index_select(1, nz)
         
-        t3 = time()
-        print(f'nonzero: {t3 - t2}')
         return cat([i0i1, j0j1])
 
     def __repr__(self):
         return f'{self.dim} Nerve {self}'
+
+def filter_idx(zt0 : torch.Tensor, search_idx:torch.LongTensor) -> torch.BoolTensor:
+    idx = zt0.indices().flatten()
+    # find the position of the search_idx in zt0's indices
+    pos_idx = torch.bucketize(search_idx,idx)
+    # check if it match
+    mask = idx[pos_idx]==search_idx
+
+    return mask
+
+def col_select(g : torch.Tensor, cols:torch.LongTensor) -> torch.LongTensor:
+    indices = g.indices()
+
+    # degree of the nodes
+    deg_g = torch.zeros(g.shape[0],dtype=torch.int32, device=indices.device)
+    deg_g.scatter_(0, indices[0], 1,reduce="add")
+    
+    # get the positions of the cols in the coo sparse matrix
+    query=torch.arange(g.shape[0],dtype=torch.long)
+    col_idx = torch.bucketize(query,indices[0])
+
+    # find the positions of all the node for a given column and a mask to select the existing ones only
+    offset = torch.arange(deg_g.max(),dtype=torch.long)
+    offset = offset.unsqueeze(0).repeat(deg_g.shape[0],1) # offset's shape => (N(g) x max(deg(g_i))) 
+    mask = offset<deg_g[:,None]
+    offset += col_idx[:,None]
+
+    # compute the list of rows by constructing a list of the row's idx
+    queries = offset[cols][mask[cols]]
+    lower_rows = indices[1,queries]
+
+    # get the idx of the reindexed cols
+    lower_cols = torch.arange(cols.shape[0]).repeat_interleave(deg_g[cols])
+
+    return torch.stack((lower_cols,lower_rows))
 
 def otimes (A, B):
     A = A.coalesce() if not A.is_coalesced() else A
@@ -298,8 +324,74 @@ def rtimes (A, B):
     return sparse.tensor(shape, IJ, xy.view([-1]))
 
 if __name__ == '__main__':
-    G = Graph([0, 1, 2, 3], 
-              [[0, 1], [1, 2], [0, 2], [1, 3]],
-              [[0, 1, 2]])
-    N = G.nerve()
-    N4 = G.nerve().nerve().nerve().nerve()
+    import unittest
+
+    class TestNerve(unittest.TestCase):
+
+        @staticmethod
+        def zeta(nerve, d):
+            N = [Nd.shape[0] for Nd in nerve.grades]
+            A = nerve.adj[1]
+
+            ij  = A.indices().T
+            zt0 = (sparse.matrix([N[0], N[0]], ij) 
+                + sparse.eye(N[0])).coalesce()
+        
+            if d == 0:
+                return zt0
+            
+
+            zt0_ = [zti.coalesce().indices()[0] for zti in zt0]
+            
+            # i0 -> i1 
+            # j0 -> j1
+            #t0 = time()
+            #--- Yield arrows sourcing from j0 <= i0 ---
+            edge0 = A.indices()
+
+            lower = zt0.index_select(0, edge0[0]).coalesce().indices()
+            edge1 = A.index_select(0, lower[1]).coalesce().indices()
+            
+            #--- Reindex arrows accordingly ---
+            lower = lower[:,edge1[0]]
+            edge0 = edge0[:,lower[0]]
+            i0, i1  = edge0[0], edge0[1]
+            j0, j1  = lower[1], edge1[1]
+
+            #t1 = time()
+            #print(f'lower: {t1 - t0}')
+
+            #--- Check that i1 >= j1 and not i1 >= j0 ---
+            #t0=time()
+            zt0_ = sparse.reshape([-1], zt0)
+
+            mask1 = zt0_.index_select(0, N[0] * i1 + j1).to_dense()
+            mask2 = zt0_.index_select(0, N[0] * i1 + j0).to_dense()
+            
+            #t2 = time()
+            #print(f'filter: {t2 - t1}')
+            
+            nz = (mask1 * (1-mask2)).nonzero().view([-1])
+            
+            #--- Remaining quadruples ---
+            i0i1 = edge0.index_select(1, nz)
+            j0j1 = stack([j0, j1]).index_select(1, nz)
+            
+            #t3 = time()
+            #print(f'nonzero: {t3 - t2}')
+            return cat([i0i1, j0j1])
+
+        def test_zeta(self):
+            G = Graph([0, 1, 2, 3], 
+                    [[0, 1], [1, 2], [0, 2], [1, 3]],
+                    [[0, 1, 2]])
+                    
+            N5 = G.nerve().nerve().nerve().nerve().nerve()
+
+            valid = TestNerve.zeta(N5, 1)
+            res = N5.zeta(1)
+
+            self.assertTrue((valid==res).all())
+
+
+    unittest.main()
