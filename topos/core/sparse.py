@@ -53,40 +53,42 @@ def tensor(shape, indices, values=1., t=True):
 
 #--- Efficient access to slices 
 
-def row_select(g:torch.Tensor, rows:torch.LongTensor) -> torch.LongTensor:
-    """ Select rows from a sparse matrix.
+def index_select(g:torch.Tensor, idx:torch.LongTensor, dim=0) -> torch.Tensor:
+    """ Select slices from a sparse matrix.
 
-        Equivalent to `g.index_select(0, rows)` but much faster. 
-        Prefer `g.to_dense()[rows]` when the size of `g` is not too large.
+        Equivalent to `g.index_select(dim, idx)` but much faster. 
     """
 
-    if not g.is_coalesced(): return row_select(g.coalesce(), rows)
+    if not g.is_coalesced(): return index_select(g.coalesce(), idx, dim)
+
     indices = g.indices()
     values  = g.values()
+    if dim != 0:
+        sorting = indices[dim].sort().indices
+        indices = indices[:,sorting]
+        values  = values[sorting]
 
     # degree of the nodes
-    deg_g = (torch.zeros(g.shape[0], dtype=torch.int32, device=indices.device)
-                  .scatter_(0, indices[0], 1, reduce="add"))
+    deg_g = (torch.zeros(g.shape[dim], dtype=torch.int32, device=indices.device)
+                  .scatter_(0, indices[dim], 1, reduce="add"))
     
-    # row start indices
-    query     = torch.arange(g.shape[0], dtype=torch.long)
-    row_begin = torch.bucketize(query, indices[0])
+    # slice start indices
+    query     = torch.arange(g.shape[dim], dtype=torch.long)
+    slice_begin = torch.bucketize(query, indices[dim])
     
     # edge indices mapped within shape N x max(deg_g)
-    idx = (torch.arange(deg_g.max(), dtype=torch.long)
-                    .unsqueeze(0)
-                    .repeat(g.shape[0], 1))
-    mask = idx < deg_g[:,None]
-    idx += row_begin[:,None]
+    edges = (torch.arange(deg_g.max(), dtype=torch.long)
+                .unsqueeze(0)
+                .repeat(g.shape[dim], 1))
+    mask = edges < deg_g[:,None]
+    edges += slice_begin[:,None]
 
     # return stacked slices
-    shape = (rows.shape[0], *g.shape[1:])
-    val   = values[idx[rows][mask[rows]]]
-    row_idx = torch.arange(shape[0]).repeat_interleave(deg_g[rows])
-    col_idx = indices[1:, idx[rows][mask[rows]]]
-    ij = torch.cat((row_idx[None,:], col_idx))
-    return tensor(shape, ij, val, t=0)
-
+    shape = [*g.shape[:dim], idx.shape[0], *g.shape[dim + 1:]]
+    val   = values[edges[idx][mask[idx]]]
+    ij    = indices[:, edges[idx][mask[idx]]]
+    ij[dim] = torch.arange(shape[dim]).repeat_interleave(deg_g[idx])
+    return torch.sparse_coo_tensor(ij, val, size=shape)
 
 #--- Index operations
 
