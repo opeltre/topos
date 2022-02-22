@@ -244,13 +244,12 @@ class Nerve (Complex):
 
         #--- Check that i1 >= j1 and not i1 >= j0 ---
         zt0_ = sparse.reshape([-1], zt0).coalesce()
-
-        mask1 = sparse.filter_idx(zt0_, N[0] * i1 + j1)
-        mask2 = sparse.filter_idx(zt0_, N[0] * i1 + j0)
-
-        nz = (mask1 * (~mask2)).nonzero().view([-1])
+        mask1 = sparse.index_mask(zt0_, N[0] * i1 + j1)
+        mask2 = sparse.index_mask(zt0_, N[0] * i1 + j0)
+        mask  = mask1 * (~ mask2)
         
         #--- Remaining quadruples ---
+        nz = mask.nonzero().view([-1])
         i0i1 = edge0.index_select(1, nz)
         j0j1 = stack([j0, j1]).index_select(1, nz)
         

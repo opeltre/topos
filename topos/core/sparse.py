@@ -3,7 +3,7 @@ from math import pi
 from topos.base import Shape
 
 def matmul (A, B):
-    """ Sparse matmul """
+    """ Sparse matmul, accepting complex input. """
     mm = torch.sparse.mm
 
     if not(torch.is_complex(A) or torch.is_complex(B)):
@@ -20,34 +20,43 @@ def matmul (A, B):
         torch.cat([real.values().cfloat(), 1j * imag.values().cfloat()]),
     ).coalesce()
 
+#--- Constructors ---
+
 def irange (n): 
     return torch.arange(n, dtype=torch.long)
 
 def diag (n, values): 
+    """ Diagonal matrix. """
     return torch.sparse_coo_tensor(
         torch.stack([irange(n), irange(n)]),
         values,
         [n, n])
 
 def zero(n, m): 
+    """ Zero matrix. """
     return matrix([n, m], [])
 
 def eye(n): 
+    """ Identity matrix. """
     return diag(n, torch.ones([n]))
 
 def matrix(shape, indices, values=1., t=True):
+    """ Alias of sparse.tensor. """
     if not len(indices):  
         indices = torch.tensor([[] for ni in shape], dtype=torch.long)
         t = False
     elif not isinstance(indices, torch.Tensor) and len(indices):
         indices = torch.tensor(indices, dtype=torch.long)
     if t: 
-       indices = indices.t()
+       indices = indices.T
     if not isinstance(values, torch.Tensor):
         values = values * torch.ones([len(indices[0])])
     return torch.sparse_coo_tensor(indices, values, size=shape)
 
 def tensor(shape, indices, values=1., t=True):
+    """ Sparse tensor constructor. 
+
+        The table of indices is assumed transposed by default (t=True). """
     return matrix(shape, indices, values, t)
 
 
@@ -58,7 +67,6 @@ def index_select(g:torch.Tensor, idx:torch.LongTensor, dim=0) -> torch.Tensor:
 
         Equivalent to `g.index_select(dim, idx)` but much faster. 
     """
-
     if not g.is_coalesced(): return index_select(g.coalesce(), idx, dim)
 
     indices = g.indices()
@@ -90,16 +98,18 @@ def index_select(g:torch.Tensor, idx:torch.LongTensor, dim=0) -> torch.Tensor:
     ij[dim] = torch.arange(shape[dim]).repeat_interleave(deg_g[idx])
     return torch.sparse_coo_tensor(ij, val, size=shape).coalesce()
 
-#--- Index operations
+#--- Filtering indices
 
-def filter_idx(zt0:torch.Tensor, search_idx:torch.LongTensor) -> torch.BoolTensor:
-    idx = zt0.indices().flatten()
-    # find the position of the search_idx in zt0's indices
-    pos_idx = torch.bucketize(search_idx,idx)
-    # check if it match
-    mask = idx[pos_idx]==search_idx
-
-    return mask
+def index_mask(x:torch.Tensor, idx:torch.LongTensor) -> torch.BoolTensor:
+    """ Mask indices not present in a sparse tensor. 
+        
+        Assumes x is 1D. 
+    """ 
+    indices = x.indices().flatten()
+    # Closest position of index in the indices of x. 
+    pos = torch.bucketize(idx, indices)
+    # Check that indices match
+    return idx == indices[pos]
 
 
 #--- Reshape ---
