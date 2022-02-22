@@ -62,7 +62,7 @@ def tensor(shape, indices, values=1., t=True):
 
 #--- Efficient access to slices 
 
-def index_select(g:torch.Tensor, idx:torch.LongTensor, dim=0) -> torch.Tensor:
+def index_select(g:torch.Tensor, idx:torch.LongTensor, dim:int = 0) -> torch.Tensor:
     """ Select slices from a sparse matrix.
 
         Equivalent to `g.index_select(dim, idx)` but much faster. 
@@ -97,6 +97,18 @@ def index_select(g:torch.Tensor, idx:torch.LongTensor, dim=0) -> torch.Tensor:
     ij    = indices[:, edges[idx][mask[idx]]]
     ij[dim] = torch.arange(shape[dim]).repeat_interleave(deg_g[idx])
     return torch.sparse_coo_tensor(ij, val, size=shape).coalesce()
+
+def sum_dense (x:torch.Tensor, dim:list) -> torch.Tensor:
+    """ Sum values along given dimensions. """
+    mask = torch.tensor([True] * x.dim())
+    dims = torch.tensor(dim, dtype=torch.long)
+    mask[dims] = False
+    tgt = Shape(*[x.shape[d] for d, md in enumerate(mask) if md])
+    val = x.values()
+    idx = x.indices()
+    return (torch.zeros([tgt.size])
+                .scatter_(0, tgt.index(idx[mask].T), 1, reduce="add")
+                .view(tgt.ns))
 
 #--- Filtering indices
 
