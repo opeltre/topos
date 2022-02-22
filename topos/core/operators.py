@@ -85,18 +85,6 @@ def pull_last(K, degree):
 
 #------ Normalisation ------
 
-def local_masses(domain):
-    """
-    Local normalisation factors, as block diagonal matrix of 1s.
-    """
-    indices = [[i, j] for a in domain\
-                      for i in range(a.begin, a.end)\
-                      for j in range(a.begin, a.end)]
-    return torch.sparse_coo_tensor(
-        indices=torch.tensor(indices, dtype=torch.long).t(),
-        values = torch.ones([len(indices)]),
-        size = [domain.size, domain.size])
-
 def from_scalar(domain):
     """
     Extension from scalar fields to tensor valued fields. 
