@@ -103,8 +103,12 @@ def index_select(g:torch.Tensor, idx:torch.LongTensor, dim=0) -> torch.Tensor:
 def index_mask(x:torch.Tensor, idx:torch.LongTensor) -> torch.BoolTensor:
     """ Mask indices not present in a sparse tensor. 
         
-        Assumes x is 1D. 
+        Returns a vector of size `idx.shape[0]`,
+        assuming `idx.shape[1] == x.dim()`. 
     """ 
+    if not x.dim() == 1:
+        x     = sparse.reshape([-1], x).coalesce()
+        idx   = Shape(*x.shape).index(idx)
     indices = x.indices().flatten()
     # Closest position of index in the indices of x. 
     pos = torch.bucketize(idx, indices)
