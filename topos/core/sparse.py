@@ -50,6 +50,56 @@ def matrix(shape, indices, values=1., t=True):
 def tensor(shape, indices, values=1., t=True):
     return matrix(shape, indices, values, t)
 
+
+#--- Efficient access to slices 
+
+def row_select(g:torch.Tensor, rows:torch.LongTensor) -> torch.LongTensor:
+    """ Select rows from a sparse matrix.
+
+        Equivalent to `g.index_select(0, rows)` but much faster. 
+        Prefer `g.to_dense()[rows]` when the size of `g` is not too large.
+    """
+
+    if not g.is_coalesced(): return row_select(g.coalesce(), rows)
+    indices = g.indices()
+    values  = g.values()
+
+    # degree of the nodes
+    deg_g = (torch.zeros(g.shape[0], dtype=torch.int32, device=indices.device)
+                  .scatter_(0, indices[0], 1, reduce="add"))
+    
+    # row start indices
+    query     = torch.arange(g.shape[0], dtype=torch.long)
+    row_begin = torch.bucketize(query, indices[0])
+    
+    # edge indices mapped within shape N x max(deg_g)
+    idx = (torch.arange(deg_g.max(), dtype=torch.long)
+                    .unsqueeze(0)
+                    .repeat(g.shape[0], 1))
+    mask = idx < deg_g[:,None]
+    idx += row_begin[:,None]
+
+    # return stacked slices
+    shape = (rows.shape[0], *g.shape[1:])
+    val   = values[idx[rows][mask[rows]]]
+    row_idx = torch.arange(shape[0]).repeat_interleave(deg_g[rows])
+    col_idx = indices[1:, idx[rows][mask[rows]]]
+    ij = torch.cat((row_idx[None,:], col_idx))
+    return tensor(shape, ij, val, t=0)
+
+
+#--- Index operations
+
+def filter_idx(zt0:torch.Tensor, search_idx:torch.LongTensor) -> torch.BoolTensor:
+    idx = zt0.indices().flatten()
+    # find the position of the search_idx in zt0's indices
+    pos_idx = torch.bucketize(search_idx,idx)
+    # check if it match
+    mask = idx[pos_idx]==search_idx
+
+    return mask
+
+
 #--- Reshape ---
 
 def complete_shape(ns, shape):

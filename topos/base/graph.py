@@ -48,6 +48,14 @@ def Simplicial (faces):
 class Graph :
     
     def __init__(self, *grades, sort=True):
+        """ 
+        Construct hypergraph from lists of hyperedges by degrees.
+
+        Example:
+        -------
+            G = Graph([[0], [1], [2]],
+                      [[0, 1], [1, 2]])
+        """
         
         G = ([astensor(js).sort(-1).values for js in grades] 
                 if sort else [astensor(js) for js in grades])
@@ -93,7 +101,7 @@ class Graph :
         return Ak
 
     def index (self, js):
-        """ Indices of a batch of hyperedges [j0, ..., jn]. """
+        """ Index i of hyperedge [j0, ..., jn]. """
         js = astensor(js)
         n  = js.shape[-1]
         I = self.idx[n - 1]
@@ -114,7 +122,7 @@ class Graph :
             begin += Gn.shape[0]
     
     def nerve (self, d=-1):
-        """ Nerve of the hypergraph. """
+        """ Categorical nerve of the hypergraph. """
         Ntot = self.Ntot 
         N = [torch.ones([Ntot]).to_sparse(),
              self.arrows()]
@@ -162,7 +170,8 @@ class Graph :
         chains = N1.coalesce().indices()
         return sparse.matrix([Ntot, Ntot], chains, t=0).coalesce()
 
-    def __getitem__(self, i):
+    def __getitem__(self, d):
+        """ Degree d hyperedges [j0,...,jd] of the hypergraph. """ 
         return self.grades[i]
     
     def __repr__(self):
@@ -249,41 +258,6 @@ class Nerve (Complex):
 
     def __repr__(self):
         return f'{self.dim} Nerve {self}'
-
-def filter_idx(zt0 : torch.Tensor, search_idx:torch.LongTensor) -> torch.BoolTensor:
-    idx = zt0.indices().flatten()
-    # find the position of the search_idx in zt0's indices
-    pos_idx = torch.bucketize(search_idx,idx)
-    # check if it match
-    mask = idx[pos_idx]==search_idx
-
-    return mask
-
-def col_select(g : torch.Tensor, cols:torch.LongTensor) -> torch.LongTensor:
-    indices = g.indices()
-
-    # degree of the nodes
-    deg_g = torch.zeros(g.shape[0],dtype=torch.int32, device=indices.device)
-    deg_g.scatter_(0, indices[0], 1,reduce="add")
-    
-    # get the positions of the cols in the coo sparse matrix
-    query=torch.arange(g.shape[0],dtype=torch.long)
-    col_idx = torch.bucketize(query,indices[0])
-
-    # find the positions of all the node for a given column and a mask to select the existing ones only
-    offset = torch.arange(deg_g.max(),dtype=torch.long)
-    offset = offset.unsqueeze(0).repeat(deg_g.shape[0],1) # offset's shape => (N(g) x max(deg(g_i))) 
-    mask = offset<deg_g[:,None]
-    offset += col_idx[:,None]
-
-    # compute the list of rows by constructing a list of the row's idx
-    queries = offset[cols][mask[cols]]
-    lower_rows = indices[1,queries]
-
-    # get the idx of the reindexed cols
-    lower_cols = torch.arange(cols.shape[0]).repeat_interleave(deg_g[cols])
-
-    return torch.stack((lower_cols,lower_rows))
 
 def otimes (A, B):
     A = A.coalesce() if not A.is_coalesced() else A
