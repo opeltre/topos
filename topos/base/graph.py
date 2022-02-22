@@ -233,8 +233,8 @@ class Nerve (Complex):
         #--- Yield arrows sourcing from j0 <= i0 ---
         edge0 = A.indices()
 
-        lower = col_select(zt0, edge0[0])
-        edge1 = col_select(A, lower[1])
+        lower = sparse.index_select(zt0, edge0[0]).indices()
+        edge1 = sparse.index_select(A, lower[1]).indices()
 
         #--- Reindex arrows accordingly ---
         lower = lower[:,edge1[0]]
@@ -245,8 +245,8 @@ class Nerve (Complex):
         #--- Check that i1 >= j1 and not i1 >= j0 ---
         zt0_ = sparse.reshape([-1], zt0).coalesce()
 
-        mask1 = filter_idx(zt0_, N[0] * i1 + j1)
-        mask2 = filter_idx(zt0_, N[0] * i1 + j0)
+        mask1 = sparse.filter_idx(zt0_, N[0] * i1 + j1)
+        mask2 = sparse.filter_idx(zt0_, N[0] * i1 + j0)
 
         nz = (mask1 * (~mask2)).nonzero().view([-1])
         

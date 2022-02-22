@@ -88,7 +88,7 @@ def index_select(g:torch.Tensor, idx:torch.LongTensor, dim=0) -> torch.Tensor:
     val   = values[edges[idx][mask[idx]]]
     ij    = indices[:, edges[idx][mask[idx]]]
     ij[dim] = torch.arange(shape[dim]).repeat_interleave(deg_g[idx])
-    return torch.sparse_coo_tensor(ij, val, size=shape)
+    return torch.sparse_coo_tensor(ij, val, size=shape).coalesce()
 
 #--- Index operations
 
