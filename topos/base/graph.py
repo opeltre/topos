@@ -64,7 +64,7 @@ class Graph :
         
         #--- Adjacency and index tensors ---
         
-        A, I = [], [] 
+        A, I, sizes = [], [], [] 
         i, Nvtx  = 0, 1 + max(Gi.max() for Gi in G)
 
         for k, Gk in enumerate(G):
@@ -80,10 +80,12 @@ class Graph :
             idx  = torch.arange(i, i + Nk)
             I   += [sparse.tensor(shape, G[k], idx).coalesce()]
             i   += Nk
+            sizes += [Nk]
 
         #--- Attributes ---
         self.adj   = A
         self.idx   = [sparse.reshape([-1], Ik) for Ik in I]
+        self.sizes = sizes
         self.Ntot  = i
         self.Nvtx  = A[0].shape[0]
         self.grades     = G
@@ -273,16 +275,12 @@ class Nerve (Complex):
         for k in range(d):
             acc += [torch.stack(next_diagrams(*acc[-1]))]
         
-        return acc 
-
-        for chains, n in zip(acc[1:], N[1:]):
-            print(N.index(chains[0].T))
-            ij = torch.stack([N.index(chains[0].T), 
-                              N.index(chains[1].T)])
+        for chains, n, begin in zip(acc[1:], N[1:d+1], self.sizes[:d]):
+            ij = torch.stack([self.index(chains[0].T) - begin, 
+                              self.index(chains[1].T) - begin])
             zt += [sparse.tensor([n, n], ij, t=False)]
 
         return zt
-          
 
     def __repr__(self):
         return f'{self.dim} Nerve {self}'
