@@ -3,7 +3,6 @@ from topos.base import Shape
 
 import torch
 from torch import stack, cat, arange
-
 from time import time
 
 def alignString (alinea='', s='', prefix='tensor(', suffix=')'):
@@ -25,27 +24,17 @@ def SymGroup (n):
 def astensor (js):
     return torch.tensor(js) if not isinstance(js, torch.Tensor) else js
 
-def face(i, f):
-    n = f.shape[-1]
-    return f.index_select(f.dim() - 1, cat([arange(i), arange(i+1, n)]))
-
-def simplices (faces):
-    faces = astensor(faces)
-    K = [[(0, faces)]]
-    def nextf (nfaces):
-        faces = []
-        for i, f in nfaces:
-            faces += [(j, face(j, f)) for j in range(i, f.shape[-1])]
-        return faces
-    for codim in range(faces.shape[-1] - 1):
-        K += [nextf(K[-1])]
-    K_ = [cat([f for i, f in Kn[::-1]]) for Kn in K[::-1]]
-    return K_
-
-def Simplicial (faces): 
-    return Graph(*simplices(faces))
-        
 class Graph :
+    """
+    Hypergraphs.
+
+    Given a set of vertices I, a hypergraph is a collection of subsets of I. 
+    These subsets are called hyperdeges or more simply cells, regions, faces... 
+
+    The degree or dimension of a face containing n vertices is n + 1.
+    A graph is a hypergraph having only faces of dimension <= 1,
+    though more precisely it is a simplicial complex of dimension 1.
+    """
     
     def __init__(self, *grades, sort=True):
         """ 
@@ -193,8 +182,24 @@ class Graph :
 
 
 class Complex (Graph):
-   
+    """
+    Simplicial complexes. 
+
+    A simplicial complex is a hypergraph containing all the subsets of its cells. 
+    The i-th face map consists of removing the i-th vertex from a degree-n cell,
+    for 0 <= i <= n.
+    Alternated sums of face maps induce a dual pair of differential and codifferential 
+    (or boundary) operators, `d` and `delta = d*`. 
+
+    References:
+    -----------
+    - Peltre, 2020:
+        Message-Passing Algorithms and Homology, Chapter II
+        https://arxiv.org/abs/2009.11631
+    """
+
     def diff(self, d):
+        """ Differential d: K[d] -> K[d + 1]. """
         src, tgt = self[d], self[d + 1]
         N, P = tgt.shape[0], src.shape[0]
         i = self.index(tgt) - self.index(tgt[0])
@@ -205,19 +210,54 @@ class Complex (Graph):
             val = (-1.) ** k
             out += sparse.matrix([N, P], stack([i, j]), val, t=0)
         return out
-
+    
+    @staticmethod
+    def face(i, f):
+        """ Face map acting on (batched) cells [j0, ..., jn]. """
+        n = f.shape[-1]
+        return f.index_select(f.dim() - 1, cat([arange(i), arange(i+1, n)]))
+    
+    @classmethod
+    def simplicial(cls, faces):
+        """ Simplicial closure. 
+            
+            Returns the complex containing every subface of the input faces.
+        """
+        faces = astensor(faces)
+        K = [[(0, faces)]]
+        def nextf (nfaces):
+            faces = []
+            for i, f in nfaces:
+                faces += [(j, cls.face(j, f)) for j in range(i, f.shape[-1])]
+            return faces
+        for codim in range(faces.shape[-1] - 1):
+            K += [nextf(K[-1])]
+        K_ = [cat([f for i, f in Kn[::-1]]) for Kn in K[::-1]]
+        return cls(*K_)
+            
     def __repr__(self):
         return f'{self.dim} Complex {self}'
- 
+
 
 class Nerve (Complex):
+    """
+    Categorical nerves. 
+
+    The nerve of a hypergraph is a simplicial complex. 
+    The partial order structure of the hypergraph also
+    induces a pair of combinatorial automorphisms, 
+    extending the Zeta transform and Möbius inversion formula
+    to the whole complex. 
+
+    References:
+    -----------
+    - Rota, 1964: 
+        On the Foundations of Combinatorial Theory - I. Theory of Möbius Transforms
+    - Peltre, 2020: 
+        Message-Passing Algorithms and Homology, Chapter III, 
+        https://arxiv.org/abs/2009.11631
+    """
     
-    def cones (self, d):
-        A = self.adj[1]
-        V = self.vertices
-        N = self[d].shape[0]
-        if d == 0:
-            return cat([stack([V, V]).T, A.indices().T])
     
     def zeta (self, d):
         """ Degree-d zeta transform. 
@@ -284,120 +324,3 @@ class Nerve (Complex):
 
     def __repr__(self):
         return f'{self.dim} Nerve {self}'
-
-def otimes (A, B):
-    A = A.coalesce() if not A.is_coalesced() else A
-    B = B.coalesce() if not B.is_coalesced() else B
-    #--- indices ---
-    i, j = A.indices().T, B.indices().T
-    I = i.repeat(j.shape[0], 1, 1)
-    J = j.repeat(i.shape[0], 1, 1).transpose(0, 1)
-    t0 = time()
-    IJ = cat([I, J], 2)
-    t1 = time()
-    print(f'cat {I.shape}: {t1 - t0}')
-    IJ = IJ.view([-1, IJ.shape[-1]])
-    #--- values ---
-    a, b = A.values(), B.values()
-    ab = a[:,None] * b[None,:]
-    #--- shape ---
-    shape = A.size() + B.size()
-    return sparse.tensor(shape, IJ, ab.view([-1]))
-
-def rtimes (A, B):
-    A = A.coalesce() if not A.is_coalesced() else A
-    B = B.coalesce() if not B.is_coalesced() else B
-    #--- indices ---
-    i, j = A.indices().T, B.indices().T
-    I = i.repeat(j.shape[0], 1, 1)
-    J = j.repeat(i.shape[0], 1, 1).transpose(0, 1)
-    t0 = time()
-    IJ = cat([I, J], 2)
-    t1 = time()
-    print(f'cat {I.shape}: {t1 - t0}')
-    IJ = IJ.view([-1, IJ.shape[-1]])
-    #--- values ---
-    x, y = A.values(), B.values()
-    xy   = x[:,None] * y[None,:]
-    #--- shape ---
-    shape = A.size() + B.size()
-    return sparse.tensor(shape, IJ, xy.view([-1]))
-
-if __name__ == '__main__':
-    import unittest
-
-    G = Graph([0, 1, 2, 3], 
-            [[0, 1], [1, 2], [0, 2], [1, 3]],
-            [[0, 1, 2]])
-
-    N = G.nerve()
-    """ 
-    class TestNerve(unittest.TestCase):
-
-        @staticmethod
-        def zeta(nerve, d):
-            N = [Nd.shape[0] for Nd in nerve.grades]
-            A = nerve.adj[1]
-
-            ij  = A.indices().T
-            zt0 = (sparse.matrix([N[0], N[0]], ij) 
-                + sparse.eye(N[0])).coalesce()
-        
-            if d == 0:
-                return zt0
-            
-
-            zt0_ = [zti.coalesce().indices()[0] for zti in zt0]
-            
-            # i0 -> i1 
-            # j0 -> j1
-            #t0 = time()
-            #--- Yield arrows sourcing from j0 <= i0 ---
-            edge0 = A.indices()
-
-            lower = zt0.index_select(0, edge0[0]).coalesce().indices()
-            edge1 = A.index_select(0, lower[1]).coalesce().indices()
-            
-            #--- Reindex arrows accordingly ---
-            lower = lower[:,edge1[0]]
-            edge0 = edge0[:,lower[0]]
-            i0, i1  = edge0[0], edge0[1]
-            j0, j1  = lower[1], edge1[1]
-
-            #t1 = time()
-            #print(f'lower: {t1 - t0}')
-
-            #--- Check that i1 >= j1 and not i1 >= j0 ---
-            #t0=time()
-            zt0_ = sparse.reshape([-1], zt0)
-
-            mask1 = zt0_.index_select(0, N[0] * i1 + j1).to_dense()
-            mask2 = zt0_.index_select(0, N[0] * i1 + j0).to_dense()
-            
-            #t2 = time()
-            #print(f'filter: {t2 - t1}')
-            
-            nz = (mask1 * (1-mask2)).nonzero().view([-1])
-            
-            #--- Remaining quadruples ---
-            i0i1 = edge0.index_select(1, nz)
-            j0j1 = stack([j0, j1]).index_select(1, nz)
-            
-            #t3 = time()
-            #print(f'nonzero: {t3 - t2}')
-            return cat([i0i1, j0j1])
-
-        def test_zeta(self):
-            G = Graph([0, 1, 2, 3], 
-                    [[0, 1], [1, 2], [0, 2], [1, 3]],
-                    [[0, 1, 2]])
-                    
-            N5 = G.nerve().nerve().nerve().nerve().nerve()
-
-            valid = TestNerve.zeta(N5, 1)
-            res = N5.zeta(1)
-
-            self.assertTrue((valid==res).all())
-    """
-
-    unittest.main()
