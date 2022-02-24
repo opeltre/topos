@@ -1,10 +1,11 @@
 from topos.core import sparse
-import topos.base.graph
+from topos.io   import readTensor
+from .graph     import Graph
 
 import torch
 from torch import cat, stack, arange
 
-class Complex (topos.base.graph.Graph):
+class Complex (Graph):
     """
     Simplicial complexes. 
 
@@ -40,9 +41,9 @@ class Complex (topos.base.graph.Graph):
         n = f.shape[-1]
         return f.index_select(f.dim() - 1, cat([arange(i), arange(i+1, n)]))
     
-    @staticmethod 
-    def simplices (faces):
-        faces = parseTensor(faces)
+    @classmethod 
+    def simplices (cls, faces):
+        faces = readTensor(faces)
         K = [[(0, faces)]]
         def nextf (nfaces):
             faces = []

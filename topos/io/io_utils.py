@@ -5,5 +5,5 @@ def alignString (alinea='', s='', prefix='tensor(', suffix=')'):
                            .replace(suffix, '')
                            .replace('\n', '\n' + ' ' * len(alinea)))
 
-def parseTensor (js):
+def readTensor(js):
     return torch.tensor(js) if not isinstance(js, torch.Tensor) else js

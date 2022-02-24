@@ -1,8 +1,5 @@
 from topos.core import sparse, Shape
-from topos.io   import alignString, parseTensor
-
-import topos.base.nerve    
-import topos.base.complex  
+from topos.io   import alignString, readTensor
 
 import torch
 from torch import stack, cat, arange
@@ -29,8 +26,8 @@ class Graph :
                       [[0, 1], [1, 2]])
         """
         
-        G = ([parseTensor(js).sort(-1).values for js in grades] 
-                if sort else [parseTensor(js) for js in grades])
+        G = ([readTensor(js).sort(-1).values for js in grades] 
+                if sort else [readTensor(js) for js in grades])
         if len(G) and G[0].dim() == 1:
             G[0] = G[0].unsqueeze(1)
         
@@ -76,7 +73,7 @@ class Graph :
 
     def index (self, js):
         """ Index i of hyperedge [j0, ..., jn]. """
-        js = parseTensor(js)
+        js = readTensor(js)
         n  = js.shape[-1]
         I = self.idx[n - 1]
         E = Shape(*([self.Nvtx] * n))
@@ -86,7 +83,7 @@ class Graph :
 
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
-        i, begin = parseTensor(i), 0
+        i, begin = readTensor(i), 0
         if not isinstance(d, type(None)):
             return self[d][i]
         for Gn in self.grades:
@@ -95,55 +92,6 @@ class Graph :
                 return Gn[i - begin] 
             begin += Gn.shape[0]
     
-    def nerve (self, d=-1):
-        """ Categorical nerve of the hypergraph. """
-        Ntot = self.Ntot 
-        N = [torch.ones([Ntot]).to_sparse(),
-             self.arrows()]
-        arr = [N[1][i].coalesce().indices() for i in range(Ntot)]
-        deg = 2
-        if d == 1: return N
-        while deg != d: 
-            ijk = [cat([ij, k]) for ij in N[-1].indices().T \
-                                for k in arr[ij[-1]].T]
-            if not len(ijk): break
-            Nd = sparse.matrix([Ntot] * (deg + 1), stack(ijk))
-            N += [Nd.coalesce()]
-            deg += 1
-        return topos.base.nerve.Nerve(*(Nd.indices().T for Nd in N), sort=False)
-
-    def arrows (self): 
-        """ 1-Chains of the hypergraph. """
-        Ntot = self.Ntot
-        N1   = sparse.matrix([Ntot, Ntot], [])
-       
-        A    = [sparse.reshape([-1], Ak) for Ak in self.adj]
-        E    = [Shape(*Ak.size()) for Ak in self.adj]
-        I    = self.idx
-
-        for n, Gn in enumerate(self.grades):
-            Nn = Gn.shape[0]
-
-            # row indices
-            i_ = I[n].index_select(0, E[n].index(Gn)).to_dense()
-            # loop over subfaces
-            F  = topos.base.complex.Complex.simplices(Gn)
-            for k, Fk in enumerate(F[:-1]):
-                # valid column indices
-                nz = (A[k].index_select(0, E[k].index(Fk))
-                          .to_dense()
-                          .view([-1, Nn])
-                          .nonzero())
-                j_ = (I[k].index_select(0, E[k].index(Fk))
-                          .to_dense()
-                          .view([-1, Nn]))
-                # ordered pairs
-                ij = torch.tensor([[i_[y], j_[x, y]] for x, y in nz])
-                N1 += sparse.matrix([Ntot, Ntot], ij)
-        
-        chains = N1.coalesce().indices()
-        return sparse.matrix([Ntot, Ntot], chains, t=0).coalesce()
-
     def __getitem__(self, d):
         """ Degree d hyperedges [j0,...,jd] of the hypergraph. """ 
         return self.grades[d]

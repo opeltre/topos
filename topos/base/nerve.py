@@ -1,9 +1,10 @@
-from topos.core import sparse
+from topos.core import sparse, Shape
+from topos.io   import readTensor
+from .complex   import Complex
 
-import topos.base.complex
 import torch
 
-class Nerve (topos.base.complex.Complex):
+class Nerve (Complex):
     """
     Categorical nerves.
 
@@ -35,7 +36,7 @@ class Nerve (topos.base.complex.Complex):
         Message-Passing Algorithms and Homology, Chapter III,
         https://arxiv.org/abs/2009.11631
     """
-   
+    
     def zeta (self, d):
         """ Degree-d zeta transform.
 
@@ -98,6 +99,56 @@ class Nerve (topos.base.complex.Complex):
             zt += [sparse.tensor([n, n], ij, t=False)]
 
         return zt
+
+    @classmethod
+    def nerve (cls, G, d=-1):
+        """ Categorical nerve of a hypergraph. """
+        Ntot = G.Ntot 
+        N = [torch.ones([Ntot]).to_sparse(),
+             cls.arrows(G)]
+        arr = [N[1][i].coalesce().indices() for i in range(Ntot)]
+        deg = 2
+        if d == 1: return N
+        while deg != d: 
+            ijk = [torch.cat([ij, k]) for ij in N[-1].indices().T \
+                                for k in arr[ij[-1]].T]
+            if not len(ijk): break
+            Nd = sparse.matrix([Ntot] * (deg + 1), torch.stack(ijk))
+            N += [Nd.coalesce()]
+            deg += 1
+        return cls(*(Nd.indices().T for Nd in N), sort=False)
+    
+    @staticmethod
+    def arrows (G): 
+        """ 1-Chains of a hypergraph. """
+        Ntot = G.Ntot
+        N1   = sparse.matrix([Ntot, Ntot], [])
+       
+        A    = [sparse.reshape([-1], Ak) for Ak in G.adj]
+        E    = [Shape(*Ak.size()) for Ak in G.adj]
+        I    = G.idx
+
+        for n, Gn in enumerate(G.grades):
+            Nn = Gn.shape[0]
+            # row indices
+            i_ = I[n].index_select(0, E[n].index(Gn)).to_dense()
+            # loop over subfaces
+            F  = Complex.simplices(Gn)
+            for k, Fk in enumerate(F[:-1]):
+                # valid column indices
+                nz = (A[k].index_select(0, E[k].index(Fk))
+                          .to_dense()
+                          .view([-1, Nn])
+                          .nonzero())
+                j_ = (I[k].index_select(0, E[k].index(Fk))
+                          .to_dense()
+                          .view([-1, Nn]))
+                # ordered pairs
+                ij = torch.tensor([[i_[y], j_[x, y]] for x, y in nz])
+                N1 += sparse.matrix([Ntot, Ntot], ij)
+        
+        chains = N1.coalesce().indices()
+        return sparse.matrix([Ntot, Ntot], chains, t=0).coalesce()
 
     def __repr__(self):
         return f'{self.dim} Nerve {self}'

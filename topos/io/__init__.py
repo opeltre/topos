@@ -1,1 +1,1 @@
-from .io_utils import alignString, parseTensor
+from .io_utils import alignString, readTensor
