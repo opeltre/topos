@@ -1,4 +1,4 @@
-from topos.core import sparse, Shape
+from topos.core import sparse, Shape, SymGroup
 from topos.io   import alignString, parseTensor
 
 import torch
