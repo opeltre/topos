@@ -54,7 +54,8 @@ class Graph :
         #--- Attributes ---
         self.adj   = A
         self.idx   = [sparse.reshape([-1], Ik) for Ik in I]
-        self.sizes = sizes
+        self.sizes = torch.tensor(sizes)
+        self.begin = torch.tensor([0, *self.sizes.cumsum(0)[:-1]])
         self.Ntot  = i
         self.Nvtx  = A[0].shape[0]
         self.grades     = G

@@ -70,45 +70,45 @@ class Nerve (Complex):
         # full automorphism
         zt = [zt0]
 
-        def next_diagrams (chain_i, chain_j):
+        def next_diagrams (chain_a, chain_b):
             """ Extend diagrams to the right:
 
-                    i0 > i1 > ... > id
+                    a0 > a1 > ... > ad
                     >=   >=         >=
-                    j0 > j1 > ... > jd
+                    b0 > b1 > ... > bd
             """
             order = sparse.reshape([-1], zt0).coalesce()
-            # Extend chain_i
-            below_i = sparse.index_select(A, chain_i[-1])
-            next_i  = below_i.indices()[1]
-            deg_i   = sparse.sum_dense(below_i, [1]).long()
-            chain_j = chain_j.repeat_interleave(deg_i, 1)
-            chain_i = chain_i.repeat_interleave(deg_i, 1)
-            chain_i = torch.cat([chain_i, next_i[None,:]])
-            # Extend chain_j
-            below_j = sparse.index_select(A, chain_j[-1])
-            next_j  = below_j.indices()[1]
-            deg_j   = sparse.sum_dense(below_j, [1]).long()
-            chain_i = chain_i.repeat_interleave(deg_j, 1)
-            chain_j = chain_j.repeat_interleave(deg_j, 1)
-            chain_j = torch.cat([chain_j, next_j[None,:]])
+            # Extend chain_a
+            below_a = sparse.index_select(A, chain_a[-1])
+            next_a  = below_a.indices()[1]
+            deg_a   = sparse.sum_dense(below_a, [1]).long()
+            chain_b = chain_b.repeat_interleave(deg_a, 1)
+            chain_a = chain_a.repeat_interleave(deg_a, 1)
+            chain_a = torch.cat([chain_a, next_a[None,:]])
+            # Extend chain_b
+            below_b = sparse.index_select(A, chain_b[-1])
+            next_b  = below_b.indices()[1]
+            deg_b   = sparse.sum_dense(below_b, [1]).long()
+            chain_a = chain_a.repeat_interleave(deg_b, 1)
+            chain_b = chain_b.repeat_interleave(deg_b, 1)
+            chain_b = torch.cat([chain_b, next_b[None,:]])
             # Check that i[d] >= j[d] and i[d] !>= j[d-1]
-            idx1  = N[0] * chain_i[-1] + chain_j[-1]
-            idx2  = N[0] * chain_i[-1] + chain_j[-2]
+            idx1  = N[0] * chain_a[-1] + chain_b[-1]
+            idx2  = N[0] * chain_a[-1] + chain_b[-2]
             mask1 =   sparse.index_mask(order, idx1)
             mask2 = ~ sparse.index_mask(order, idx2)
             nz = (mask1 * mask2).nonzero().flatten()
             # Return diagrams
-            return chain_i[:, nz], chain_j[:, nz]
+            return chain_a[:, nz], chain_b[:, nz]
 
         acc = [zt0.indices().unsqueeze(1)]
 
         for k in range(d):
             acc += [torch.stack(next_diagrams(*acc[-1]))]
-
-        for chains, n, begin in zip(acc[1:], N[1:d+1], self.sizes[:d]):
-            ij = torch.stack([self.index(chains[0].T) - begin,
-                              self.index(chains[1].T) - begin])
+        
+        for chains, n, i0 in zip(acc[1:], N[1:d+1], self.begin[1:]):
+            ij = torch.stack([self.index(chains[0].T) - i0,
+                              self.index(chains[1].T) - i0])
             zt += [sparse.tensor([n, n], ij, t=False)]
 
         return zt
