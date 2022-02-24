@@ -3,7 +3,7 @@ from math import pi
 from topos.base import Shape
 
 def matmul (A, B):
-    """ Sparse matmul """
+    """ Sparse matmul, accepting complex input. """
     mm = torch.sparse.mm
 
     if not(torch.is_complex(A) or torch.is_complex(B)):
@@ -20,35 +20,113 @@ def matmul (A, B):
         torch.cat([real.values().cfloat(), 1j * imag.values().cfloat()]),
     ).coalesce()
 
+#--- Constructors ---
+
 def irange (n): 
     return torch.arange(n, dtype=torch.long)
 
 def diag (n, values): 
+    """ Diagonal matrix. """
     return torch.sparse_coo_tensor(
         torch.stack([irange(n), irange(n)]),
         values,
         [n, n])
 
 def zero(n, m): 
+    """ Zero matrix. """
     return matrix([n, m], [])
 
 def eye(n): 
+    """ Identity matrix. """
     return diag(n, torch.ones([n]))
 
 def matrix(shape, indices, values=1., t=True):
+    """ Alias of sparse.tensor. """
     if not len(indices):  
         indices = torch.tensor([[] for ni in shape], dtype=torch.long)
         t = False
     elif not isinstance(indices, torch.Tensor) and len(indices):
         indices = torch.tensor(indices, dtype=torch.long)
     if t: 
-       indices = indices.t()
+       indices = indices.T
     if not isinstance(values, torch.Tensor):
         values = values * torch.ones([len(indices[0])])
     return torch.sparse_coo_tensor(indices, values, size=shape)
 
 def tensor(shape, indices, values=1., t=True):
+    """ Sparse tensor constructor. 
+
+        The table of indices is assumed transposed by default (t=True). """
     return matrix(shape, indices, values, t)
+
+
+#--- Efficient access to slices 
+
+def index_select(g:torch.Tensor, idx:torch.LongTensor, dim:int = 0) -> torch.Tensor:
+    """ Select slices from a sparse matrix.
+
+        Equivalent to `g.index_select(dim, idx)` but much faster. 
+    """
+    if not g.is_coalesced(): return index_select(g.coalesce(), idx, dim)
+
+    indices = g.indices()
+    values  = g.values()
+    if dim != 0:
+        sorting = indices[dim].sort().indices
+        indices = indices[:,sorting]
+        values  = values[sorting]
+
+    # degree of the nodes
+    deg_g = (torch.zeros(g.shape[dim], dtype=torch.int32, device=indices.device)
+                  .scatter_(0, indices[dim], 1, reduce="add"))
+    
+    # slice start indices
+    query     = torch.arange(g.shape[dim], dtype=torch.long)
+    slice_begin = torch.bucketize(query, indices[dim])
+    
+    # edge indices mapped within shape N x max(deg_g)
+    edges = (torch.arange(deg_g.max(), dtype=torch.long)
+                .unsqueeze(0)
+                .repeat(g.shape[dim], 1))
+    mask = edges < deg_g[:,None]
+    edges += slice_begin[:,None]
+
+    # return stacked slices
+    shape = [*g.shape[:dim], idx.shape[0], *g.shape[dim + 1:]]
+    val   = values[edges[idx][mask[idx]]]
+    ij    = indices[:, edges[idx][mask[idx]]]
+    ij[dim] = torch.arange(shape[dim]).repeat_interleave(deg_g[idx])
+    return torch.sparse_coo_tensor(ij, val, size=shape).coalesce()
+
+def sum_dense (x:torch.Tensor, dim:list) -> torch.Tensor:
+    """ Sum values along given dimensions. """
+    mask = torch.tensor([True] * x.dim())
+    dims = torch.tensor(dim, dtype=torch.long)
+    mask[dims] = False
+    tgt = Shape(*[x.shape[d] for d, md in enumerate(mask) if md])
+    val = x.values()
+    idx = x.indices()
+    return (torch.zeros([tgt.size])
+                .scatter_(0, tgt.index(idx[mask].T), 1, reduce="add")
+                .view(tgt.ns))
+
+#--- Filtering indices
+
+def index_mask(x:torch.Tensor, idx:torch.LongTensor) -> torch.BoolTensor:
+    """ Mask indices not present in a sparse tensor. 
+        
+        Returns a vector of size `idx.shape[0]`,
+        assuming `idx.shape[1] == x.dim()`. 
+    """ 
+    if not x.dim() == 1:
+        x     = sparse.reshape([-1], x).coalesce()
+        idx   = Shape(*x.shape).index(idx)
+    indices = x.indices().flatten()
+    # Closest position of index in the indices of x. 
+    pos = torch.bucketize(idx, indices)
+    # Check that indices match
+    return idx == indices[pos]
+
 
 #--- Reshape ---
 

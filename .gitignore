@@ -1,3 +1,6 @@
 __pycache__
 */__pycache__
 notebooks/*
+.vscode
+build
+*.egg-info
