@@ -1,13 +1,8 @@
 from topos.core import sparse, Shape
+from topos.io   import alignString, parseTensor
 
 import torch
 from torch import stack, cat, arange
-from time import time
-
-def alignString (alinea='', s='', prefix='tensor(', suffix=')'):
-    return alinea + (str(s).replace(prefix, ' ' * len(prefix))
-                           .replace(suffix, '')
-                           .replace('\n', '\n' + ' ' * len(alinea)))
 
 def SymGroup (n):
     if n == 1:
@@ -19,9 +14,6 @@ def SymGroup (n):
     return cat([stack([
         cat([s[:n-1-i], last, s[n-1-i:]]) for i in range(n) \
     ]) for s in Sn_1 ])
-
-def astensor (js):
-    return torch.tensor(js) if not isinstance(js, torch.Tensor) else js
 
 class Graph :
     """
@@ -45,8 +37,8 @@ class Graph :
                       [[0, 1], [1, 2]])
         """
         
-        G = ([astensor(js).sort(-1).values for js in grades] 
-                if sort else [astensor(js) for js in grades])
+        G = ([parseTensor(js).sort(-1).values for js in grades] 
+                if sort else [parseTensor(js) for js in grades])
         if len(G) and G[0].dim() == 1:
             G[0] = G[0].unsqueeze(1)
         
@@ -92,7 +84,7 @@ class Graph :
 
     def index (self, js):
         """ Index i of hyperedge [j0, ..., jn]. """
-        js = astensor(js)
+        js = parseTensor(js)
         n  = js.shape[-1]
         I = self.idx[n - 1]
         E = Shape(*([self.Nvtx] * n))
@@ -102,7 +94,7 @@ class Graph :
 
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
-        i, begin = astensor(i), 0
+        i, begin = parseTensor(i), 0
         if not isinstance(d, type(None)):
             return self[d][i]
         for Gn in self.grades:
@@ -222,7 +214,7 @@ class Complex (Graph):
             
             Returns the complex containing every subface of the input faces.
         """
-        faces = astensor(faces)
+        faces = parseTensor(faces)
         K = [[(0, faces)]]
         def nextf (nfaces):
             faces = []

@@ -16,6 +16,7 @@ setup(
     install_requires=requirements,
     packages = ['topos', 
                 'topos.base', 
+                'topos.io',
                 'topos.core',
                 'topos.domain',
                 'topos.exceptions']
