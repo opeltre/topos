@@ -91,6 +91,10 @@ class Graph :
             if i0 - begin < Gn.shape[0]:
                 return Gn[i - begin]
             begin += Gn.shape[0]
+    
+    def __len__(self):
+        """ Maximal degree. """
+        return len(self.grades)
 
     def __getitem__(self, d):
         """ Degree d hyperedges [j0,...,jd] of the hypergraph. """

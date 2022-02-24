@@ -14,18 +14,18 @@ class Nerve (Complex):
     extending the Zeta transform and Möbius inversion formula
     to the whole complex.
 
-    In degree 0, the zeta transform evaluated at i0 is the sum
-    of all evaluations on lower cells j0 <= i0.
+    In degree 0, the zeta transform evaluated at a0 is the sum
+    of all evaluations on lower cells b0 <= a0.
     The Möbius transform mu inverts zeta.
 
-    In degree d, the zeta transform evaluated at i0 > ... > id
+    In degree d, the zeta transform evaluated at a0 > ... > ad
     sums over all diagrams of the form:
 
-                    i0 > i1 > ... > id
+                    a0 > a1 > ... > ad
                     >=   >=         >=
-                    j0 > j1 > ... > jd
+                    b0 > b1 > ... > bd
 
-    with the additional constraint that i1 !>= j0, i2 !>= j1, ...
+    with the additional constraint that a1 !>= b0, a2 !>= b1, ...
     The Möbius transform extended to degree d inverts zeta.
 
     References:
@@ -37,25 +37,38 @@ class Nerve (Complex):
         https://arxiv.org/abs/2009.11631
     """
 
-    def zeta (self, d):
-        """ Degree-d zeta transform.
-
-            See Nerve.zetas(d) to keep graded components until d.
+    def zeta (self, d=0):
+        """ 
+        Degree-d zeta transform.
+        
+        Recursive function. 
+        Calls `Nerve.zetas(d)` to compute graded components up to degree d.
         """
         return self.zetas(d)[d]
 
-    def zetas (self, d):
-        """ List of zeta transforms in degrees <= d. """
-
-        zt, N = [], [Nd.shape[0] for Nd in self.grades]
-
-        # strict inclusions
+    def zetas (self, d=-1):
+        """
+        List of zeta transforms in degrees <= d.
+    
+            #--- degree 0
+            zeta(x)[a]       = sum [x[b] | b <= a]
+            #--- degree 1
+            zeta(m)[a0 > a1] = sum [m[b0 > b1] | b0 <= a0, b1 <= a1, b0 !<= a1]
+            #--- ...
+            #--- degree d
+            zeta(y)[a0 > ... > ad] = sum [y[b0 > ... > bd] | 
+                                           b0 <= a0,  ..., bd <= ad,
+                                           b0 !<= a1, ..., bd_1 !<= ad=
+        """
+        if d < 0 : d = max(0, len(self) - d)
+        N = [Nd.shape[0] for Nd in self.grades]
+        # strict inclusions : adj[1]
         A  = self.adj[1]
-        # weak inclusions
+        # weak inclusions   : zeta[0]
         zt0 = ( sparse.matrix([N[0], N[0]], A.indices(), t=False)
               + sparse.eye(N[0])).coalesce()
-
-        zt += [zt0]
+        # full automorphism
+        zt = [zt0]
 
         def next_diagrams (chain_i, chain_j):
             """ Extend diagrams to the right:
