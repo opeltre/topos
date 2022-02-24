@@ -30,7 +30,7 @@ class Complex (Graph):
         out = sparse.matrix([N, P], [])
         for k in range(d + 2):
             j0  = self.index(src[0])
-            j   = self.index(face(k, self[d + 1])) - j0
+            j   = self.index(self.face(k, self[d + 1])) - j0
             val = (-1.) ** k
             out += sparse.matrix([N, P], stack([i, j]), val, t=0)
         return out
@@ -61,7 +61,7 @@ class Complex (Graph):
 
             Returns the complex containing every subface of the input faces.
         """
-        return cls(*simplices(faces))
+        return cls(*cls.simplices(faces))
 
     def __repr__(self):
         return f'{self.dim} Complex {self}'

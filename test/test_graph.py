@@ -22,5 +22,3 @@ class TestGraph (test.TestCase):
         A2 = torch.zeros([3, 3, 3])
         A2[0, 1, 2] += 1
         self.assertClose(A2, G.adj[2].to_dense())
-
-
