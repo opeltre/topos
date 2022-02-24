@@ -1,5 +1,4 @@
-from topos.core import sparse
-from topos.base import Shape
+from topos.core import sparse, Shape
 
 import torch
 from torch import stack, cat, arange

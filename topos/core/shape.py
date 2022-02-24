@@ -1,9 +1,12 @@
-from .hashable import Hashable
 import torch
 
-class Shape (Hashable):
+class Shape:
 
     def __init__(self, *ns):
+
+        if not all(isinstance(ni, int) for ni in ns):
+            raise TypeError("Expecting integer arguments")
+        
         self.dim = len(ns)
         self.n = list(ns)
         self.ns = torch.tensor(self.n)

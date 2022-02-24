@@ -1,6 +1,7 @@
+from .shape import Shape
+
 import torch
 from math import pi
-from topos.base import Shape
 
 def matmul (A, B):
     """ Sparse matmul, accepting complex input. """
