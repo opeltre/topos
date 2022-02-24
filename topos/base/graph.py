@@ -4,17 +4,6 @@ from topos.io   import alignString, parseTensor
 import torch
 from torch import stack, cat, arange
 
-def SymGroup (n):
-    if n == 1:
-        return torch.tensor([[0]])
-    if n == 2:
-        return torch.tensor([[0, 1], [1, 0]])
-    Sn_1 = SymGroup(n - 1)
-    last = torch.tensor([n-1])
-    return cat([stack([
-        cat([s[:n-1-i], last, s[n-1-i:]]) for i in range(n) \
-    ]) for s in Sn_1 ])
-
 class Graph :
     """
     Hypergraphs.
