@@ -7,13 +7,13 @@ from torch import cat, stack, arange
 
 class Complex (Graph):
     """
-    Simplicial complexes. 
+    Simplicial complexes.
 
-    A simplicial complex is a hypergraph containing all the subsets of its cells. 
+    A simplicial complex is a hypergraph containing all the subsets of its cells.
     The i-th face map consists of removing the i-th vertex from a degree-n cell,
     for 0 <= i <= n.
-    Alternated sums of face maps induce a dual pair of differential and codifferential 
-    (or boundary) operators, `d` and `delta = d*`. 
+    Alternated sums of face maps induce a dual pair of differential and codifferential
+    (or boundary) operators, `d` and `delta = d*`.
 
     References:
     -----------
@@ -34,14 +34,14 @@ class Complex (Graph):
             val = (-1.) ** k
             out += sparse.matrix([N, P], stack([i, j]), val, t=0)
         return out
-    
+
     @staticmethod
     def face(i, f):
         """ Face map acting on (batched) cells [j0, ..., jn]. """
         n = f.shape[-1]
         return f.index_select(f.dim() - 1, cat([arange(i), arange(i+1, n)]))
-    
-    @classmethod 
+
+    @classmethod
     def simplices (cls, faces):
         faces = readTensor(faces)
         K = [[(0, faces)]]
@@ -57,12 +57,11 @@ class Complex (Graph):
 
     @classmethod
     def simplicial(cls, faces):
-        """ Simplicial closure. 
-            
+        """ Simplicial closure.
+
             Returns the complex containing every subface of the input faces.
         """
         return cls(*simplices(faces))
 
     def __repr__(self):
         return f'{self.dim} Complex {self}'
-

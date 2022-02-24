@@ -36,11 +36,11 @@ class Nerve (Complex):
         Message-Passing Algorithms and Homology, Chapter III,
         https://arxiv.org/abs/2009.11631
     """
-    
+
     def zeta (self, d):
         """ Degree-d zeta transform.
 
-            See Nerve.zetas(d) to keep graded components until d. 
+            See Nerve.zetas(d) to keep graded components until d.
         """
         return self.zetas(d)[d]
 
@@ -54,9 +54,9 @@ class Nerve (Complex):
         # weak inclusions
         zt0 = ( sparse.matrix([N[0], N[0]], A.indices(), t=False)
               + sparse.eye(N[0])).coalesce()
-       
+
         zt += [zt0]
-       
+
         def next_diagrams (chain_i, chain_j):
             """ Extend diagrams to the right:
 
@@ -92,7 +92,7 @@ class Nerve (Complex):
 
         for k in range(d):
             acc += [torch.stack(next_diagrams(*acc[-1]))]
-       
+
         for chains, n, begin in zip(acc[1:], N[1:d+1], self.sizes[:d]):
             ij = torch.stack([self.index(chains[0].T) - begin,
                               self.index(chains[1].T) - begin])
@@ -103,13 +103,13 @@ class Nerve (Complex):
     @classmethod
     def nerve (cls, G, d=-1):
         """ Categorical nerve of a hypergraph. """
-        Ntot = G.Ntot 
+        Ntot = G.Ntot
         N = [torch.ones([Ntot]).to_sparse(),
              cls.arrows(G)]
         arr = [N[1][i].coalesce().indices() for i in range(Ntot)]
         deg = 2
         if d == 1: return N
-        while deg != d: 
+        while deg != d:
             ijk = [torch.cat([ij, k]) for ij in N[-1].indices().T \
                                 for k in arr[ij[-1]].T]
             if not len(ijk): break
@@ -117,13 +117,13 @@ class Nerve (Complex):
             N += [Nd.coalesce()]
             deg += 1
         return cls(*(Nd.indices().T for Nd in N), sort=False)
-    
+
     @staticmethod
-    def arrows (G): 
+    def arrows (G):
         """ 1-Chains of a hypergraph. """
         Ntot = G.Ntot
         N1   = sparse.matrix([Ntot, Ntot], [])
-       
+
         A    = [sparse.reshape([-1], Ak) for Ak in G.adj]
         E    = [Shape(*Ak.size()) for Ak in G.adj]
         I    = G.idx
@@ -146,7 +146,7 @@ class Nerve (Complex):
                 # ordered pairs
                 ij = torch.tensor([[i_[y], j_[x, y]] for x, y in nz])
                 N1 += sparse.matrix([Ntot, Ntot], ij)
-        
+
         chains = N1.coalesce().indices()
         return sparse.matrix([Ntot, Ntot], chains, t=0).coalesce()
 
