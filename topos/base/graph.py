@@ -1,5 +1,6 @@
-from topos.core import sparse, Shape
+from topos.core import sparse, Shape, simplices
 from topos.io   import alignString, readTensor
+import topos.base.complex
 
 import torch
 from torch import stack, cat, arange
@@ -53,7 +54,7 @@ class Graph :
 
         #--- Attributes ---
         self.adj   = A
-        self.idx   = [sparse.reshape([-1], Ik) for Ik in I]
+        self.idx   = I
         self.sizes = torch.tensor(sizes)
         self.begin = torch.tensor([0, *self.sizes.cumsum(0)[:-1]])
         self.Ntot  = i
@@ -72,15 +73,15 @@ class Graph :
             Ak += sparse.tensor(shape, self[k].index_select(1, sigma))
         return Ak
 
-    def index (self, js):
+    def index (self, js, output=None):
         """ Index i of hyperedge [j0, ..., jn]. """
         js = readTensor(js)
         n  = js.shape[-1]
-        I = self.idx[n - 1]
-        E = Shape(*([self.Nvtx] * n))
-        i = E.index(js)
-        return (I.index_select(0, i).to_dense() if i.dim()
-                else I.select(0, i))
+        idx = sparse.select(self.idx[n-1], js)
+        if output != 'mask':
+            return idx
+        mask = sparse.mask_index(self.adj[n-1], js)
+        return idx, mask
 
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
@@ -92,10 +93,38 @@ class Graph :
             if i0 - begin < Gn.shape[0]:
                 return Gn[i - begin]
             begin += Gn.shape[0]
-    
+   
+    def arrows (self):
+        """ Strict 1-chains (a > b) of a hypergraph. """
+        Ntot = self.Ntot
+        arr  = sparse.matrix([Ntot, Ntot], [])
+       
+        for d, Ad in enumerate(self.grades):
+            # number of d-cells
+            nd = Ad.shape[0]
+            idx_src = sparse.select(self.idx[d], Ad)
+            # subfaces
+            faces = topos.core.simplices(Ad)
+            for k, Bk in enumerate(faces[:-1]):
+                # Bk is of shape (nd, nk, k+1):
+                nk = Bk.shape[1]
+                Bk = Bk.reshape([-1, k+1])
+                # Index map
+                mask = sparse.index_mask(self.adj[k], Bk)
+                src  = idx_src.repeat_interleave(nk)
+                tgt  = sparse.select(self.idx[k], Bk)
+                AB   = torch.stack([src[mask], tgt[mask]])
+                # arrow index pairs
+                arr += sparse.matrix([Ntot, Ntot], AB, t=0)
+        return arr.coalesce()
+
     def __len__(self):
         """ Maximal degree. """
         return len(self.grades)
+   
+    def __iter__(self):
+        """ Iterate over grades. """
+        return self.grades.__iter__()
 
     def __getitem__(self, d):
         """ Degree d hyperedges [j0,...,jd] of the hypergraph. """

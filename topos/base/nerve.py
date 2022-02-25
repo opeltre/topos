@@ -114,11 +114,10 @@ class Nerve (Complex):
         return zt
 
     @classmethod
-    def nerve (cls, G, d=-1):
-        """ Categorical nerve of a hypergraph. """
-        Ntot = G.Ntot
-        N = [torch.ones([Ntot]).to_sparse(),
-             cls.arrows(G)]
+    def nerve (cls, C, d=-1):
+        """ Nerve of a hypergraph (or category). """
+        Ntot = C.Ntot
+        N = [torch.ones([Ntot]).to_sparse(), C.arrows()]
         arr = [N[1][i].coalesce().indices() for i in range(Ntot)]
         deg = 2
         if d == 1: return N
@@ -130,38 +129,6 @@ class Nerve (Complex):
             N += [Nd.coalesce()]
             deg += 1
         return cls(*(Nd.indices().T for Nd in N), sort=False)
-
-    @staticmethod
-    def arrows (G):
-        """ 1-Chains of a hypergraph. """
-        Ntot = G.Ntot
-        N1   = sparse.matrix([Ntot, Ntot], [])
-
-        A    = [sparse.reshape([-1], Ak) for Ak in G.adj]
-        E    = [Shape(*Ak.size()) for Ak in G.adj]
-        I    = G.idx
-
-        for n, Gn in enumerate(G.grades):
-            Nn = Gn.shape[0]
-            # row indices
-            i_ = I[n].index_select(0, E[n].index(Gn)).to_dense()
-            # loop over subfaces
-            F  = Complex.simplices(Gn)
-            for k, Fk in enumerate(F[:-1]):
-                # valid column indices
-                nz = (A[k].index_select(0, E[k].index(Fk))
-                          .to_dense()
-                          .view([-1, Nn])
-                          .nonzero())
-                j_ = (I[k].index_select(0, E[k].index(Fk))
-                          .to_dense()
-                          .view([-1, Nn]))
-                # ordered pairs
-                ij = torch.tensor([[i_[y], j_[x, y]] for x, y in nz])
-                N1 += sparse.matrix([Ntot, Ntot], ij)
-
-        chains = N1.coalesce().indices()
-        return sparse.matrix([Ntot, Ntot], chains, t=0).coalesce()
 
     def __repr__(self):
         return f'{self.dim} Nerve {self}'

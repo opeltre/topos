@@ -1,4 +1,4 @@
-from topos.core import sparse
+from topos.core import sparse, face, simplices
 from topos.io   import readTensor
 from .graph     import Graph
 
@@ -30,30 +30,10 @@ class Complex (Graph):
         out = sparse.matrix([N, P], [])
         for k in range(d + 2):
             j0  = self.index(src[0])
-            j   = self.index(self.face(k, self[d + 1])) - j0
+            j   = self.index(face(k, self[d + 1])) - j0
             val = (-1.) ** k
             out += sparse.matrix([N, P], stack([i, j]), val, t=0)
         return out
-
-    @staticmethod
-    def face(i, f):
-        """ Face map acting on (batched) cells [j0, ..., jn]. """
-        n = f.shape[-1]
-        return f.index_select(f.dim() - 1, cat([arange(i), arange(i+1, n)]))
-
-    @classmethod
-    def simplices (cls, faces):
-        faces = readTensor(faces)
-        K = [[(0, faces)]]
-        def nextf (nfaces):
-            faces = []
-            for i, f in nfaces:
-                faces += [(j, cls.face(j, f)) for j in range(i, f.shape[-1])]
-            return faces
-        for codim in range(faces.shape[-1] - 1):
-            K += [nextf(K[-1])]
-        K_ = [cat([f for i, f in Kn[::-1]]) for Kn in K[::-1]]
-        return K_
 
     @classmethod
     def simplicial(cls, faces):
@@ -61,7 +41,10 @@ class Complex (Graph):
 
             Returns the complex containing every subface of the input faces.
         """
-        return cls(*cls.simplices(faces))
+        N = max(len(f) for f in faces)
+        src = [[] * N]
+        K = [F.reshape([-1, F.shape[-1]]) for F in simplices(faces)]
+        return cls(*K)
 
     def __repr__(self):
         return f'{self.dim} Complex {self}'

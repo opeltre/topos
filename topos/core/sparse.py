@@ -23,55 +23,55 @@ def matmul (A, B):
 
 #--- Constructors ---
 
-def irange (n): 
+def irange (n):
     return torch.arange(n, dtype=torch.long)
 
-def diag (n, values): 
+def diag (n, values):
     """ Diagonal matrix. """
     return torch.sparse_coo_tensor(
         torch.stack([irange(n), irange(n)]),
         values,
         [n, n])
 
-def zero(n, m): 
+def zero(n, m):
     """ Zero matrix. """
     return matrix([n, m], [])
 
-def eye(n): 
+def eye(n):
     """ Identity matrix. """
     return diag(n, torch.ones([n]))
 
 def matrix(shape, indices, values=1., t=True):
     """ Alias of sparse.tensor. """
-    if not len(indices):  
+    if not len(indices):
         indices = torch.tensor([[] for ni in shape], dtype=torch.long)
         t = False
     elif not isinstance(indices, torch.Tensor) and len(indices):
         indices = torch.tensor(indices, dtype=torch.long)
-    if t: 
+    if t:
        indices = indices.T
     if not isinstance(values, torch.Tensor):
         values = values * torch.ones([len(indices[0])])
     return torch.sparse_coo_tensor(indices, values, size=shape)
 
 def tensor(shape, indices, values=1., t=True):
-    """ Sparse tensor constructor. 
+    """ Sparse tensor constructor.
 
         The table of indices is assumed transposed by default (t=True). """
     return matrix(shape, indices, values, t)
 
-
-#--- Efficient access to slices 
+#--- Efficient access to slices
 
 def index_select(g:torch.Tensor, idx:torch.LongTensor, dim:int = 0) -> torch.Tensor:
     """ Select slices from a sparse matrix.
 
-        Equivalent to `g.index_select(dim, idx)` but much faster. 
+        Equivalent to `g.index_select(dim, idx)` but much faster.
     """
     if not g.is_coalesced(): return index_select(g.coalesce(), idx, dim)
 
     indices = g.indices()
     values  = g.values()
+  
     if dim != 0:
         sorting = indices[dim].sort().indices
         indices = indices[:,sorting]
@@ -80,11 +80,11 @@ def index_select(g:torch.Tensor, idx:torch.LongTensor, dim:int = 0) -> torch.Ten
     # degree of the nodes
     deg_g = (torch.zeros(g.shape[dim], dtype=torch.int32, device=indices.device)
                   .scatter_(0, indices[dim], 1, reduce="add"))
-    
+  
     # slice start indices
     query     = torch.arange(g.shape[dim], dtype=torch.long)
     slice_begin = torch.bucketize(query, indices[dim])
-    
+  
     # edge indices mapped within shape N x max(deg_g)
     edges = (torch.arange(deg_g.max(), dtype=torch.long)
                 .unsqueeze(0)
@@ -99,6 +99,47 @@ def index_select(g:torch.Tensor, idx:torch.LongTensor, dim:int = 0) -> torch.Ten
     ij[dim] = torch.arange(shape[dim]).repeat_interleave(deg_g[idx])
     return torch.sparse_coo_tensor(ij, val, size=shape).coalesce()
 
+#--- Efficient access to values
+
+def select(x:torch.Tensor, idx:torch.LongTensor) -> torch.Tensor:
+    """ Select pointwise values from a sparse tensor. """
+    if x.dim() > 1:
+        shape  = Shape(*[ni for ni in x.shape])
+        x_flat = reshape([-1], x)
+        return select(x_flat, shape.index(idx))
+    if idx.dim() > 1:
+        idx = idx.view([-1])
+    if not x.is_coalesced():
+        x = x.coalesce()
+    supp = x.indices().flatten()
+    val  = x.values()
+    pos  = torch.bucketize(idx, supp)
+    pos  = torch.min(pos, torch.tensor(supp.shape[0] - 1))
+    mask = (supp[pos] == idx)
+    return mask * val[pos]
+      
+#--- Filtering indices
+
+def index_mask(x:torch.Tensor, idx:torch.LongTensor) -> torch.BoolTensor:
+    """
+    Mask indices not present in a sparse tensor.
+      
+    Returns a vector of size `idx.shape[0]`,
+    assuming `idx.shape[1] == x.dim()`.
+    """
+    if not (x.dim() == 1 and idx.dim() == 1):
+        x_flat = reshape([-1], x).coalesce()
+        idx_flat = Shape(*x.shape).index(idx)
+        return index_mask(x_flat, idx_flat)
+    indices = x.indices().flatten()
+    # Closest position of index in the indices of x.
+    pos = torch.bucketize(idx, indices)
+    pos = torch.min(pos, torch.tensor(indices.shape[0] - 1))
+    # Check that indices match
+    return idx == indices[pos]
+
+#--- Sum slices
+
 def sum_dense (x:torch.Tensor, dim:list) -> torch.Tensor:
     """ Sum values along given dimensions. """
     mask = torch.tensor([True] * x.dim())
@@ -110,24 +151,6 @@ def sum_dense (x:torch.Tensor, dim:list) -> torch.Tensor:
     return (torch.zeros([tgt.size])
                 .scatter_(0, tgt.index(idx[mask].T), 1, reduce="add")
                 .view(tgt.ns))
-
-#--- Filtering indices
-
-def index_mask(x:torch.Tensor, idx:torch.LongTensor) -> torch.BoolTensor:
-    """ Mask indices not present in a sparse tensor. 
-        
-        Returns a vector of size `idx.shape[0]`,
-        assuming `idx.shape[1] == x.dim()`. 
-    """ 
-    if not x.dim() == 1:
-        x     = sparse.reshape([-1], x).coalesce()
-        idx   = Shape(*x.shape).index(idx)
-    indices = x.indices().flatten()
-    # Closest position of index in the indices of x. 
-    pos = torch.bucketize(idx, indices)
-    # Check that indices match
-    return idx == indices[pos]
-
 
 #--- Reshape ---
 
@@ -185,5 +208,5 @@ def from_complex (mat):
     mat = mat.coalesce()
     ij  = mat.indices()
     Mij = mat.values()
-    return (matrix(mat.shape, ij, Mij.real, t=0), 
+    return (matrix(mat.shape, ij, Mij.real, t=0),
             matrix(mat.shape, ij, Mij.imag, t=0))
