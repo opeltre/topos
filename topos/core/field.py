@@ -1,7 +1,7 @@
 from .vect import Vect
 
-from topos.base   import Fiber
 from topos.exceptions import FieldError
+from topos.io import showTensor
 
 import torch
 
@@ -25,9 +25,9 @@ class Field (Vect):
             if u.domain == v.domain:
                 return u.data, v.data, u.same
             if u.domain.scalars == v.domain:
-                return u.data, u.domain.extend(v).data, u.same
+                return u.data, u.domain.from_scalars(v).data, u.same
             elif v.domain.scalars == u.domain:
-                return v.domain.extend(u).data, v.data, v.same 
+                return v.domain.from_scalars(u).data, v.data, v.same 
         return super().cast2(u, v)
 
 
@@ -74,16 +74,18 @@ class Field (Vect):
         #--- Pass ---
         if self.domain == other.domain:
             return other
-        #--- Extend ---
+        #--- From scalars ---
         if self.domain.scalars.size == other.domain.size:
-            return self.domain.extend(other)
+            return self.domain.from_scalars(other)
 
     def get(self, a):
         """
         Local component on the fiber of a.
         """
-        a = self.domain.get(a) if not isinstance(a, Fiber) else a
-        return self.data[a.begin:a.end].view(a.shape.n)
+        D = self.domain
+        idx = D.index(a)
+        begin, end = D.begin[idx], D.end[idx]
+        return self.data[begin:end].view(D.shape[idx])
 
     def __getitem__(self, a):
         """
@@ -102,13 +104,16 @@ class Field (Vect):
         """
         Update a local fiber component.
         """
-        a = self.domain[a] if not isinstance(a, Fiber) else a
+        D = self.domain
+        idx = D.index(a)
+        begin, end = D.begin[idx], D.end[idx]
         try:
+            size = end - begin
             if isinstance (va, torch.Tensor):
-                data = va.reshape([a.size])
+                data = va.reshape([size])
             else: 
-                data = va * torch.ones([a.size])
-            self.data[a.begin:a.end] = data
+                data = va * torch.ones([size])
+            self.data[begin:end] = data
         except: 
             raise FieldError(f"scalar or size {a.size} tensor expected")
 
@@ -130,22 +135,13 @@ class Field (Vect):
         if self.domain.size == 0:
             return "{}"
         s = "{\n\n"
-        for c in self.domain:
-            sc = f"  {c} ::"
+        for k, ik in self.domain.items():
+            sc = f"  {k} ::"
             pad = len(sc) 
-            s += sc + show_tensor(self.get(c), pad) + ",\n\n"
+            s += sc + showTensor(self.get(ik), pad) + ",\n\n"
         return s + "}"
     
     def __repr__(self): 
         prefix = self.degree if self.degree != None else ""
         return f"{prefix} Field {self}"
 
-#--- Show --- 
-
-def show_tensor (t, pad):
-    return str(t).replace("tensor(", " " * 7)\
-        .replace(")", "")\
-        .replace("\n\n", "\n")\
-        .replace("\t", "")\
-        .replace(r'\s*', "")\
-        .replace("\n", "\n" + " " * pad)

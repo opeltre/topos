@@ -1,4 +1,4 @@
-from topos.core import sparse, face, simplices
+from topos.core import sparse, face, simplices, linear_cache
 from topos.io   import readTensor
 from .graph     import Graph
 
@@ -21,7 +21,8 @@ class Complex (Graph):
         Message-Passing Algorithms and Homology, Chapter II
         https://arxiv.org/abs/2009.11631
     """
-
+    
+    @linear_cache
     def diff(self, d):
         """ Differential d: K[d] -> K[d + 1]. """
         src, tgt = self[d], self[d + 1]

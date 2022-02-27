@@ -5,6 +5,7 @@ import topos.base.complex
 import torch
 from torch import stack, cat, arange
 
+
 class Graph :
     """
     Hypergraphs.
@@ -13,8 +14,8 @@ class Graph :
     These subsets are called hyperdeges or more simply cells, regions, faces...
 
     The degree or dimension of a face containing n vertices is n + 1.
-    A graph is a hypergraph having only faces of dimension <= 1,
-    though more precisely it is a simplicial complex of dimension 1.
+    A graph in the usual sense is a hypergraph having only faces of dimension <= 1,
+    and more precisely it is a simplicial complex of dimension 1.
     """
 
     def __init__(self, *grades, sort=True):
@@ -62,6 +63,8 @@ class Graph :
         self.grades     = G
         self.vertices   = G[0].squeeze(1)
         self.dim        = len(G) - 1
+        #--- Cache
+        self._cache = {}
 
     def adjacency(self, k):
         """ Symmetric adjacency tensor in degree k. """
