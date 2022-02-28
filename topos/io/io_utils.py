@@ -13,7 +13,7 @@ def readFunctor(keys=None, functor=None):
 
     #--- Dict input ---
    
-    # readFunctor(functor={'a' : [3], 'b' : [2, 2], ...})
+    #(functor={'a' : [3], 'b' : [2, 2], ...})
     if isinstance(functor, dict):
         i, idx, keys, fibers = 0, {}, [], []
         for k, fk in functor.items():
@@ -22,33 +22,34 @@ def readFunctor(keys=None, functor=None):
             keys   += [k]
             fibers += [fk]
         return idx, keys, fibers
-    # readFunctor({'a': [3], 'b': [2, 2], ...})
+    #({'a': [3], 'b': [2, 2], ...})
     if isinstance(keys, dict):
         return readFunctor(functor=keys)
    
     #--- List input
 
-    # readFunctor(functor=[[3], [2, 2], ...])
+    #(functor=[[3], [2, 2], ...])
     if isinstance(functor, list) and type(keys) == type(None):
         keys = list(range(len(functor)))
-    # readFunctor([[3], [2, 2], ...])
+    #([[3], [2, 2], ...])
     if isinstance(keys, list):
         if not all(isinstance(k, (tuple, int, str)) for k in keys):
             return readFunctor(functor=keys)
 
     #--- Adjacency matrix input ---
 
-    # readFunctor(keys:torch.sparse_coo_tensor)
+    #(keys:torch.sparse_coo_tensor)
     if isinstance(keys, torch.Tensor):
         shape = keys.shape
-        keys  = keys.coalesce().indices()
-        N     = keys.shape[-1]
-        idx   = torch.sparse_coo_tensor(keys, torch.arange(N), size=shape, 
+        ij    = keys.coalesce().indices()
+        keys  = ij.T
+        N     = keys.shape[0]
+        idx   = torch.sparse_coo_tensor(ij, torch.arange(N), size=shape, 
                                         dtype=torch.long)
-   
+
     #--- Key value pairs ---
 
-    # readFunctor(['a', 'b', ...], [[3], [2, 2], ...])
+    #(['a', 'b', ...], [[3], [2, 2], ...])
     elif isinstance(keys, list):
         keys  = keys
         idx   = {readKey(k): i for i, k in enumerate(keys)}
