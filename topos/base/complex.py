@@ -45,7 +45,7 @@ class Complex (Graph):
         N = max(len(f) for f in faces)
         src = [[] * N]
         K = [F.reshape([-1, F.shape[-1]]) for F in simplices(faces)]
-        return cls(*K)
+        return cls(K)
 
     def __repr__(self):
         return f'{self.dim} Complex {self}'

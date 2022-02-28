@@ -1,12 +1,11 @@
+from .domain    import Sheaf
 from topos.core import sparse, Shape, simplices
 from topos.io   import alignString, readTensor
-import topos.base.complex
 
 import torch
 from torch import stack, cat, arange
 
-
-class Graph :
+class Graph (Sheaf):
     """
     Hypergraphs.
 
@@ -18,7 +17,7 @@ class Graph :
     and more precisely it is a simplicial complex of dimension 1.
     """
 
-    def __init__(self, *grades, sort=True):
+    def __init__(self, grades, functor=None, sort=True):
         """
         Construct hypergraph from lists of hyperedges by degrees.
 
@@ -112,7 +111,7 @@ class Graph :
             nd = Ad.shape[0]
             idx_src = sparse.select(self.idx[d], Ad)
             # subfaces
-            faces = topos.core.simplices(Ad)
+            faces = simplices(Ad)
             for k, Bk in enumerate(faces[:-1]):
                 # Bk is of shape (nd, nk, k+1):
                 nk = Bk.shape[1]

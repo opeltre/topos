@@ -3,9 +3,9 @@ import torch
 
 from topos.base import Graph, Nerve
 
-G = Graph([0],
-         [[0, 1],[0, 2], [0, 3]],
-         [[0, 1, 2], [0, 2, 3], [0, 1, 3]])
+G = Graph([[0],
+           [[0, 1],[0, 2], [0, 3]],
+           [[0, 1, 2], [0, 2, 3], [0, 1, 3]]])
 
 N = Nerve.nerve(G)
 

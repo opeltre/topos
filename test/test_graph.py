@@ -3,9 +3,9 @@ import torch
 
 from topos.base import Graph
 
-G = Graph([[0], [1], [2]],
-          [[0, 1], [1, 2]],
-          [[0, 1, 2]])
+G = Graph([[[0], [1], [2]],
+           [[0, 1], [1, 2]],
+           [[0, 1, 2]]])
 
 class TestGraph (test.TestCase):
 

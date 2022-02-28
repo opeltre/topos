@@ -128,7 +128,7 @@ class Nerve (Complex):
             Nd = sparse.matrix([Ntot] * (deg + 1), torch.stack(ijk))
             N += [Nd.coalesce()]
             deg += 1
-        return cls(*(Nd.indices().T for Nd in N), sort=False)
+        return cls((Nd.indices().T for Nd in N), sort=False)
 
     def __repr__(self):
         return f'{self.dim} Nerve {self}'
