@@ -18,6 +18,12 @@ class TestSheaf(test.TestCase):
         expect = (6, 12, (2, 3))
         self.assertTrue(expect == result)
 
+    def test_slices(self):
+        slices = list(F.slices())
+        fibers = [f for begin, end, f in slices]
+        self.assertTrue(len(slices) == 2)
+        self.assertTrue(sum(fk.size for fk in fibers) == 12)
+
     def test_getitem(self):
         fiber = F['a']
         result = fiber.shape

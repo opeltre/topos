@@ -30,7 +30,6 @@ class Field (Vect):
                 return v.domain.from_scalars(u).data, v.data, v.same
         return super().cast2(u, v)
 
-
     def __init__(self, domain, data=0., degree=None):
         """
         Create a d-field on a domain from numerical data.
@@ -92,17 +91,19 @@ class Field (Vect):
             end   = begin + K[a].size
             return K[a].field(self.data[begin:end])
         #--- Access fiber slice
-        begin, end, fiber = self.domain[a]
+        begin, end, fiber = self.domain.slice(a)
         return fiber.field(self.data[begin:end])
 
     def __setitem__(self, a, va):
         """
         Update a local fiber component.
         """
-        begin, end, fiber = D[a]
+        begin, end, fiber = self.domain.slice(a)
         try:
             if isinstance (va, torch.Tensor):
                 data = va.reshape([fiber.size])
+            elif isinstance (va, Field):
+                data = va.data
             else:
                 data = va * torch.ones([fiber.size])
             self.data[begin:end] = data
@@ -113,8 +114,9 @@ class Field (Vect):
         """
         Yield (key, value) pairs.
         """
-        for begin, end, fiber in self.domain.slices():
-            yield (fiber.key, fiber.field(self.data[begin:end]))
+        D = self.domain
+        for k, i, j, fiber in zip(D.keys, D.begin, D.end, D.fibers):
+            yield (k, fiber.field(self.data[i:j]))
 
     def norm(self):
         """
@@ -138,7 +140,10 @@ class Field (Vect):
             sc = f"  {k} ::"
             fk = self.domain[k]
             pad = len(sc)
-            s += sc + showTensor(xk.data.view(fk.shape), pad) + ",\n\n"
+            tensor = (showTensor(xk.data.view(fk.shape), pad) 
+                      if "shape" in fk.__dir__()  else 
+                      str(xk).replace("\n", "\n" + " " * pad))
+            s += sc + tensor + ",\n\n"
         return s + "}"
    
     def __repr__(self):

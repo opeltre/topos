@@ -78,11 +78,16 @@ class Graph :
 
     def index (self, js, output=None):
         """ Index i of hyperedge [j0, ..., jn]. """
+        #--- Degree access
+        if isinstance(js, int):
+            return js
+        #--- Index of hyperedge batch
         js = readTensor(js)
         n  = js.shape[-1]
         idx = sparse.select(self.idx[n-1], js)
         if output != 'mask':
             return idx
+        #--- Keep mask
         mask = sparse.mask_index(self.adj[n-1], js)
         return idx, mask
 

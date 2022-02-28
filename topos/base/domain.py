@@ -4,13 +4,13 @@ from topos.core import sparse, Field
 from topos.io   import readTensor, readKey
 
 
-class Domain(abc.ABC): 
-    
+class Domain(abc.ABC):
+   
     #--- Field Creation ---
 
     def field(self, data, degree=None):
         """ Create a field from numerical data. """
-        d = self.degree if degree == None else degree 
+        d = self.degree if degree == None else degree
         return Field(self, data, d)
 
     def from_scalars(self, x):
@@ -34,16 +34,23 @@ class Domain(abc.ABC):
         """ Represent the domain mapped to its range of indices. """
         tgt = self if d == None else self[d]
         return tgt.field(torch.arange(tgt.size), d)
+    
+    @abc.abstractmethod
+    def slices(self):
+        """ Yield (begin, end, domain) triplets."""
+        pass
 
+    @abc.abstractmethod
+    def slice(self, key):
+        """ Slice (begin, end, domain) at key k. """
+        pass
 
-class Fiber(Domain):
+class Fiber (Domain):
+    """
+    Elementary domain.
+    """
 
     def __init__(self, key=None, shape=None, degree=None):
-        """ 
-        Should be equivalent to
-
-            super().__init__([None], shape, degree)
-        """
         self.key = key
         self.degree = None
         if isinstance(shape, type(None)):
@@ -54,15 +61,15 @@ class Fiber(Domain):
             self.shape = shape.tolist()
             self.size  = shape.prod().long()
 
+    def slice(self, key=None):
+        return (0, self.size, self)
+
+    def slices(self):
+        yield (0, self.size, self)
+
     def __getitem__(self, key=None):
         return self
-   
-    def slice (self, key=None):
-        return (0, 1, self)
-
-    def slices (self):
-        yield (0, 1, self)
-
+  
     def __iter__(self):
         yield self
 
@@ -70,25 +77,28 @@ class Fiber(Domain):
         yield self.key, self
 
 
-
-class Sheaf(Domain):
+class Sheaf (Domain):
+    """
+    Dictionary of domains.
+    """
 
     def __init__(self, keys, shape=None, degree=None):
         """              """
-        #--- Degree 
+        #--- Degree
         self.degree = None
         #--- Keys + indices
         self.keys = keys
         self.idx = {readKey(k): i for i, k in enumerate(keys)}
-        #--- Fiber shapes
+        #--- Fibers 
         self.trivial = isinstance(shape, type(None))
         if self.trivial:
             shape = [[]] * len(keys)
         elif callable(shape):
             shape = [shape(a) for a in keys]
-        self.shape = shape
-        #--- Pointers 
-        sizes  = torch.tensor([readTensor(s).long().prod() for s in self.shape])
+        self.fibers = [fk if isinstance(fk, Domain) else Fiber(k, fk)\
+                          for k, fk in zip(keys, shape)]
+        #--- Pointers
+        sizes  = torch.tensor([fiber.size for fiber in self.fibers])
         offset = sizes.cumsum(0)
         begin  = torch.cat([torch.tensor([0]), offset])
         self.size  = offset[-1]
@@ -97,31 +107,29 @@ class Sheaf(Domain):
         self.end   = begin[1:]
         #--- Cache
         self._cache = {}
-    
-    #--- Index range ---
-    
-    def __getitem__(self, key):
-        idx = self.index(key)
-        return Fiber(key, self.shape[idx])
-
-    def slice(self, key):
-        idx = self.index(key)
-        return self.begin[idx], self.end[idx], Fiber(key, self.shape[idx])
-
-    def __iter__(self):
-        return self.keys.__iter__()
-    
-    def slices(self):
-        for k, i, j, shape in zip(self.keys, self.begin, self.end, self.shape):
-            yield (i, j, Fiber(k, shape))
-
-    def items(self): 
-        for k, fk in zip(self.keys, self.slices()):
-            yield (k, fk)
-
-    def index(self, key, *js): 
+   
+    def index(self, key, *js):
         """ Index of a key """
         if isinstance(key, int):
             return key
         else:
             return self.idx[key]
+
+    def slice(self, key):
+        idx = self.index(key)
+        return self.begin[idx], self.end[idx], self.fibers[idx]
+
+    def slices(self):
+        for i,j, fiber in zip(self.begin, self.end, self.fibers):
+            yield (i, j, fiber)
+
+    def __getitem__(self, key):
+        idx = self.index(key)
+        return self.fibers[idx]
+
+    def items(self):
+        for k, fk in zip(self.keys, self.slices()):
+            yield (k, fk)
+
+    def __iter__(self):
+        return self.keys.__iter__()
