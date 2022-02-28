@@ -94,7 +94,7 @@ class Sheaf (Domain):
     @classmethod
     def sparse (cls, shape, indices, functor=None, degree=None):
         idx  = readTensor(indices, dtype=torch.long)
-        adj  = sparse.tensor(shape, idx, dtype=torch.long)
+        adj  = sparse.tensor(shape, idx, dtype=torch.long).coalesce()
         sheaf = cls(adj, functor, degree)
         sheaf.adj = adj
         sheaf.is_sparse = True

@@ -61,7 +61,7 @@ class Nerve (Complex):
                                            b0 !<= a1, ..., bd_1 !<= ad=
         """
         if d < 0 : d = max(0, len(self) - d)
-        N = [Nd.shape[0] for Nd in self.grades]
+        N = [Nd.keys.shape[0] for Nd in self.fibers]
         # strict inclusions : adj[1]
         A  = self.adj[1]
         # weak inclusions   : zeta[0]
@@ -105,10 +105,10 @@ class Nerve (Complex):
 
         for k in range(d):
             acc += [torch.stack(next_diagrams(*acc[-1]))]
-        
-        for chains, n, i0 in zip(acc[1:], N[1:d+1], self.begin[1:]):
-            ij = torch.stack([self.index(chains[0].T) - i0,
-                              self.index(chains[1].T) - i0])
+
+        for Gk, chains, n in zip(self.fibers[1:], acc[1:], N[1:d+1]):
+            ij = torch.stack([Gk.index(chains[0].T),
+                              Gk.index(chains[1].T)])
             zt += [sparse.tensor([n, n], ij, t=False)]
 
         return zt

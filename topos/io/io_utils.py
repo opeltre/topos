@@ -45,7 +45,7 @@ def readFunctor(keys=None, functor=None):
         keys  = ij.T
         N     = keys.shape[0]
         idx   = torch.sparse_coo_tensor(ij, torch.arange(N), size=shape, 
-                                        dtype=torch.long)
+                                        dtype=torch.long).coalesce()
 
     #--- Key value pairs ---
 

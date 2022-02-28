@@ -32,38 +32,24 @@ class Graph (Sheaf):
         if len(G) and G[0].dim() == 1:
             G[0] = G[0].unsqueeze(1)
 
-        #--- Adjacency and index tensors ---
-
-        A, I, sizes = [], [], []
-        i, Nvtx  = 0, 1 + max(Gi.max() for Gi in G)
-
-        for k, Gk in enumerate(G):
-
-            #--- sort and remove duplicates
-            shape = [Nvtx] * (k + 1)
-            Ak   = sparse.tensor(shape, Gk).coalesce()
-            G[k] = Ak.indices().T
-            Nk   = G[k].shape[0]
-            A   += [sparse.tensor(shape, Ak.indices(), t=0).coalesce()]
-
-            #--- index regions
-            idx  = torch.arange(i, i + Nk)
-            I   += [sparse.tensor(shape, G[k], idx).coalesce()]
-            i   += Nk
-            sizes += [Nk]
-
-        #--- Attributes ---
-        self.adj   = A
-        self.idx   = I
-        self.sizes = torch.tensor(sizes)
-        self.begin = torch.tensor([0, *self.sizes.cumsum(0)[:-1]])
-        self.Ntot  = i
-        self.Nvtx  = A[0].shape[0]
+        #--- Sparse fibers ---
+        Nvtx  = 1 + max(Gi.max() for Gi in G)
+        shapes = [[Nvtx] * (d + 1) for d in range(len(G))]
+        fibers = [Sheaf.sparse(Nd, Gd) for Nd, Gd in zip(shapes, G)]
+        super().__init__(functor=fibers)
+        
+        #--- Graph attributes ---
+        self.adj   = [Gd.adj for Gd in fibers]
+        self.idx   = [Gd.idx for d, Gd in enumerate(fibers)]
+        self.Ntot  = self.sizes.sum()
+        self.Nvtx  = self.adj[0].shape[0]
         self.grades     = G
         self.vertices   = G[0].squeeze(1)
         self.dim        = len(G) - 1
-        #--- Cache
-        self._cache = {}
+    
+    def __getitem__(self, d):
+        """ Return sparse domain at degree d. """
+        return self.fibers[d]
 
     def adjacency(self, k):
         """ Symmetric adjacency tensor in degree k. """
@@ -83,43 +69,46 @@ class Graph (Sheaf):
         #--- Index of hyperedge batch
         js = readTensor(js)
         n  = js.shape[-1]
+        offset = self.sizes[n-1] 
         idx = sparse.select(self.idx[n-1], js)
         if output != 'mask':
-            return idx
+            return idx + offset
         #--- Keep mask
         mask = sparse.mask_index(self.adj[n-1], js)
-        return idx, mask
+        return idx + offset, mask
 
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
         i, begin = readTensor(i), 0
         if not isinstance(d, type(None)):
             return self[d][i]
-        for Gn in self.grades:
+        for Gn in self.fibers:
             i0 = i[0] if i.dim() == 1 else i
-            if i0 - begin < Gn.shape[0]:
+            if i0 - begin < Gn.keys.shape[0]:
                 return Gn[i - begin]
-            begin += Gn.shape[0]
+            begin += Gn.keys.shape[0]
    
     def arrows (self):
         """ Strict 1-chains (a > b) of a hypergraph. """
         Ntot = self.Ntot
         arr  = sparse.matrix([Ntot, Ntot], [])
        
-        for d, Ad in enumerate(self.grades):
-            # number of d-cells
+        for d, Gd in enumerate(self.fibers):
+            # Source d-cells
+            Ad = Gd.keys
             nd = Ad.shape[0]
-            idx_src = sparse.select(self.idx[d], Ad)
+            idx_src = sparse.select(self.idx[d], Ad) + self.begin[d]
             # subfaces
             faces = simplices(Ad)
+            # Target k-cells
             for k, Bk in enumerate(faces[:-1]):
                 # Bk is of shape (nd, nk, k+1):
                 nk = Bk.shape[1]
                 Bk = Bk.reshape([-1, k+1])
                 # Index map
-                mask = sparse.index_mask(self.adj[k], Bk)
+                mask = sparse.index_mask(self[k].adj, Bk)
                 src  = idx_src.repeat_interleave(nk)
-                tgt  = sparse.select(self.idx[k], Bk)
+                tgt  = sparse.select(self[k].idx, Bk) + self.begin[k]
                 AB   = torch.stack([src[mask], tgt[mask]])
                 # arrow index pairs
                 arr += sparse.matrix([Ntot, Ntot], AB, t=0)
@@ -127,16 +116,8 @@ class Graph (Sheaf):
 
     def __len__(self):
         """ Maximal degree. """
-        return len(self.grades)
+        return len(self.fibers)
    
-    def __iter__(self):
-        """ Iterate over grades. """
-        return self.grades.__iter__()
-
-    def __getitem__(self, d):
-        """ Degree d hyperedges [j0,...,jd] of the hypergraph. """
-        return self.grades[d]
-
     def __repr__(self):
         return f"{self.dim} Graph {self}"
 
@@ -146,8 +127,8 @@ class Graph (Sheaf):
     def show (self, json=False):
         s = '{\n\n'
         degree = lambda d: (f'  {d}: ' if not json else f'  "{d}": ')
-        s += alignString(degree(0), self[0]) + ',\n\n'
+        s += alignString(degree(0), self[0].keys) + ',\n\n'
         for d in range(1, self.dim + 1):
-            s += alignString(degree(d), self[d]) \
+            s += alignString(degree(d), self[d].keys) \
                 + (',\n\n' if d < self.dim else '\n\n')
         return s + '}'
