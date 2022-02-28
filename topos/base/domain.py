@@ -1,5 +1,6 @@
 import abc
 import torch
+
 from topos.core import sparse, Field
 from topos.io   import readTensor, readFunctor
 
@@ -93,16 +94,20 @@ class Sheaf (Domain):
     @classmethod
     def sparse (cls, shape, indices, functor=None, degree=None):
         idx  = readTensor(indices, dtype=torch.long)
-        keys = sparse.tensor(shape, idx)
-        return cls(keys, functor, degree)
+        adj  = sparse.tensor(shape, idx, dtype=torch.long)
+        sheaf = cls(adj, functor, degree)
+        sheaf.adj = adj
+        sheaf.is_sparse = True
+        return sheaf
 
     def __init__(self, keys=None, functor=None, degree=None):
         """              """
+        #--- Sparse sheaves ---
+        self.is_sparse, self.adj = False, None
         #--- Fiber index ---
-        self.idx, self.keys, fibers =\
-            readFunctor(keys, functor)
-        self.fibers = [fk if isinstance(fk, Domain) else Fiber(k, fk)\
-                          for k, fk in zip(self.keys, fibers)]
+        self.idx, self.keys, fibers = readFunctor(keys, functor)
+        self.fibers = [f if isinstance(f, Domain) else Fiber(k, f)\
+                         for k, f in zip(self.keys, fibers)]
         #--- Domain attributes ---
         self.trivial = all(f.trivial for f in self.fibers)
         sizes  = torch.tensor([fiber.size for fiber in self.fibers])
@@ -115,10 +120,16 @@ class Sheaf (Domain):
         self.begin = begin[:-1]
         self.end   = begin[1:]
    
-    def index(self, key):
+    def index(self, key, output=None):
         """ Index of a key """
         if isinstance(key, int):
             return key
+        if self.is_sparse:
+            idx = sparse.select(self.idx, key)
+            if output == "mask":
+                mask = sparse.index_mask(self.adj, key)
+                return idx, mask
+            return idx
         else:
             return self.idx[key]
 
@@ -140,36 +151,3 @@ class Sheaf (Domain):
 
     def __iter__(self):
         return self.keys.__iter__()
-
-
-class IndexSheaf(Sheaf):
-
-    def __init__(self, keys, shape=None):
-        #--- Adjacency tensor ---
-        keys  = readTensor(keys, dtype=torch.long).T
-        shape = [k.max() + 1 for k in keys]
-        self.adj  = sparse.tensor(shape, keys, t=False).coalesce()
-        self.keys = self.adj.indices().T
-        #--- Index tensor ---
-        idx = torch.arange(self.keys.shape[0])
-        self.idx  = sparse.tensor(shape, self.keys.T, idx) 
-        #--- Fibers ---
-        self.trivial = isinstance(shape, type(None))
-        if self.trivial: 
-            shape = [[] * len(keys)]
-        elif callable(shape):
-            shape = [shape(k) for k in self.keys]
-        self.fibers = [Fiber(k, s) for k, s in zip(self.keys, shape)]
-        #--- Pointers ---
-        self.sizes = torch.tensor([s.prod() for s in shape])
-        offset = self.sizes.cumsum(0)
-        self.begin = offset[:-1]
-        self.end   = offset[1:]
-        #--- Domain attributes
-        size   = offset[-1]
-        degree = keys.shape[-1]
-        super(Sheaf, self).__init__(size, degree)
-        super(Sheaf, self).__init__(size, degree)
-
-        
-

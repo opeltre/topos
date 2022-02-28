@@ -39,10 +39,12 @@ def readFunctor(keys=None, functor=None):
     #--- Adjacency matrix input ---
 
     # readFunctor(keys:torch.sparse_coo_tensor)
-    if isinstance(keys, torch.LongTensor):
+    if isinstance(keys, torch.Tensor):
         shape = keys.shape
         keys  = keys.coalesce().indices()
-        idx   = sparse.tensor(shape, keys.T, torch.arange(keys.shape[-1]))
+        N     = keys.shape[-1]
+        idx   = torch.sparse_coo_tensor(keys, torch.arange(N), size=shape, 
+                                        dtype=torch.long)
    
     #--- Key value pairs ---
 

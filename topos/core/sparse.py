@@ -41,24 +41,24 @@ def eye(n):
     """ Identity matrix. """
     return diag(n, torch.ones([n]))
 
-def matrix(shape, indices, values=1., t=True):
-    """ Alias of sparse.tensor. """
-    if not len(indices):
-        indices = torch.tensor([[] for ni in shape], dtype=torch.long)
-        t = False
-    elif not isinstance(indices, torch.Tensor) and len(indices):
-        indices = torch.tensor(indices, dtype=torch.long)
-    if t:
-       indices = indices.T
-    if not isinstance(values, torch.Tensor):
-        values = values * torch.ones([len(indices[0])])
-    return torch.sparse_coo_tensor(indices, values, size=shape)
-
-def tensor(shape, indices, values=1., t=True):
+def tensor(shape, indices, values=1., t=True, dtype=None, device=None):
     """ Sparse tensor constructor.
 
         The table of indices is assumed transposed by default (t=True). """
-    return matrix(shape, indices, values, t)
+    if not len(indices):
+        indices = torch.tensor([[] for ni in shape], dtype=torch.long, device=device)
+        t = False
+    elif not isinstance(indices, torch.Tensor) and len(indices):
+        indices = torch.tensor(indices, dtype=torch.long, device=device)
+    if t:
+       indices = indices.T
+    if not isinstance(values, torch.Tensor):
+        values = values * torch.ones([len(indices[0])], device=device)
+    return torch.sparse_coo_tensor(indices, values, size=shape, dtype=dtype, device=device)
+
+def matrix(shape, indices, values=1., t=True, dtype=None, device=None):
+    """ Alias of sparse.tensor. """
+    return tensor(shape, indices, values, t, dtype, device)
 
 #--- Efficient access to slices
 
