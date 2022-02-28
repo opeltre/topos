@@ -1,4 +1,7 @@
 from .core import *
-from .domain import *
-import topos.exceptions as exceptions
-import topos.base as base
+import topos.base   as base
+import topos.io     as io
+
+#old
+#from .domain import *
+#import topos.exceptions as exceptions
