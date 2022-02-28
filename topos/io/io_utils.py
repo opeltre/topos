@@ -1,16 +1,74 @@
 import torch
 
-#--- Region keys 
+#--- Region keys
 
 def readKey(k):
     if isinstance(k, (int, str)):
         return k
     return tuple(readKey(ki) for ki in k)
 
+#--- Functor I/O
+
+def readFunctor(keys=None, functor=None):
+
+    #--- Dict input ---
+   
+    # readFunctor(functor={'a' : [3], 'b' : [2, 2], ...})
+    if isinstance(functor, dict):
+        i, idx, keys, fibers = 0, {}, [], []
+        for k, fk in functor.items():
+            idx[k] = i
+            i += 1
+            keys   += [k]
+            fibers += [fk]
+        return idx, keys, fibers
+    # readFunctor({'a': [3], 'b': [2, 2], ...})
+    if isinstance(keys, dict):
+        return readFunctor(functor=keys)
+   
+    #--- List input
+
+    # readFunctor(functor=[[3], [2, 2], ...])
+    if isinstance(functor, list) and type(keys) == type(None):
+        keys = list(range(len(functor)))
+    # readFunctor([[3], [2, 2], ...])
+    if isinstance(keys, list):
+        if not all(isinstance(k, (tuple, int, str)) for k in keys):
+            return readFunctor(functor=keys)
+
+    #--- Adjacency matrix input ---
+
+    # readFunctor(keys:torch.sparse_coo_tensor)
+    if isinstance(keys, torch.LongTensor):
+        shape = keys.shape
+        keys  = keys.coalesce().indices()
+        idx   = sparse.tensor(shape, keys.T, torch.arange(keys.shape[-1]))
+   
+    #--- Key value pairs ---
+
+    # readFunctor(['a', 'b', ...], [[3], [2, 2], ...])
+    elif isinstance(keys, list):
+        keys  = keys
+        idx   = {readKey(k): i for i, k in enumerate(keys)}
+
+    #--- Functor values
+    if isinstance(functor, list):
+        fibers = functor
+    if isinstance(functor, type(None)):
+        fibers = [[] for k in keys]
+    if callable(functor):
+        fibers = [f(k) for k in keys]
+
+    #--- Return
+    if isinstance(fibers, list):
+        return idx, keys, fibers
+    raise Error('readFunctor: Invalid key, functor input')
+
 #--- Tensor I/O
 
-def readTensor(js):
-    return torch.tensor(js) if not isinstance(js, torch.Tensor) else js
+def readTensor(x, dtype=None, device=None):
+    return (x if isinstance(x, torch.Tensor)
+              else torch.tensor(x, dtype=dtype, device=device))
 
 def showTensor (t, pad):
     return str(t).replace("tensor(", " " * 7)\
