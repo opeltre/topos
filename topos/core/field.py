@@ -136,7 +136,8 @@ class Field (Vect):
             return "{}"
         s = "{\n\n"
         for k, xk in self.items():
-            sc = f"  {k} ::"
+            sc = (f"  {k} ::" if not isinstance(k, torch.LongTensor) 
+                              else f"  {k.tolist()} ::")
             fk = self.domain[k]
             pad = len(sc)
             tensor = (showTensor(xk.data.view(fk.shape), pad) 

@@ -15,8 +15,9 @@ class Domain(abc.ABC):
 
     def field(self, data, degree=None):
         """ Create a field from numerical data. """
-        d = self.degree if degree == None else degree
-        return Field(self, data, d)
+        tgt = self if degree == None else self[degree]
+        d = tgt.degree
+        return Field(tgt, data, d)
 
     def from_scalars(self, x):
         if self.trivial:
@@ -33,12 +34,12 @@ class Domain(abc.ABC):
     def randn(self, degree=None):
         """ Return a field with normally distributed values. """
         tgt = self if degree == None else self[degree]
-        return tgt.field(torch.randn(tgt.size), degree)
+        return self.field(torch.randn(tgt.size), degree)
 
     def range(self, d=None):
         """ Represent the domain mapped to its range of indices. """
         tgt = self if d == None else self[d]
-        return tgt.field(torch.arange(tgt.size), d)
+        return self.field(torch.arange(tgt.size), d)
     
     @abc.abstractmethod
     def slices(self):
@@ -122,8 +123,6 @@ class Sheaf (Domain):
    
     def index(self, key, output=None):
         """ Index of a key """
-        if isinstance(key, int):
-            return key
         if self.is_sparse:
             idx = sparse.select(self.idx, key)
             if output == "mask":

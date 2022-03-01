@@ -35,7 +35,7 @@ class Graph (Sheaf):
         #--- Sparse fibers ---
         Nvtx  = 1 + max(Gi.max() for Gi in G)
         shapes = [[Nvtx] * (d + 1) for d in range(len(G))]
-        fibers = [Sheaf.sparse(Nd, Gd) for Nd, Gd in zip(shapes, G)]
+        fibers = [Sheaf.sparse(shapes[d], G[d], degree=d) for d in range(len(G))]
         super().__init__(functor=fibers)
         
         #--- Graph attributes ---
