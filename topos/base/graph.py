@@ -90,7 +90,14 @@ class Graph (Sheaf):
             if i0 - begin < Gn.keys.shape[0]:
                 return Gn[i - begin]
             begin += Gn.keys.shape[0]
-   
+    
+    def arrow (self, a, b): 
+        """ Return a matrix of size G[da] x G[db]. """
+        da, db = a.shape[-1] - 1, b.shape[-1] - 1
+        shape = self[da].size, self[db].size
+        ij = torch.stack([self[da].index(a), self[db].index(b)])
+        return sparse.matrix(shape, ij, t=False)
+
     def arrows (self):
         """ Strict 1-chains (a > b) of a hypergraph. """
         Ntot = self.Ntot

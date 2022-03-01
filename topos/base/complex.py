@@ -27,15 +27,12 @@ class Complex (Graph):
         """ Differential d: K[d] -> K[d + 1]. """
         src, tgt = self[d].keys, self[d + 1].keys
         N, P = tgt.shape[0], src.shape[0]
-        i = self.index(tgt) - self.index(tgt[0])
         out = sparse.matrix([N, P], [])
         for k in range(d + 2):
-            j0  = self.index(src[0])
-            j   = self.index(face(k, self[d + 1].keys)) - j0
-            val = (-1.) ** k
-            out += sparse.matrix([N, P], stack([i, j]), val, t=0)
+            fk = self.arrow(tgt, face(k, tgt))
+            out += (-1.) ** k * fk
         return Linear([self[d], self[d + 1]], out, degree=1)
-
+    
     @classmethod
     def simplicial(cls, faces):
         """ Simplicial closure.
