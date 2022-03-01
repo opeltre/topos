@@ -21,6 +21,9 @@ class Graph (Sheaf):
         """
         Construct hypergraph from lists of hyperedges by degrees.
 
+        Hyperedges in each degree are given to `Sheaf.sparse` in order
+        to create graded index sheaves with sparse adjacency tensors.
+
         Example:
         -------
             G = Graph([[0], [1], [2]],

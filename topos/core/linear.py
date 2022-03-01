@@ -2,6 +2,8 @@ from .functional import Functional, GradedFunctional
 from .vect import Vect
 from .sparse import eye, zero, matmul, diag
 
+from topos.io import LinearError
+
 import torch
 
 class Linear (Functional, Vect): 
@@ -34,6 +36,21 @@ class Linear (Functional, Vect):
 
         self.data = mat
         super().__init__([src, tgt], matvec, name)
+    
+    def __call__(self, field):
+        """ Action on fields. """
+        tgt, mat = self.tgt, self.data
+        # numerical data
+        if isinstance(field, Vect):
+            x = field.data
+        elif isinstance(field, torch.Tensor):
+            x = field
+        else:
+            raise LinearError(f"Invalid input type {type(field)}")
+        # matvec product
+        if torch.is_complex(mat) and not torch.is_complex(x):
+            x = x.cfloat()
+        return tgt.field(mat @ x)
 
     @classmethod
     def null(cls, domains):
@@ -68,8 +85,16 @@ class Linear (Functional, Vect):
         """
         if isinstance(other, Linear):
             return self.compose(other)
-        elif isinstance(other, Vect):
+        if isinstance(other, Vect):
             return self(other)
+        #--- Numerical data
+        if not isinstance(other, torch.Tensor):
+            raise LinearError(f'uncomposable type {type(other)}')
+        if other.is_sparse:
+            return self.compose(other)
+        return self(other)
+        
+
         return super().compose(other)
 
     def __truediv__(self, other): 

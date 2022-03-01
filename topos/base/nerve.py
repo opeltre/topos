@@ -1,4 +1,4 @@
-from topos.core import sparse, Shape
+from topos.core import sparse, Shape, Linear, linear_cache
 from topos.io   import readTensor
 from .complex   import Complex
 
@@ -36,7 +36,8 @@ class Nerve (Complex):
         Message-Passing Algorithms and Homology, Chapter III,
         https://arxiv.org/abs/2009.11631
     """
-
+    
+    @linear_cache("zeta", "\u03b6")
     def zeta (self, d=0):
         """ 
         Degree-d zeta transform.
@@ -60,7 +61,9 @@ class Nerve (Complex):
                                            b0 <= a0,  ..., bd <= ad,
                                            b0 !<= a1, ..., bd_1 !<= ad=
         """
-        if d < 0 : d = max(0, len(self) - d)
+        if d < 0 : 
+            d = max(0, len(self) - d)
+        # sizes
         N = [Nd.keys.shape[0] for Nd in self.fibers]
         # strict inclusions : adj[1]
         A  = self.adj[1]
@@ -107,11 +110,14 @@ class Nerve (Complex):
             acc += [torch.stack(next_diagrams(*acc[-1]))]
 
         for Gk, chains, n in zip(self.fibers[1:], acc[1:], N[1:d+1]):
-            ij = torch.stack([Gk.index(chains[0].T),
-                              Gk.index(chains[1].T)])
-            zt += [sparse.tensor([n, n], ij, t=False)]
+            zt += [Gk.arrow(chains[0].T, chains[1].T)]
 
-        return zt
+        out = []
+        for d, ztd in enumerate(zt):
+            lin = Linear([self[d]], ztd, degree=d, name="\u03b6") 
+            out += [lin]
+            self[d]._cache["zeta"] = lin
+        return out
 
     @classmethod
     def nerve (cls, C, d=-1):

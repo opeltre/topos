@@ -1,4 +1,4 @@
-from topos.core import sparse, face, simplices, linear_cache
+from topos.core import sparse, face, simplices, Linear, linear_cache
 from topos.io   import readTensor
 from .graph     import Graph
 
@@ -22,7 +22,7 @@ class Complex (Graph):
         https://arxiv.org/abs/2009.11631
     """
     
-    @linear_cache
+    @linear_cache("d")
     def diff(self, d):
         """ Differential d: K[d] -> K[d + 1]. """
         src, tgt = self[d].keys, self[d + 1].keys
@@ -34,7 +34,7 @@ class Complex (Graph):
             j   = self.index(face(k, self[d + 1].keys)) - j0
             val = (-1.) ** k
             out += sparse.matrix([N, P], stack([i, j]), val, t=0)
-        return out
+        return Linear([self[d], self[d + 1]], out, degree=1)
 
     @classmethod
     def simplicial(cls, faces):

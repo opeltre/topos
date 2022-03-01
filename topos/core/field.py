@@ -29,7 +29,7 @@ class Field (Vect):
                 return v.domain.from_scalars(u).data, v.data, v.same
         return super().cast2(u, v)
 
-    def __init__(self, domain, data=0., degree=None):
+    def __init__(self, domain, data=0., degree=None, device=None):
         """
         Create a d-field on a domain from numerical data.
 
@@ -43,9 +43,9 @@ class Field (Vect):
         if isinstance(data, torch.Tensor):
             self.data = data
         elif isinstance(data, list):
-            self.data = torch.tensor(data)
+            self.data = torch.tensor(data, device=device)
         elif isinstance(data, (int, float)):
-            self.data = data * torch.ones([self.size])
+            self.data = data * torch.ones([self.size], device=device)
         else:
             raise FieldError(
                     f"Unsupported data type: {type(data)}",
@@ -58,6 +58,7 @@ class Field (Vect):
             raise FieldError(
                 f"Could not coerce to domain size {domain.size}",
                 f"invalid input shape {list(self.data.shape)}")
+        self.device = self.data.device
 
     def same(self, other=None, name=None):
         """

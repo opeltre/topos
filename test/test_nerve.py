@@ -12,7 +12,7 @@ N = Nerve.nerve(G)
 class TestComplex (test.TestCase):
 
     def test_zeta(self):
-        zeta = N.zeta(0)
+        zeta = N.zeta(0).data
         # zt0(x)[a] = sum [x[b] | b <= a]
         one = torch.ones([7])
         result = zeta @ one
@@ -20,7 +20,7 @@ class TestComplex (test.TestCase):
         self.assertClose(expect, result)
         
     def test_zetas(self):
-        zt = N.zetas()
+        zt = [lin.data for lin in N.zetas()]
         self.assertTrue(len(N) == len(zt))
         # zt1(y)[a0 > a1] =  sum[y[b0 > b1 | b0 <= a0, b1 <= a1, b0 !<= a1]
         one1 = torch.ones([3 + 3 + 6])

@@ -58,7 +58,7 @@ def readFunctor(keys=None, functor=None):
     if isinstance(functor, list):
         fibers = functor
     if isinstance(functor, type(None)):
-        fibers = [[] for k in keys]
+        fibers = [None for k in keys]
     if callable(functor):
         fibers = [f(k) for k in keys]
 

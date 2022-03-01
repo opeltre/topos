@@ -11,7 +11,7 @@ class Functional :
         self.domain = (self.src, self.tgt)
         self.call = f if callable(f) else lambda x : tgt.field(f)
         self.name = name
-
+    
     @classmethod
     def map(cls, domains, f, name="\u033b"):
         """ Create functional from a torch.Tensor function. """

@@ -6,9 +6,10 @@ from topos.io   import readTensor, readFunctor
 
 class Domain(abc.ABC):
 
-    def __init__(self, size, degree=None):
+    def __init__(self, size, degree=None, device=None):
         self.degree = degree
-        self.size = size
+        self.size   = size
+        self.device = device
         self._cache = {}
 
     #--- Field Creation ---
@@ -17,7 +18,8 @@ class Domain(abc.ABC):
         """ Create a field from numerical data. """
         tgt = self if degree == None else self[degree]
         d = tgt.degree
-        return Field(tgt, data, d)
+        device = self.device
+        return Field(tgt, data, d, device=device)
 
     def from_scalars(self, x):
         if self.trivial:
@@ -50,6 +52,7 @@ class Domain(abc.ABC):
     def slice(self, key=None):
         """ Slice (begin, end, domain) at key k. """
         return (0, self.size, self)
+
 
 class Fiber (Domain):
     """
@@ -132,6 +135,13 @@ class Sheaf (Domain):
         else:
             return self.idx[key]
 
+    def arrow (self, a, b):
+        n = self.size
+        if self.is_sparse and self.trivial:
+            ij = torch.stack([self.index(a), self.index(b)])
+            return sparse.tensor([n, n], ij, t=False)
+        print("arrow None")
+        
     def slice(self, key):
         idx = self.index(key)
         return self.begin[idx], self.end[idx], self.fibers[idx]

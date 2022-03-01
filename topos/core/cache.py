@@ -1,8 +1,10 @@
-from .field import Field
+from .field  import Field
+from .linear import Linear
+import torch
 
 #--- Cached operators
 
-def linear_cache (operator):
+def linear_cache (name, symbol=None):
     """ 
     Decorator for operator computations.
 
@@ -11,18 +13,28 @@ def linear_cache (operator):
         - `op : D -> Functional(D, D')` to compute or read `op` from cache
         - `op : Field(D) -> Field(D')` applied to arguments. 
     """
-    def runCached (self, x=None):
-        #-- Degree and cache key
-        d    = x.degree if isinstance(x, Field) else x
-        name = operator.__name__ \
-             + (f':{d}' if d != None else '')
-        #-- Read cache
-        if name in self._cache:
-            op = self._cache[name]
-            return op @ x if isinstance(x, Field) else op
-        #-- Compute and write cache
-        op = operator(self) if d == None else operator(self, d) 
-        self._cache[name] = op
-        return op @ x if isinstance(x, Field) else op
+    if type(symbol) == type(None): 
+        symbol = name
 
-    return runCached
+    def decorator(operator):
+
+        def runCached (self, x=None):
+            #-- Degree and cache key
+            d     = x.degree if isinstance(x, Field) else x
+            cache = self._cache if d == None else self[d]._cache
+            #-- Read/write cache
+            if name in cache:
+                op = cache[name]
+            else:
+                op = operator(self) if d == None else operator(self, d) 
+                op.name = symbol
+                cache[name] = op
+            #-- Apply to x / return op
+            if isinstance(x, Field):
+                return op @ x
+            elif isinstance(x, torch.Tensor):
+                return op.tgt.field(op.data @ x)
+            return op
+        return runCached
+
+    return decorator
