@@ -4,3 +4,5 @@ notebooks/*
 .vscode
 build
 *.egg-info
+
+**/_*
