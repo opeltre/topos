@@ -18,6 +18,5 @@ setup(
                 'topos.base', 
                 'topos.io',
                 'topos.core',
-                'topos.domain',
                 'topos.exceptions']
 )

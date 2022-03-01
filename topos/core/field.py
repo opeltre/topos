@@ -1,7 +1,6 @@
 from .vect import Vect
 
-from topos.exceptions import FieldError
-from topos.io import showTensor
+from topos.io import showTensor, FieldError
 
 import torch
 

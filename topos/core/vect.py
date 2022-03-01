@@ -1,7 +1,7 @@
 import torch
 import time
 
-from topos.exceptions import VectError
+from topos.io import VectError
     
 class Vect: 
     """ A base container class for torch 1D-tensors """
