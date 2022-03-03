@@ -1,8 +1,7 @@
 import abc
 import torch
 
-from topos.core import sparse, Field
-from topos.io   import readTensor, readFunctor
+from topos.core import sparse, Field, Shape
 
 class Domain(abc.ABC):
 
@@ -54,109 +53,3 @@ class Domain(abc.ABC):
         return (0, self.size, self)
 
 
-class Fiber (Domain):
-    """
-    Elementary domain.
-    """
-
-    def __init__(self, key=None, shape=None, degree=None):
-        self.key = key
-        self.trivial = isinstance(shape, type(None))
-        if self.trivial:
-            size  = 1
-            self.shape = []
-        else:
-            shape = readTensor(shape)
-            size  = shape.prod().long()
-            self.shape = shape.tolist()
-        #--- Domain attributes
-        self.degree = degree
-        self.size   = size
-        super().__init__(size, degree)
-
-    def slice(self, key=None):
-        return (0, self.size, self)
-
-    def slices(self):
-        yield (0, self.size, self)
-
-    def __getitem__(self, key=None):
-        return self
-  
-    def __iter__(self):
-        yield self
-
-    def items(self):
-        yield self.key, self
-
-
-class Sheaf (Domain):
-    """
-    Dictionary of domains.
-    """
-
-    @classmethod
-    def sparse (cls, shape, indices, functor=None, degree=None):
-        idx  = readTensor(indices, dtype=torch.long)
-        adj  = sparse.tensor(shape, idx, dtype=torch.long).coalesce()
-        sheaf = cls(adj, functor, degree)
-        sheaf.adj = adj
-        sheaf.is_sparse = True
-        return sheaf
-
-    def __init__(self, keys=None, functor=None, degree=None):
-        """              """
-        #--- Sparse sheaves ---
-        self.is_sparse, self.adj = False, None
-        #--- Fiber index ---
-        self.idx, self.keys, fibers = readFunctor(keys, functor)
-        self.fibers = [f if isinstance(f, Domain) else Fiber(k, f)\
-                         for k, f in zip(self.keys, fibers)]
-        #--- Domain attributes ---
-        self.trivial = all(f.trivial for f in self.fibers)
-        sizes  = torch.tensor([fiber.size for fiber in self.fibers])
-        offset = sizes.cumsum(0)
-        size = offset[-1]
-        super().__init__(size, degree)
-        #--- Pointers --- 
-        begin  = torch.cat([torch.tensor([0]), offset])
-        self.sizes = sizes
-        self.begin = begin[:-1]
-        self.end   = begin[1:]
-   
-    def index(self, key, output=None):
-        """ Index of a key """
-        if self.is_sparse:
-            idx = sparse.select(self.idx, key)
-            if output == "mask":
-                mask = sparse.index_mask(self.adj, key)
-                return idx, mask
-            return idx
-        else:
-            return self.idx[key]
-
-    def arrow (self, a, b):
-        n = self.size
-        if self.is_sparse and self.trivial:
-            ij = torch.stack([self.index(a), self.index(b)])
-            return sparse.tensor([n, n], ij, t=False)
-        print("arrow None")
-        
-    def slice(self, key):
-        idx = self.index(key)
-        return self.begin[idx], self.end[idx], self.fibers[idx]
-
-    def slices(self):
-        for i,j, fiber in zip(self.begin, self.end, self.fibers):
-            yield (i, j, fiber)
-
-    def __getitem__(self, key):
-        idx = self.index(key)
-        return self.fibers[idx]
-
-    def items(self):
-        for k, fk in zip(self.keys, self.slices()):
-            yield (k, fk)
-
-    def __iter__(self):
-        return self.keys.__iter__()

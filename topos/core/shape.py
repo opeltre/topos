@@ -4,7 +4,7 @@ class Shape:
 
     def __init__(self, *ns):
 
-        if not all(isinstance(ni, int) for ni in ns):
+        if not all(isinstance(ni, (int, torch.LongTensor)) for ni in ns):
             raise TypeError("Expecting integer arguments")
         
         self.dim = len(ns)

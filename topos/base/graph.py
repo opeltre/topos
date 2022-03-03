@@ -1,4 +1,4 @@
-from .domain    import Sheaf
+from .sheaf     import Sheaf
 from topos.core import sparse, Shape, simplices
 from topos.io   import alignString, readTensor
 
