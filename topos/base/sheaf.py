@@ -27,21 +27,23 @@ class Sheaf (Domain):
         If keys is an adjacency tensor then a sparse sheaf instance
         is created. 
         
-        Example:
+        Examples:
         --------
-        The following pairs are equivalent:
+        The following definitions are equivalent in each group:
 
+            # Trivial sheaf on two elements (~ R^2)
             Sheaf(['a', 'b'])
             Sheaf(['a', 'b'], [None, None])
-
             Sheaf({'a': [], 'b': []}]
             Sheaf(['a', 'b'], functor=lambda _ : [])
 
+            # Sheaf with distinct shapes on each key
             Sheaf(['a', 'b'], [[2, 3], [3, 4]])
             Sheaf({'a': [2, 3], 'b': [3, 4]})
 
-            Sheaf([0, 1], [[3, 3], [3, 3]])
-            Sheaf([[3, 3], [3, 3]])
+            # Isomorphic sheaf with integer keys
+            Sheaf([0, 1], [[2, 3], [3, 4]])
+            Sheaf([[2, 3], [3, 4]])
 
         """
         #--- Sparse sheaves ---
@@ -80,10 +82,12 @@ class Sheaf (Domain):
         print("arrow None")
         
     def slice(self, key):
+        """ Return (begin, end, fiber) triplet at key. """
         idx = self.index(key)
         return self.begin[idx], self.end[idx], self.fibers[idx]
 
     def slices(self):
+        """ Yield (begin, end, fiber) triplets. """
         for i,j, fiber in zip(self.begin, self.end, self.fibers):
             yield (i, j, fiber)
 
