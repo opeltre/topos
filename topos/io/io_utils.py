@@ -1,4 +1,5 @@
 import torch
+from .exceptions import IOError
 
 #--- Region keys
 
@@ -65,7 +66,7 @@ def readFunctor(keys=None, functor=None):
     #--- Return
     if isinstance(fibers, list):
         return idx, keys, fibers
-    raise Error('readFunctor: Invalid key, functor input')
+    raise IOError('readFunctor: Invalid key, functor input')
 
 #--- Tensor I/O
 

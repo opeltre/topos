@@ -57,9 +57,9 @@ class Nerve (Complex):
             zeta(m)[a0 > a1] = sum [m[b0 > b1] | b0 <= a0, b1 <= a1, b0 !<= a1]
             #--- ...
             #--- degree d
-            zeta(y)[a0 > ... > ad] = sum [y[b0 > ... > bd] | 
-                                           b0 <= a0,  ..., bd <= ad,
-                                           b0 !<= a1, ..., bd_1 !<= ad=
+            zeta(y)[a0 > ... > ad] =
+                sum [y[b0 > ... > bd] | b0 <= a0,  ..., bd <= ad,
+                                        b0 !<= a1, ..., bd_1 !<= ad]
         """
         if d < 0 : 
             d = max(0, len(self) - d)

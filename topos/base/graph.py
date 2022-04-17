@@ -99,7 +99,11 @@ class Graph (Sheaf):
         return sparse.matrix(shape, ij, t=False)
 
     def arrows (self):
-        """ Strict 1-chains (a > b) of a hypergraph. """
+        """ Strict 1-chains (a > b) of a hypergraph.
+
+            Chains are returned as non-zero indices
+            of a sparse matrix of shape (Ntot, Ntot).
+        """
         Ntot = self.Ntot
         arr  = sparse.matrix([Ntot, Ntot], [])
        
