@@ -19,7 +19,7 @@ class Domain(abc.ABC):
         tgt = self if degree == None else self[degree]
         d = tgt.degree
         device = self.device
-        return Field(tgt, data, d, device=device)
+        return Field(tgt)(data)
 
     def from_scalars(self, x):
         if self.trivial:

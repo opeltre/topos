@@ -1,17 +1,51 @@
-from .vect import Vect
-
-from topos.io import showTensor, FieldError
-
+import fp
 import torch
 
-class Field (Vect):
+class Field (fp.meta.Functor):
     """
     Scalar functions on the fibers of a domain.
 
     Fields are internally linked to a torch 1D-tensor
     of the size of the domain.
     """
-   
+    
+    def __new__(cls, A):
+        
+        class Field_A: 
+
+            domain = A
+            shape  = [A.size]
+            device = A.device if 'device' in dir(A) else 'cpu'
+            degree = A.degree if 'degree' in dir(A) else None
+
+            def __new__(cls, data):
+                if not isinstance(data, torch.Tensor):
+                    data = torch.tensor(data, device=cls.device)
+                field = object.__new__(cls)
+                field.data   = data
+                field.device = cls.device
+                field.degree = cls.degree
+                return field
+
+            def __init__(self, data):
+                pass  
+
+        name  = cls.name(A)
+        bases = (fp.Tens([A.size]),)
+        dct   = dict(Field_A.__dict__)
+        FA = fp.meta.RingMeta(name, bases, dct)
+        return FA
+    
+    @classmethod
+    def fmap(cls, A):
+        pass
+
+    @classmethod
+    def name(cls, A):
+        return f'Field {A.size}'
+        
+
+class Field2 :
     @classmethod
     def cast2(cls, u, v):
         """
