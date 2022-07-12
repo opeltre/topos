@@ -31,7 +31,7 @@ class Complex (Graph):
         for k in range(d + 2):
             fk = self.arrow(tgt, face(k, tgt))
             out += (-1.) ** k * fk
-        return Linear(self[d], self[d + 1])(out, degree=1)
+        return Linear(self[d], self[d + 1])(out, degree=1, name="d")
     
     @classmethod
     def simplicial(cls, faces):

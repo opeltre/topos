@@ -185,8 +185,6 @@ class Field2 :
 
     #--- Show ---
 
-    
-   
     def __repr__(self):
         prefix = self.degree if self.degree != None else ""
         return f"{prefix} Field {self}"

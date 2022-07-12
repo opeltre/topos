@@ -11,6 +11,7 @@ import fp
 class Linear(fp.Linear): 
 
     def __new__(cls, A, B):
+
         Fa, Fb = Field(A), Field(B)
         na, nb = A.size, B.size
         
@@ -19,14 +20,46 @@ class Linear(fp.Linear):
             src = Fa
             tgt = Fb
 
-            def __new__(cls, data, degree=None, name="L"):
+            def __new__(cls, data, degree=None, name=None):
                 lin = object.__new__(cls)
                 cls.__init__(lin, data, degree)
                 return lin
 
-            def __init__(self, data, degree=None, name="L"):
+            def __init__(self, data, degree=None, name=None):
                 super().__init__(data)
                 self.degree = degree
+                if name:
+                    self.__name__ = name
+
+            def __truediv__(self, other): 
+                """ 
+                Divide coefficients by numerical data (e.g. scalar).
+                """
+                return self.same(self.data / other)
+
+            def __getitem__(self, i):
+                if isinstance(i, int):
+                    return self.src(self.data[i].to_dense())
+                elif isinstance(i, str):
+                    return self[self.tgt.index(i)]
+        
+            def __mul__(self, other):
+                if isinstance(other, self.__class__):
+                    return super().__mul__(other)
+                if isinstance(other, self.src):
+                    D = other.domain
+                    w = diag(D.size, other.data)
+                    out = matmul(self.data, w)
+                    return self.__class__(out)
+
+            def __rmul__(self, other):
+                if isinstance(other, self.__class__):
+                    return super().__rmul__(other)
+                if isinstance(other, self.tgt):
+                    D = other.domain
+                    w = diag(D.size, other.data)
+                    out = matmul(w, self.data)
+                    return self.__class__(out)
             
         return LinAB
     
@@ -34,6 +67,14 @@ class Linear(fp.Linear):
     def name(cls, A, B):
         rep = lambda D : D.__name__ if '__name__' in dir(D) else D.size
         return f'Linear {rep(A)} -> {rep(B)}'
+
+    @classmethod
+    def compose(cls, f, g):
+        f_base = fp.Linear(f.src.shape, f.tgt.shape)(f.data)
+        g_base = fp.Linear(g.src.shape, g.tgt.shape)(g.data)
+        fg = fp.Linear.compose(f_base, g_base)
+        return cls(g.src.domain, f.tgt.domain)(fg.data)
+
 
 
 class Linear2 (Functional, Vect): 
@@ -99,33 +140,7 @@ class Linear2 (Functional, Vect):
             name = self.name
         elif isinstance(data, torch.Tensor):
             name = name if name != None else self.name 
-        return Linear([src, tgt], data, name, self.degree)
-    
-    def compose(self, other):
-        """
-        Return the composed operator, multiplying matrices.
-        """
-        tgt, src = self.tgt, other.src
-        mat = matmul(self.data, other.data)
-        return Linear([src, tgt], mat, f"{self} . {other}")
-
-    def __matmul__(self, other):
-        """
-        Composition of operators/ Action on fields.
-        """
-        if isinstance(other, Linear):
-            return self.compose(other)
-        if isinstance(other, Vect):
-            return self(other)
-        #--- Numerical data
-        if not isinstance(other, torch.Tensor):
-            raise LinearError(f'uncomposable type {type(other)}')
-        if other.is_sparse:
-            return self.compose(other)
-        return self(other)
-        
-
-        return super().compose(other)
+        return Linear([src, tgt], data, name, self.degree)    
 
     def __truediv__(self, other): 
         """ 
