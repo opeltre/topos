@@ -1,6 +1,8 @@
 import fp
 import torch
 
+from topos.io import showTensor, FieldError
+
 class Field (fp.meta.Functor):
     """
     Scalar functions on the fibers of a domain.
@@ -28,7 +30,65 @@ class Field (fp.meta.Functor):
                 return field
 
             def __init__(self, data):
-                pass  
+                pass
+
+            def items(self):
+                """
+                Yield (key, value) pairs.
+                """
+                D = self.domain
+                for k, i, j, fiber in zip(D.keys, D.begin, D.end, D.fibers):
+                    yield (k, fiber.field(self.data[i:j]))
+
+            def __getitem__(self, a):
+                """
+                Local component on the fiber of a.
+                """
+                K = self.domain
+                #---
+                if isinstance(a, int) and "grades" not in K.__dir__():
+                    return self.data[a]
+                #--- Access graded component
+                elif isinstance(a, int):
+                    begin = sum(K[i].size for i in range(a))
+                    end   = begin + K[a].size
+                    return K[a].field(self.data[begin:end])
+                #--- Access fiber slice
+                begin, end, fiber = self.domain.slice(a)
+                return fiber.field(self.data[begin:end])
+
+            def __setitem__(self, a, va):
+                """
+                Update a local fiber component.
+                """
+                begin, end, fiber = self.domain.slice(a)
+                try:
+                    if isinstance (va, torch.Tensor):
+                        data = va.reshape([fiber.size])
+                    elif isinstance (va, Field):
+                        data = va.data
+                    else:
+                        data = va * torch.ones([fiber.size])
+                    self.data[begin:end] = data
+                except:
+                    raise FieldError(f"scalar or size {fiber.size} tensor expected")
+        
+            def __repr__(self):
+                if self.domain.size == 0:
+                    return ""
+                s = ""
+                for k, xk in self.items():
+                    fk = self.domain[k]
+                    if isinstance(k, torch.LongTensor):
+                        sc = f' {k.tolist()} : '
+                    else:
+                        sc = f' {k} : '
+                    pad = len(sc)
+                    tensor = (showTensor(xk.data.view(fk.shape), pad) 
+                            if "shape" in fk.__dir__()  else 
+                            str(xk).replace("\n", "\n" + " " * pad))
+                    s += sc + tensor + "\n"
+                return s 
 
         name  = cls.name(A)
         bases = (fp.Tens([A.size]),)
@@ -111,47 +171,6 @@ class Field2 :
         if self.domain.scalars.size == other.domain.size:
             return self.domain.from_scalars(other)
 
-    def __getitem__(self, a):
-        """
-        Local component on the fiber of a.
-        """
-        K = self.domain
-        #---
-        if isinstance(a, int) and "grades" not in K.__dir__():
-            return self.data[a]
-        #--- Access graded component
-        elif isinstance(a, int):
-            begin = sum(K[i].size for i in range(a))
-            end   = begin + K[a].size
-            return K[a].field(self.data[begin:end])
-        #--- Access fiber slice
-        begin, end, fiber = self.domain.slice(a)
-        return fiber.field(self.data[begin:end])
-
-    def __setitem__(self, a, va):
-        """
-        Update a local fiber component.
-        """
-        begin, end, fiber = self.domain.slice(a)
-        try:
-            if isinstance (va, torch.Tensor):
-                data = va.reshape([fiber.size])
-            elif isinstance (va, Field):
-                data = va.data
-            else:
-                data = va * torch.ones([fiber.size])
-            self.data[begin:end] = data
-        except:
-            raise FieldError(f"scalar or size {fiber.size} tensor expected")
-   
-    def items(self):
-        """
-        Yield (key, value) pairs.
-        """
-        D = self.domain
-        for k, i, j, fiber in zip(D.keys, D.begin, D.end, D.fibers):
-            yield (k, fiber.field(self.data[i:j]))
-
     def norm(self):
         """
         Euclidean norm of the underlying vector.
@@ -166,20 +185,7 @@ class Field2 :
 
     #--- Show ---
 
-    def __str__(self):
-        if self.domain.size == 0:
-            return "{}"
-        s = "{\n\n"
-        for k, xk in self.items():
-            sc = (f"  {k} ::" if not isinstance(k, torch.LongTensor) 
-                              else f"  {k.tolist()} ::")
-            fk = self.domain[k]
-            pad = len(sc)
-            tensor = (showTensor(xk.data.view(fk.shape), pad) 
-                      if "shape" in fk.__dir__()  else 
-                      str(xk).replace("\n", "\n" + " " * pad))
-            s += sc + tensor + ",\n\n"
-        return s + "}"
+    
    
     def __repr__(self):
         prefix = self.degree if self.degree != None else ""

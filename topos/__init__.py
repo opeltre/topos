@@ -1,3 +1,3 @@
 from .core import *
-import topos.base   as base
+from .base import *
 import topos.io     as io

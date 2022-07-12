@@ -32,19 +32,14 @@ class Sheaf (Domain):
         The following definitions are equivalent in each group:
 
             # Trivial sheaf on two elements (~ R^2)
+            Sheaf({'a': [], 'b': []}]
             Sheaf(['a', 'b'])
             Sheaf(['a', 'b'], [None, None])
-            Sheaf({'a': [], 'b': []}]
             Sheaf(['a', 'b'], functor=lambda _ : [])
 
-            # Sheaf with distinct shapes on each key
-            Sheaf(['a', 'b'], [[2, 3], [3, 4]])
+            # Sheaf with distinct shapes n each key
             Sheaf({'a': [2, 3], 'b': [3, 4]})
-
-            # Isomorphic sheaf with integer keys
-            Sheaf([0, 1], [[2, 3], [3, 4]])
-            Sheaf([[2, 3], [3, 4]])
-
+            Sheaf(['a', 'b'], [[2, 3], [3, 4]])
         """
         #--- Sparse sheaves ---
         self.is_sparse, self.adj = False, None

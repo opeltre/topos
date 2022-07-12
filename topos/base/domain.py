@@ -14,12 +14,14 @@ class Domain(abc.ABC):
 
     #--- Field Creation ---
 
+    def Field(self, degree=None):
+        """ Field class (optionally restricted to a graded component). """
+        tgt = self if degree == None else self[degree]
+        return Field(tgt)
+        
     def field(self, data, degree=None):
         """ Create a field from numerical data. """
-        tgt = self if degree == None else self[degree]
-        d = tgt.degree
-        device = self.device
-        return Field(tgt)(data)
+        return self.Field(degree)(data)
 
     def from_scalars(self, x):
         if self.trivial:
@@ -27,11 +29,11 @@ class Domain(abc.ABC):
 
     def zeros(self, degree=None):
         """ Return the unit of + field 0. """
-        return self.field(0, degree)
+        return self.Field(degree).zeros()
 
     def ones(self, degree=None):
         """ Return the unit of * field 1. """
-        return self.field(1, degree)
+        return self.Field(degree).ones()
 
     def randn(self, degree=None):
         """ Return a field with normally distributed values. """
