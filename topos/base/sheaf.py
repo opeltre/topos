@@ -101,3 +101,6 @@ class Sheaf (Domain):
 
     def __iter__(self):
         return self.keys.__iter__()
+
+    def __repr__(self):
+        return f"Sheaf {self}"

@@ -40,7 +40,7 @@ class Graph (Sheaf):
         shapes = [[Nvtx] * (d + 1) for d in range(len(G))]
         fibers = [Sheaf.sparse(shapes[d], G[d], degree=d) for d in range(len(G))]
         super().__init__(functor=fibers)
-        
+
         #--- Graph attributes ---
         self.adj   = [Gd.adj for Gd in fibers]
         self.idx   = [Gd.idx for d, Gd in enumerate(fibers)]
@@ -49,7 +49,7 @@ class Graph (Sheaf):
         self.grades     = G
         self.vertices   = G[0].squeeze(1)
         self.dim        = len(G) - 1
-    
+
     def __getitem__(self, d):
         """ Return sparse domain at degree d. """
         return self.fibers[d]
@@ -72,7 +72,7 @@ class Graph (Sheaf):
         #--- Index of hyperedge batch
         js = readTensor(js)
         n  = js.shape[-1]
-        offset = self.sizes[n-1] 
+        offset = self.sizes[n-1]
         idx = sparse.select(self.idx[n-1], js)
         if output != 'mask':
             return idx + offset
@@ -90,9 +90,15 @@ class Graph (Sheaf):
             if i0 - begin < Gn.keys.shape[0]:
                 return Gn[i - begin]
             begin += Gn.keys.shape[0]
-    
-    def arrow (self, a, b): 
-        """ Return a matrix of size G[da] x G[db]. """
+
+    def arrow (self, a, b):
+        """
+        Return a size G[da] x G[db] matrix representing functorial maps.
+
+        Inputs:
+            - a: tensor of shape (da) or (N, da)
+            - b: tensor of shape (db) or (N, db)
+        """
         da, db = a.shape[-1] - 1, b.shape[-1] - 1
         shape = self[da].size, self[db].size
         ij = torch.stack([self[da].index(a), self[db].index(b)])
@@ -106,7 +112,7 @@ class Graph (Sheaf):
         """
         Ntot = self.Ntot
         arr  = sparse.matrix([Ntot, Ntot], [])
-       
+
         for d, Gd in enumerate(self.fibers):
             # Source d-cells
             Ad = Gd.keys
@@ -131,12 +137,9 @@ class Graph (Sheaf):
     def __len__(self):
         """ Maximal degree. """
         return len(self.fibers)
-   
+
     def __repr__(self):
         return f"{self.dim} Graph {self}"
-
-    def __str__(self):
-        return self.show()
 
     def show (self, json=False):
         s = '{\n\n'

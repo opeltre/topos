@@ -2,6 +2,7 @@ import abc
 import torch
 
 from topos.core import sparse, Field, Shape
+from topos.io   import alignString
 
 class Domain(abc.ABC):
 
@@ -52,4 +53,11 @@ class Domain(abc.ABC):
         """ Slice (begin, end, domain) at key k. """
         return (0, self.size, self)
 
+    def __str__(self):
+        return self.show()
+    
+    def __repr__(self):
+        return "Domain {self}"
 
+    def show (self, json=False):
+        return f'(size:{self.size})'

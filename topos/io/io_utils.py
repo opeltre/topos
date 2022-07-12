@@ -11,9 +11,21 @@ def readKey(k):
 #--- Functor I/O
 
 def readFunctor(keys=None, functor=None):
+    """
+    Parse functorial information.
+
+    Inputs:
+        - keys    : list representing source domain
+        - functor : list representing target object shapes
+
+    Output:
+        - idx     : index map from keys to integers
+        - keys    : source domain
+        - fibers  : target objects
+    """
 
     #--- Dict input ---
-   
+
     #(functor={'a' : [3], 'b' : [2, 2], ...})
     if isinstance(functor, dict):
         i, idx, keys, fibers = 0, {}, [], []
@@ -26,7 +38,7 @@ def readFunctor(keys=None, functor=None):
     #({'a': [3], 'b': [2, 2], ...})
     if isinstance(keys, dict):
         return readFunctor(functor=keys)
-   
+
     #--- List input
 
     #(functor=[[3], [2, 2], ...])
@@ -45,7 +57,7 @@ def readFunctor(keys=None, functor=None):
         ij    = keys.coalesce().indices()
         keys  = ij.T
         N     = keys.shape[0]
-        idx   = torch.sparse_coo_tensor(ij, torch.arange(N), size=shape, 
+        idx   = torch.sparse_coo_tensor(ij, torch.arange(N), size=shape,
                                         dtype=torch.long).coalesce()
 
     #--- Key value pairs ---
