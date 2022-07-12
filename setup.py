@@ -13,7 +13,7 @@ setup(
     author_email='opeltre@gmail.com',
     url     ='https://github.com/opeltre/topos',
     license ='MIT',
-    install_requires=requirements,
+    install_requires=[], #requirements, : git source throws error
     packages = ['topos', 
                 'topos.base', 
                 'topos.io',
