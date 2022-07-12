@@ -2,6 +2,7 @@ from .sheaf     import Sheaf
 from topos.core import sparse, Shape, simplices
 from topos.io   import alignString, readTensor
 
+import topos.base.nerve 
 import torch
 from torch import stack, cat, arange
 
@@ -140,6 +141,9 @@ class Graph (Sheaf):
 
     def __repr__(self):
         return f"{self.dim} Graph {self}"
+
+    def nerve(self):
+        return topos.base.nerve.Nerve.classify(self)
 
     def show (self, json=False):
         s = '{\n\n'

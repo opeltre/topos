@@ -1,12 +1,42 @@
 from .functional import Functional, GradedFunctional
 from .vect import Vect
+from .field import Field
 from .sparse import eye, zero, matmul, diag
 
 from topos.io import LinearError
 
 import torch
+import fp
 
-class Linear (Functional, Vect): 
+class Linear(fp.Linear): 
+
+    def __new__(cls, A, B):
+        Fa, Fb = Field(A), Field(B)
+        na, nb = A.size, B.size
+        
+        class LinAB (fp.Linear([na], [nb]), fp.Arrow(Fa, Fb)):
+            
+            src = Fa
+            tgt = Fb
+
+            def __new__(cls, data, degree=None, name="L"):
+                lin = object.__new__(cls)
+                cls.__init__(lin, data, degree)
+                return lin
+
+            def __init__(self, data, degree=None, name="L"):
+                super().__init__(data)
+                self.degree = degree
+            
+        return LinAB
+    
+    @classmethod
+    def name(cls, A, B):
+        rep = lambda D : D.__name__ if '__name__' in dir(D) else D.size
+        return f'Linear {rep(A)} -> {rep(B)}'
+
+
+class Linear2 (Functional, Vect): 
     """ 
     Linear functionals implemented as sparse matrices.
     """
@@ -126,9 +156,7 @@ class Linear (Functional, Vect):
                 out = matmul(w, self.data)
                 return self.same(out)
         return super().__rmul__(other)
-            
-
-
+        
     def __repr__(self):
         return f"Linear {self}"
 

@@ -114,13 +114,13 @@ class Nerve (Complex):
 
         out = []
         for d, ztd in enumerate(zt):
-            lin = Linear([self[d]], ztd, degree=d, name="\u03b6") 
+            lin = Linear(self[d], self[d])(ztd, degree=0, name="\u03b6")
             out += [lin]
             self[d]._cache["zeta"] = lin
         return out
 
     @classmethod
-    def nerve (cls, C, d=-1):
+    def classify (cls, C, d=-1):
         """ Nerve of a hypergraph (or category). """
         Ntot = C.Ntot
         N = [torch.ones([Ntot]).to_sparse(), C.arrows()]

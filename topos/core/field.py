@@ -13,7 +13,7 @@ class Field (fp.meta.Functor):
     
     def __new__(cls, A):
         
-        class Field_A: 
+        class Field_A (fp.Tens([A.size])): 
 
             domain = A
             shape  = [A.size]
