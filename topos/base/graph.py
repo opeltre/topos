@@ -1,4 +1,5 @@
 from .sheaf     import Sheaf
+from .diagram   import Category, Diagram
 from topos.core import sparse, Shape, simplices
 from topos.io   import alignString, readTensor
 
@@ -50,6 +51,7 @@ class Graph (Sheaf):
         self.grades     = G
         self.vertices   = G[0].squeeze(1)
         self.dim        = len(G) - 1
+        self._diagram   = None
 
     def __getitem__(self, d):
         """ Return sparse domain at degree d. """
@@ -103,24 +105,28 @@ class Graph (Sheaf):
         da, db = a.shape[-1] - 1, b.shape[-1] - 1
         shape = self[da].size, self[db].size
         ij = torch.stack([self[da].index(a), self[db].index(b)])
-        return sparse.matrix(shape, ij, t=False)
-
-    def arrows (self):
-        """ Strict 1-chains (a > b) of a hypergraph.
-
-            Chains are returned as non-zero indices
-            of a sparse matrix of shape (Ntot, Ntot).
+        if self.trivial:
+            return sparse.matrix(shape, ij, t=False)
+    
+    def diagram(self):
         """
+        Compute strict one chains a > b of the hypergraph. 
+        """
+        if not isinstance(self._diagram, type(None)):
+            return self._diagram
+        
         Ntot = self.Ntot
         arr  = sparse.matrix([Ntot, Ntot], [])
+        maps = []
 
         for d, Gd in enumerate(self.fibers):
             # Source d-cells
             Ad = Gd.keys
             nd = Ad.shape[0]
             idx_src = sparse.select(self.idx[d], Ad) + self.begin[d]
-            # subfaces
-            faces = simplices(Ad)
+            # subfaces and forgotten indices
+            faces, indices = simplices(Ad, True)
+            Js = []
             # Target k-cells
             for k, Bk in enumerate(faces[:-1]):
                 # Bk is of shape (nd, nk, k+1):
@@ -133,7 +139,15 @@ class Graph (Sheaf):
                 AB   = torch.stack([src[mask], tgt[mask]])
                 # arrow index pairs
                 arr += sparse.matrix([Ntot, Ntot], AB, t=0)
-        return arr.coalesce()
+                # forgotten indices
+                js = torch.tensor(indices[k]).repeat(nd, 1)
+                Js += [js[mask]]
+            if not self.trivial:
+                for a, js in zip(Ad, Js):
+                    maps.append(self.functor(a).res(*js))
+        if self.trivial: 
+            ab = arr.coalesce().indices()
+            return Category(torch.arange(Ntot), ab.T, device=self.device)
 
     def __len__(self):
         """ Maximal degree. """

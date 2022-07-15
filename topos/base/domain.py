@@ -45,12 +45,10 @@ class Domain(abc.ABC):
         tgt = self if d == None else self[d]
         return self.field(torch.arange(tgt.size), d)
     
-    @abc.abstractmethod
     def slices(self):
         """ Yield (begin, end, domain) triplets."""
         yield (0, self.size, self)
 
-    @abc.abstractmethod
     def slice(self, key=None):
         """ Slice (begin, end, domain) at key k. """
         return (0, self.size, self)

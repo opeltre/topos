@@ -123,8 +123,11 @@ class Nerve (Complex):
     def classify (cls, C, d=-1):
         """ Nerve of a hypergraph (or category). """
         Ntot = C.Ntot
-        N = [torch.ones([Ntot]).to_sparse(), C.arrows()]
-        arr = [N[1][i].coalesce().indices() for i in range(Ntot)]
+        N0   = torch.ones([Ntot]).to_sparse()
+        N1   = sparse.matrix([Ntot, Ntot], C.diagram()._arrows[:,:2].T, t=0)
+        N1   = N1.coalesce()
+        N = [N0, N1]
+        arr = [N1[i].coalesce().indices() for i in range(Ntot)]
         deg = 2
         if d == 1: return N
         while deg != d:

@@ -1,5 +1,6 @@
 from topos import Graph
 import fp
+import torch
 
 # vertices
 G0 = [0, 1, 2]
@@ -15,5 +16,8 @@ N = G.nerve()
 phi = N.ones(1)
 
 from topos import Linear
+from topos.core import simplices
 
 mat = Linear(G, G).randn()
+
+F = torch.arange(6).view([2, 3])
