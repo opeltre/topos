@@ -1,4 +1,12 @@
+![spinGlass](assets/img/spinGlass.svg)
+
 # Topos
+
+_The library is being refactored to provide generic topological and algebraic tools
+for discrete mathematics and statistics._
+
+_The README should be split in (1) an introduction to the library and (2) specific notebook 
+examples for applications e.g. BP or molecules._
 
 [hypergraph]: https://en.wikipedia.org/wiki/Hypergraph
 [nerve]: https://en.wikipedia.org/wiki/Nerve_(category_theory)
@@ -72,12 +80,6 @@ $ pip install .
 
 
 ## Usage  (outdated)
-
-_The library is being refactored to provide generic topological and algebraic tools
-for discrete mathematics and statistics._
-
-_The README should be split in (1) an introduction to the library and (2) specific notebook 
-examples for applications e.g. BP or molecules._
 
 ### Systems 
 
