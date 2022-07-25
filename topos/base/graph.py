@@ -1,13 +1,14 @@
-from .sheaf     import Sheaf
-from .diagram   import Category, Diagram
+from .quiver    import Quiver
 from topos.core import sparse, Shape, simplices
 from topos.io   import alignString, readTensor
 
 import topos.base.nerve 
 import torch
-from torch import stack, cat, arange
 
-class Graph (Sheaf):
+from .multigraph import MultiGraph
+
+
+class Graph (MultiGraph):
     """
     Hypergraphs.
 
@@ -31,31 +32,10 @@ class Graph (Sheaf):
             G = Graph([[0], [1], [2]],
                       [[0, 1], [1, 2]])
         """
-
         G = ([readTensor(js).sort(-1).values for js in grades]
                 if sort else [readTensor(js) for js in grades])
-        if len(G) and G[0].dim() == 1:
-            G[0] = G[0].unsqueeze(1)
-
-        #--- Sparse fibers ---
-        Nvtx  = 1 + max(Gi.max() for Gi in G)
-        shapes = [[Nvtx] * (d + 1) for d in range(len(G))]
-        fibers = [Sheaf.sparse(shapes[d], G[d], degree=d) for d in range(len(G))]
-        super().__init__(functor=fibers)
-
-        #--- Graph attributes ---
-        self.adj   = [Gd.adj for Gd in fibers]
-        self.idx   = [Gd.idx for d, Gd in enumerate(fibers)]
-        self.Ntot  = self.sizes.sum()
-        self.Nvtx  = self.adj[0].shape[0]
-        self.grades     = G
-        self.vertices   = G[0].squeeze(1)
-        self.dim        = len(G) - 1
-        self._diagram   = None
-
-    def __getitem__(self, d):
-        """ Return sparse domain at degree d. """
-        return self.fibers[d]
+        super().__init__(G, functor)
+        self._quiver = None
 
     def adjacency(self, k):
         """ Symmetric adjacency tensor in degree k. """
@@ -108,15 +88,25 @@ class Graph (Sheaf):
         if self.trivial:
             return sparse.matrix(shape, ij, t=False)
     
-    def diagram(self):
+    def quiver(self):
         """
-        Compute strict one chains a > b of the hypergraph. 
+        Quiver of strict 1-chains a > b for inclusion.
+
+        The restriction maps G.obj(a) -> G.obj(b) are encoded 
+        as edge labels i.e. edges q of Q[1] are of the form: 
+
+            q = [a, b, 1 + j0, ..., 1 + jk, 0, ..., 0] 
+
+        where j0, ..., jk are the position (< a.dim) of 
+        forgotten indices in the restriction a -> b.
         """
-        if not isinstance(self._diagram, type(None)):
-            return self._diagram
+        if not isinstance(self._quiver, type(None)):
+            return self._quiver
         
         Ntot = self.Ntot
-        arr  = sparse.matrix([Ntot, Ntot], [])
+        Nlbl = [2 + self.dim] * self.dim
+        Q1  = sparse.matrix([Ntot, Ntot, *Nlbl], [])
+        fibers = []
         maps = []
 
         for d, Gd in enumerate(self.fibers):
@@ -137,33 +127,22 @@ class Graph (Sheaf):
                 src  = idx_src.repeat_interleave(nk)
                 tgt  = sparse.select(self[k].idx, Bk) + self.begin[k]
                 AB   = torch.stack([src[mask], tgt[mask]])
+                # Label edges by forgotten indices
+                js  = torch.tensor(indices[k])
+                pad = torch.zeros([self.dim - js.shape[-1]]).repeat(js.shape[0], 1)
+                label = torch.cat([1 + js, pad], dim=-1).repeat(nd, 1)
+                edges = torch.cat([AB.T, label[mask]], dim=-1)
                 # arrow index pairs
-                arr += sparse.matrix([Ntot, Ntot], AB, t=0)
-                # forgotten indices
-                js = torch.tensor(indices[k]).repeat(nd, 1)
-                Js += [js[mask]]
-            if not self.trivial:
-                for a, js in zip(Ad, Js):
-                    maps.append(self.functor(a).res(*js))
-        if self.trivial: 
-            ab = arr.coalesce().indices()
-            return Category(torch.arange(Ntot), ab.T, device=self.device)
+                shape = [Ntot, Ntot, *Nlbl]
+                Q1 += sparse.matrix(shape, edges)
 
-    def __len__(self):
-        """ Maximal degree. """
-        return len(self.fibers)
+        edges = Q1.coalesce().indices().T
+        Q = Quiver(torch.arange(Ntot), edges)
+        self._quiver = Q if self.trivial else Quiver(Q.grades, self.functor)
+        return self._quiver
 
     def __repr__(self):
         return f"{self.dim} Graph {self}"
 
     def nerve(self):
-        return topos.base.nerve.Nerve.classify(self)
-
-    def show (self, json=False):
-        s = '{\n\n'
-        degree = lambda d: (f'  {d}: ' if not json else f'  "{d}": ')
-        s += alignString(degree(0), self[0].keys) + ',\n\n'
-        for d in range(1, self.dim + 1):
-            s += alignString(degree(d), self[d].keys) \
-                + (',\n\n' if d < self.dim else '\n\n')
-        return s + '}'
+        return topos.base.nerve.Nerve.classify(self.quiver())

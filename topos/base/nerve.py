@@ -120,11 +120,12 @@ class Nerve (Complex):
         return out
 
     @classmethod
-    def classify (cls, C, d=-1):
-        """ Nerve of a hypergraph (or category). """
-        Ntot = C.Ntot
+    def classify (cls, quiver, d=-1):
+        """ Nerve of a quiver (e.g. hypergraph ordering or category). """
+        Ntot = quiver[0].size
+        Q1 = quiver.grades[1]
         N0   = torch.ones([Ntot]).to_sparse()
-        N1   = sparse.matrix([Ntot, Ntot], C.diagram()._arrows[:,:2].T, t=0)
+        N1   = sparse.matrix([Ntot, Ntot], Q1[:,:2].T, t=0)
         N1   = N1.coalesce()
         N = [N0, N1]
         arr = [N1[i].coalesce().indices() for i in range(Ntot)]

@@ -7,7 +7,7 @@ G = Graph([[0],
            [[0, 1],[0, 2], [0, 3]],
            [[0, 1, 2], [0, 2, 3], [0, 1, 3]]])
 
-N = Nerve.classify(G)
+N = Nerve.classify(G.quiver())
 
 class TestComplex (test.TestCase):
 

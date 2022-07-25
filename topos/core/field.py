@@ -37,8 +37,11 @@ class Field (fp.meta.Functor):
                 Yield (key, value) pairs.
                 """
                 D = self.domain
-                for k, i, j, fiber in zip(D.keys, D.begin, D.end, D.fibers):
-                    yield (k, fiber.field(self.data[i:j]))
+                if 'keys' in dir(D):
+                    for k, i, j, fiber in zip(D.keys, D.begin, D.end, D.fibers):
+                        yield (k, fiber.field(self.data[i:j]))
+                else:
+                    yield(None, D.field(self.data))
 
             def __getitem__(self, a):
                 """
@@ -76,6 +79,8 @@ class Field (fp.meta.Functor):
             def __repr__(self):
                 if self.domain.size == 0:
                     return ""
+                if not 'keys' in dir(self.domain):
+                    return showTensor(self.data, 0)
                 s = ""
                 for k, xk in self.items():
                     fk = self.domain[k]

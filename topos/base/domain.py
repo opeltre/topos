@@ -44,7 +44,10 @@ class Domain(abc.ABC):
         """ Represent the domain mapped to its range of indices. """
         tgt = self if d == None else self[d]
         return self.field(torch.arange(tgt.size), d)
-    
+
+    def __iter__(self):
+        return range(self.size).__iter__()
+
     def slices(self):
         """ Yield (begin, end, domain) triplets."""
         yield (0, self.size, self)
@@ -57,7 +60,7 @@ class Domain(abc.ABC):
         return self.show()
     
     def __repr__(self):
-        return "Domain {self}"
+        return f"Domain {self}"
 
     def show (self, json=False):
         return f'(size:{self.size})'

@@ -1,4 +1,7 @@
 import torch
+
+from fp.meta import Functor
+
 from .exceptions import IOError
 
 #--- Region keys
@@ -12,18 +15,17 @@ def readKey(k):
 
 def readFunctor(keys=None, functor=None):
     """
-    Parse functorial information.
+    Parse functorial data.
 
     Inputs:
-        - keys    : list representing source domain
-        - functor : list representing target object shapes
+        - keys    : source domain (e.g. list)
+        - functor : target object shapes (e.g. list)
 
     Output:
         - idx     : index map from keys to integers
         - keys    : source domain
         - fibers  : target objects
     """
-
     #--- Dict input ---
 
     #(functor={'a' : [3], 'b' : [2, 2], ...})
@@ -57,8 +59,9 @@ def readFunctor(keys=None, functor=None):
         ij    = keys.coalesce().indices()
         keys  = ij.T
         N     = keys.shape[0]
-        idx   = torch.sparse_coo_tensor(ij, torch.arange(N), size=shape,
-                                        dtype=torch.long).coalesce()
+        val = torch.arange(N)
+        idx = torch.sparse_coo_tensor(ij, val, size=shape, dtype=torch.long)
+        idx = idx.coalesce()
 
     #--- Key value pairs ---
 
@@ -67,18 +70,24 @@ def readFunctor(keys=None, functor=None):
         keys  = keys
         idx   = {readKey(k): i for i, k in enumerate(keys)}
 
+    elif 'size' in dir(keys):
+        keys = torch.arange(keys.size)
+        idx  = keys
+
     #--- Functor values
     if isinstance(functor, list):
         fibers = functor
     if isinstance(functor, type(None)):
         fibers = [None for k in keys]
     if callable(functor):
-        fibers = [f(k) for k in keys]
+        fibers = [functor(k) for k in keys]
 
     #--- Return
     if isinstance(fibers, list):
         return idx, keys, fibers
+
     raise IOError('readFunctor: Invalid key, functor input')
+
 
 #--- Tensor I/O
 
@@ -98,4 +107,3 @@ def alignString (alinea='', s='', prefix='tensor(', suffix=')'):
     return alinea + (str(s).replace(prefix, ' ' * len(prefix))
                            .replace(suffix, '')
                            .replace('\n', '\n' + ' ' * len(alinea)))
-
