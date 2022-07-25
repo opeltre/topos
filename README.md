@@ -3,18 +3,40 @@
 [hypergraph]: https://en.wikipedia.org/wiki/Hypergraph
 [nerve]: https://en.wikipedia.org/wiki/Nerve_(category_theory)
 [divergence]: https://en.wikipedia.org/wiki/Divergence
+[sheaf]:https://en.wikipedia.org/wiki/Sheaf_(mathematics)
 
 This library implements topological and statistical structures 
-described in [[2]](/README.md#ref2) for the
-study of message-passing algorithms.  
+described in [[2]](#ref2), initially motivated by the
+study of message-passing algorithms such as generalized belief propagation (GBP [[1](#ref1), [3](#ref3)]).
 
-There exists natural boundary operators on statistical systems, 
-generalising gradient and [divergence], leading to diffusion equations 
-that improve belief propagation (BP) algorithms.
-BP algorithms were originally introduced to efficiently 
-estimate the marginals of a high dimensional probability distribution 
-(usually better than Monte Carlo). This geometrical picture leads to new algorithms with even
-more interesting applications. 
+Local statistics of random variables <span>$(X_i)_{i \in \Omega}$</span>
+can be described over a covering or hypergraph $G \subseteq \mathcal{P}(\Omega)$ of the set of vertices $\Omega$.
+A $k$-_region_ $a \subseteq \Omega$ is a collection $a = \\{i_0, \dots, i_d \\}$ 
+of $k+1$ vertices. Graphs are a particular case having only degree $k \leq 1$ regions. 
+
+Atomic and region-wise degrees of freedom can usually be described by a 
+free [sheaf] $E : G^{op} \to \mathrm{Set}$ satisfying $E_a = \prod_{i \in a} E_i$.
+Functoriality then consists of restriction maps $\pi^{a \to b} : E_a \to E_b$ for every
+partial order relation $b \subseteq a$. From this data one can also define functors 
+$\mathbb{R}^E : G \to \mathrm{Alg}$ and $\mathbb{R}^{E * } : G^{op} \to \mathrm{Vect}$ 
+of local _observables_ and _densities_ respectively. The pullbacks of observables $\pi^{a \to b\:* } : \mathbb{R}^{E_b} \to \mathbb{R}^{E_a}$ 
+are cylindrical extensions while the pushforwards of densities
+<span>$\pi^{a \to b}_* : \mathbb{R}^{E_a *} \to \mathbb{R}^{E_b *}$ </span> 
+consist of partial integrations.
+In the GBP setting, 
+a dual pair of differential operators $d$ and $\delta = d^{ * }$ is moreover introduced. 
+Generalizing the usual discrete gradient and divergence operators, 
+they lead to diffusion equations improving stability and convergence of GBP.
+
+Sheaves $F : G^{op} \to \mathrm{Set}$ that are not free can be obtained by natural transformation
+of a free sheaf $E$. 
+This occurs for instance in molecular applications, 
+when defining equivariant message-passing schemes or invariant local functionals. 
+
+The purpose of this library is to provide efficient data structures for 
+generic sheaves $F : G^{op} \to \mathrm{Set}$, where $G$ can be any (directed) (multi-)graph.
+Domain classes such as `MultiGraph, Graph, Quiver, Complex, Nerve, ...` are for instance distinguished, 
+with specific operators implemented depending on their structure. 
 
 ### References 
 <span id="ref3"></span>
