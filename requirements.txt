@@ -1,1 +1,2 @@
 torch
+git+https://github.com/opeltre/fp@master#egg=fp

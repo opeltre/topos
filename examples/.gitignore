@@ -1,3 +1,4 @@
 *.py
-!example.py
+!graph.py
+!quiver.py
 !sheaf.py

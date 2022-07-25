@@ -11,3 +11,9 @@ class VectError (ToposError):
 
 class FieldError (VectError):
     cls = "Field"
+
+class LinearError (ToposError):
+    cls = "Linear"
+
+class IOError (ToposError):
+    cls = "IO"

@@ -1,50 +1,31 @@
+from topos.base import Sheaf
 import test
 
-from topos import Domain, Sheaf
+import torch
 
-F = Sheaf({'i': [3], 'j': [3], 'k': [3]})
-D = Domain(['i', 'j', 'k'])
+F = Sheaf(['a', 'b'], [[3, 2], [2, 3]])
 
+class TestSheaf(test.TestCase):
 
-class TestSheaf (test.TestCase):
+    def test_ones(self):
+        result = F.ones().data
+        expect = torch.ones([12])
+        self.assertClose(expect, result)
 
-    def test_size(self):
-        n, m = F.scalars.size, D.size
-        self.assertEqual(n, m)
+    def test_slice(self):
+        begin, end, fiber = F.slice('b')
+        result = (begin, end, tuple(fiber.shape))
+        expect = (6, 12, (2, 3))
+        self.assertTrue(expect == result)
 
-    def test_sums(self):
-        u = F.sums @ F.uniform() 
-        v = F.scalars.ones()
-        self.assertClose(u, v)
+    def test_slices(self):
+        slices = list(F.slices())
+        fibers = [f for begin, end, f in slices]
+        self.assertTrue(len(slices) == 2)
+        self.assertTrue(sum(fk.size for fk in fibers) == 12)
 
-    def test_extend(self):
-        u = F.ones()
-        v = F.extend @ F.scalars.ones()
-        self.assertClose(u, v)
-
-    def test_gibbs(self):
-        u = F.gibbs @ F.zeros()
-        v = F.uniform()
-        self.assertClose(u, v)
-
-        p = F.gibbs(F.randn())
-        one = F.scalars.ones()
-        self.assertClose(F.sums @ p, one, 1e-6)
-
-    def test_log(self):
-        u = F.randn() 
-        p = F.gibbs(u)
-        v = F._ln(p) 
-        self.assertClose(u - F.means(u), v - F.means(v), 1e-6)
-
-    def test_fft(self):
-        v = F.fft @ F.ones() 
-        u = F.field([1., 0., 0.] * 3)
-        self.assertClose(u, v)
-
-    def test_ifft(self):
-        u = F.randn()
-        self.assertClose(u, F.ifft @ F.fft @ u)
-
-if __name__ == '__main__':
-    test.main()
+    def test_getitem(self):
+        fiber = F['a']
+        result = fiber.shape
+        expect = [3, 2]
+        self.assertTrue(expect == result)

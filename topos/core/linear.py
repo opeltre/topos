@@ -1,10 +1,83 @@
 from .functional import Functional, GradedFunctional
 from .vect import Vect
+from .field import Field
 from .sparse import eye, zero, matmul, diag
 
-import torch
+from topos.io import LinearError
 
-class Linear (Functional, Vect): 
+import torch
+import fp
+
+class Linear(fp.Linear): 
+
+    def __new__(cls, A, B):
+
+        Fa, Fb = Field(A), Field(B)
+        na, nb = A.size, B.size
+        
+        class LinAB (fp.Linear([na], [nb]), fp.Arrow(Fa, Fb)):
+            
+            src = Fa
+            tgt = Fb
+
+            def __new__(cls, data, degree=None, name=None):
+                lin = object.__new__(cls)
+                cls.__init__(lin, data, degree)
+                return lin
+
+            def __init__(self, data, degree=None, name=None):
+                super().__init__(data)
+                self.degree = degree
+                if name:
+                    self.__name__ = name
+
+            def __truediv__(self, other): 
+                """ 
+                Divide coefficients by numerical data (e.g. scalar).
+                """
+                return self.same(self.data / other)
+
+            def __getitem__(self, i):
+                if isinstance(i, int):
+                    return self.src(self.data[i].to_dense())
+                elif isinstance(i, str):
+                    return self[self.tgt.index(i)]
+        
+            def __mul__(self, other):
+                if isinstance(other, self.__class__):
+                    return super().__mul__(other)
+                if isinstance(other, self.src):
+                    D = other.domain
+                    w = diag(D.size, other.data)
+                    out = matmul(self.data, w)
+                    return self.__class__(out)
+
+            def __rmul__(self, other):
+                if isinstance(other, self.__class__):
+                    return super().__rmul__(other)
+                if isinstance(other, self.tgt):
+                    D = other.domain
+                    w = diag(D.size, other.data)
+                    out = matmul(w, self.data)
+                    return self.__class__(out)
+            
+        return LinAB
+    
+    @classmethod
+    def name(cls, A, B):
+        rep = lambda D : D.__name__ if '__name__' in dir(D) else D.size
+        return f'Linear {rep(A)} -> {rep(B)}'
+
+    @classmethod
+    def compose(cls, f, g):
+        f_base = fp.Linear(f.src.shape, f.tgt.shape)(f.data)
+        g_base = fp.Linear(g.src.shape, g.tgt.shape)(g.data)
+        fg = fp.Linear.compose(f_base, g_base)
+        return cls(g.src.domain, f.tgt.domain)(fg.data)
+
+
+
+class Linear2 (Functional, Vect): 
     """ 
     Linear functionals implemented as sparse matrices.
     """
@@ -34,6 +107,21 @@ class Linear (Functional, Vect):
 
         self.data = mat
         super().__init__([src, tgt], matvec, name)
+    
+    def __call__(self, field):
+        """ Action on fields. """
+        tgt, mat = self.tgt, self.data
+        # numerical data
+        if isinstance(field, Vect):
+            x = field.data
+        elif isinstance(field, torch.Tensor):
+            x = field
+        else:
+            raise LinearError(f"Invalid input type {type(field)}")
+        # matvec product
+        if torch.is_complex(mat) and not torch.is_complex(x):
+            x = x.cfloat()
+        return tgt.field(mat @ x)
 
     @classmethod
     def null(cls, domains):
@@ -52,25 +140,7 @@ class Linear (Functional, Vect):
             name = self.name
         elif isinstance(data, torch.Tensor):
             name = name if name != None else self.name 
-        return Linear([src, tgt], data, name, self.degree)
-    
-    def compose(self, other):
-        """
-        Return the composed operator, multiplying matrices.
-        """
-        tgt, src = self.tgt, other.src
-        mat = matmul(self.data, other.data)
-        return Linear([src, tgt], mat, f"{self} . {other}")
-
-    def __matmul__(self, other):
-        """
-        Composition of operators/ Action on fields.
-        """
-        if isinstance(other, Linear):
-            return self.compose(other)
-        elif isinstance(other, Vect):
-            return self(other)
-        return super().compose(other)
+        return Linear([src, tgt], data, name, self.degree)    
 
     def __truediv__(self, other): 
         """ 
@@ -101,9 +171,7 @@ class Linear (Functional, Vect):
                 out = matmul(w, self.data)
                 return self.same(out)
         return super().__rmul__(other)
-            
-
-
+        
     def __repr__(self):
         return f"Linear {self}"
 

@@ -1,59 +1,86 @@
-from .hashable      import Hashable 
-from .shape         import Shape
-from .set           import Set
+from .domain    import Domain
+from topos.io   import readTensor
 
-class Fiber (Hashable): 
+import torch
 
-    @classmethod
-    def read (cls, key):
-        if isinstance(key, cls):
-            return key.key
-        return key
+class Fiber (Domain):
+    """
+    Elementary domain.
 
-    @classmethod
-    def join(cls, keys, shape=None):
-        #--- dictionnary of shapes in $1 --
-        if isinstance(keys, dict) and shape == None:
-            shape = {cls.read(k): Ek for k, Ek in shape.items()}
-            keys  = shape.keys()
+    The `Fiber([n0, ..., nd])` instance spans keys (x0, ..., xd)
+    such that 0 <= xi < ni for all 0 <= i <= d. 
+
+    """
+
+    def __init__(self, key=None, shape=None, degree=None):
+        self.trivial = isinstance(shape, type(None))
+        if self.trivial:
+            size  = 1
+            self.shape = []
+            self.dim = 0
         else:
-            keys  = [cls.read(k) for k in keys]
-            #--- pointwise shapes ---
-            if shape == None:
-                shape = {k : Shape() for k in keys}
-            #--- shapes from callable ---
-            elif callable(shape):
-                shape = {k : shape(k) for k in keys}\
-        #--- join ---
-        fibers = {}
-        begin = 0
-        for i, k in enumerate(keys):
-            fiber        = Fiber(k, shape[k], begin, i)
-            fibers[k]    = fiber
-            begin       += fiber.size
-        return fibers, begin
-
-    def __init__(self, key, shape=None, begin=0, idx=0):
-        if isinstance(shape, type(None)):
-            shape = Shape()
-        elif not isinstance(shape, Shape):
-            shape   = Shape(*shape) if len(shape) > 0 else Shape()
-        self.key    = key 
-        self.idx    = idx
-        self.begin  = begin
-        self.end    = begin + shape.size
-        self.shape  = shape
-        self.size   = shape.size
-
-    def __gt__(self, other): 
-        return self.key > other.key
-
-    def __ge__(self, other): 
-        return self.key >= other.key
-
-    def __str__(self): 
-        return str(self.key)
+            shape = readTensor(shape)
+            size  = shape.prod().long()
+            self.shape = shape.tolist()
+            self.dim = shape.shape[0]
+            self.ns  = shape
+            self.mod = torch.tensor([shape[i+1:].prod() for i in range(self.dim)])
+        #--- Domain attributes
+        self.degree = degree
+        self.size   = size
+        super().__init__(size, degree)
     
-    def __repr__(self): 
-        return f"Fiber {self} {self.begin}-{self.end}"
+    def index(self, keys, output=None):
+        """
+        Row-major index. 
+        """
+        if not len(keys):
+            return 0
+        js  = readTensor(keys)
+        out = (self.mod * js).sum([-1])
+        if type(output) == type(None):
+            return out
+        ns = self.ns[None,:] if js.dim() == 2 else self.ns 
+        mask = ((js < ns).long().prod(1)
+             *  (0 <= js).long().prod(1))
+        return out, mask
 
+    def coords(self, idx, output=None):
+        """
+        Coordinates of an index. 
+        """
+        div = lambda a, b: torch.div(a, b, rounding_mode = 'floor')
+        idx = readTensor(idx, dtype=torch.long)
+
+        i = 0 + (idx if i.dim() == 0 else idx[None,:])
+        out = (torch.zeros([self.dim], dtype=torch.long)
+                    if i.dim() == 0 else [None] * self.dim)
+
+        for j, mj in enumerte(self.mod):
+            out[j] = div(i, mj)
+            i      = i % mj
+
+        if i.dim() == 0: return out
+        if not len(out): return torch.tensor([[]])
+        return torch.stack(out).t()
+    
+    def res(self, indices):
+        """ 
+        Restriction to a subset of keys 0 <= kj < dim. 
+        """
+        pass
+
+    def slices(self):
+        yield (0, self.size, self)
+
+    def slice(self, key=None):
+        return (0, self.size, self)
+
+    def __getitem__(self, key=None):
+        return self
+
+    def __iter__(self):
+        yield self
+
+    def items():
+        yield self.key, self
