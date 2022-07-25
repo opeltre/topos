@@ -54,24 +54,27 @@ class Graph (MultiGraph):
             return js
         #--- Index of hyperedge batch
         js = readTensor(js)
-        n  = js.shape[-1]
-        offset = self.sizes[n-1]
-        idx = sparse.select(self.idx[n-1], js)
-        if output != 'mask':
+        n  = js.shape[-1] - 1
+        idx = sparse.select(self.idx[n], js)
+        #--- Graded fiber offset
+        offsets = self.sizes.cumsum(0).roll(1)
+        offset  = offsets[n] if n > 0 else 0
+        #--- Return index only
+        if output == None:
             return idx + offset
         #--- Keep mask
-        mask = sparse.mask_index(self.adj[n-1], js)
+        mask = sparse.index_mask(self.adj[n], js)
         return idx + offset, mask
 
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
         i, begin = readTensor(i), 0
         if not isinstance(d, type(None)):
-            return self[d][i]
+            return self.grades[d][i]
         for Gn in self.fibers:
             i0 = i[0] if i.dim() == 1 else i
             if i0 - begin < Gn.keys.shape[0]:
-                return Gn[i - begin]
+                return Gn.keys[i - begin]
             begin += Gn.keys.shape[0]
 
     def arrow (self, a, b):

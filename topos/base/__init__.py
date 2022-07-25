@@ -1,3 +1,4 @@
+from .functor       import Functor, FreeFunctor
 from .nerve         import Nerve
 from .complex       import Complex
 from .quiver        import Quiver

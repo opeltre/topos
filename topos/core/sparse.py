@@ -127,6 +127,8 @@ def index_mask(x:torch.Tensor, idx:torch.LongTensor) -> torch.BoolTensor:
     Returns a vector of size `idx.shape[0]`,
     assuming `idx.shape[1] == x.dim()`.
     """
+    if (not x.dim() == 1) and idx.dim() == 1:
+        return index_mask(x, idx.unsqueeze(0))[0]
     if not (x.dim() == 1 and idx.dim() == 1):
         x_flat = reshape([-1], x).coalesce()
         idx_flat = Shape(*x.shape).index(idx)
