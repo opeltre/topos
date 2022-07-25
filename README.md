@@ -5,8 +5,8 @@
 [divergence]: https://en.wikipedia.org/wiki/Divergence
 
 This library implements topological and statistical structures 
-considered in [[2]][phd] for the
-study of message-passing algorithms. 
+described in [[2]](/README.md#ref2) for the
+study of message-passing algorithms.  
 
 There exists natural boundary operators on statistical systems, 
 generalising gradient and [divergence], leading to diffusion equations 
@@ -15,6 +15,26 @@ BP algorithms were originally introduced to efficiently
 estimate the marginals of a high dimensional probability distribution 
 (usually better than Monte Carlo). This geometrical picture leads to new algorithms with even
 more interesting applications. 
+
+### References 
+<span id="ref3"></span>
+[1] : Yedidia, Freeman and Weiss, 2000 - _Generalized Belief Propagation_,
+NeurIPS 2000. [full text][YFW00]
+
+<span id="ref2"></span>
+[2] : Peltre, 2020, _Message-Passing Algorithms and Homology_, 
+PhD thesis. [arXiv:2009.11631][phd]
+
+<span id="ref1"></span>
+[3] : Peltre, 2021, _Belief Propagation as Diffusion_.
+GSI'21 proceedings. [arXiv:2107.12230][gsi21]
+
+
+[gsi21]: https://arxiv.org/abs/2107.12230
+[phd]:   https://arxiv.org/abs/2009.11631
+[YFW00]: https://https://proceedings.neurips.cc/paper/1832-generalized-belief-propagation.pdf
+[not_table]: https://arxiv.org/pdf/2009.11631#page=4
+[alg_table]: https://arxiv.org/pdf/2107.12230#page=7
 
 
 ## Installation 
@@ -140,22 +160,3 @@ See [example.py](example.py)
 }
 ``` 
 
-# References 
-
-<span id="ref1"></span>
-[1] : Peltre - _Belief Propagation as Diffusion_ (2021).
-GSI'21 proceedings, [arXiv:2107.12230][gsi21]
-
-<span id="ref2"></span>
-[2] : Peltre - _Message-Passing Algorithms and Homology_ (2020).
-PhD preprint, [arXiv:2009.11631][phd]
-
-<span id="ref3"></span>
-[3] : Yedidia, Freeman, Weiss - _Generalized Belief Propagation_ (2000).
-NeurIPS 2000, [full text][YFW00]
-
-[gsi21]: https://arxiv.org/abs/2107.12230
-[phd]:   https://arxiv.org/abs/2009.11631
-[YFW00]: https://https://proceedings.neurips.cc/paper/1832-generalized-belief-propagation.pdf
-[not_table]: https://arxiv.org/pdf/2009.11631#page=4
-[alg_table]: https://arxiv.org/pdf/2107.12230#page=7
