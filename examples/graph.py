@@ -1,4 +1,5 @@
 from topos import Graph
+import topos
 import fp
 import torch
 
@@ -15,9 +16,5 @@ f = G.ones(1)
 N = G.nerve()
 phi = N.ones(1)
 
-from topos import Linear
-from topos.core import simplices
-
-mat = Linear(G, G).randn()
-
-F = torch.arange(6).view([2, 3])
+F = topos.FreeFunctor(3)
+GF = Graph(G, F)

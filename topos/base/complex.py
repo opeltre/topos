@@ -29,7 +29,7 @@ class Complex (Graph):
         N, P = tgt.shape[0], src.shape[0]
         out = sparse.matrix([N, P], [])
         for k in range(d + 2):
-            fk = self.arrow(tgt, face(k, tgt))
+            fk = self.fmap((tgt, face(k, tgt)))
             out += (-1.) ** k * fk
         return Linear(self[d], self[d + 1])(out, degree=1, name="d")
     

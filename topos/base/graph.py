@@ -1,7 +1,7 @@
 from .quiver    import Quiver
 from topos.core import sparse, Shape, simplices
-from topos.io   import alignString, readTensor
 
+import topos.io as io
 import topos.base.nerve 
 import torch
 
@@ -46,49 +46,51 @@ class Graph (MultiGraph):
             Ak += sparse.tensor(shape, self[k].index_select(1, sigma))
         return Ak
 
-    def index (self, js, output=None):
-        """ Index i of hyperedge [j0, ..., jn]. """
-        #--- Degree access
-        if isinstance(js, int):
-            return js
-        #--- Index of hyperedge batch
-        js = readTensor(js)
-        n  = js.shape[-1] - 1
-        idx = sparse.select(self.idx[n], js)
-        #--- Graded fiber offset
-        offsets = self.sizes.cumsum(0).roll(1)
-        offset  = offsets[n] if n > 0 else 0
-        #--- Return index only
-        if output == None:
-            return idx + offset
-        #--- Keep mask
-        mask = sparse.index_mask(self.adj[n], js)
-        return idx + offset, mask
+    
 
-    def coords(self, i, d=None):
-        """ Hyperedge [j0, ..., jn] at index i. """
-        i, begin = readTensor(i), 0
-        if not isinstance(d, type(None)):
-            return self.grades[d][i]
-        off = self.sizes.cumsum(0).contiguous()
-        d = torch.bucketize(i, off, right=True)
-        d = int(d.flatten()[0]) if d.numel() > 1 else int(d)
-        return self[d].keys[i - (off[d-1] if d > 0 else 0)]
-        raise IndexError(f'Invalid index {i} for size {self.size} domain {self}')
-
-    def arrow (self, a, b):
+    def fmap (self, f):
         """
         Return a size G[da] x G[db] matrix representing functorial maps.
 
-        Inputs:
+        Input: f = (a, b) where
             - a: tensor of shape (da) or (N, da)
             - b: tensor of shape (db) or (N, db)
         """
-        da, db = a.shape[-1] - 1, b.shape[-1] - 1
-        shape = self[da].size, self[db].size
-        ij = torch.stack([self[da].index(a), self[db].index(b)])
+        T = self.scalars()
+        a, b     = io.readTensor(f[0]), io.readTensor(f[1])
+        da, db   = a.shape[-1] - 1, b.shape[-1] - 1
+        src, tgt = self[da], self[db]
+        i, j = src.index(a), tgt.index(b)
+        ij   = torch.stack([i, j])
+
+        #--- Scalar coefficients ---
         if self.trivial:
+            shape = self[da].size, self[db].size
             return sparse.matrix(shape, ij, t=False)
+        
+        #--- Functorial coefficients ---
+        Q = self.quiver()
+        IJ = ij.repeat_interleave(src.sizes[i])
+        # functor graph
+        F = Q.arrows()
+        # last elements of the chain
+        a1 = self[0].index(a.select(-1, -1))
+        b1 = self[0].index(b.select(-1, -1))
+        # arrow index
+        k = Q[1].index(torch.stack([a1, b1], dim=1))
+        K = k.repeat_interleave(src.sizes[i])
+        # relative source index
+        Ioff = torch.arange(K.shape[0]) - Q[1].begin[K]
+        # relative target index
+        Joff = F[K + Ioff]
+        # absolute source and target indices 
+        Fi = src.begin[I] + Ioff
+        Fj = tgt.begin[J] + Joff
+        # sparse matrix
+        shape = src.size, tgt.size
+        Fij = torch.stack([Fi, Fj])
+        return sparse.matrix(shape, Fij.T)
+            
     
     def pull(self, functor): 
         """ 
@@ -128,7 +130,10 @@ class Graph (MultiGraph):
         if not self.trivial:
             T = self.scalars()
             Q = T.quiver()
-            last = Functor(lambda a:a[-1], lambda f:f)
+            def obj (a): return a[0] if a.dim() else a
+            def hom (f): return f
+                
+            last = Functor(obj, hom)
             F = self.functor @ T.Coords @ last
             return Quiver(Q, F)
 

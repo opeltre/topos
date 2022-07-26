@@ -82,9 +82,9 @@ class Quiver(MultiGraph):
             graphT = []
             for f in arrows:
                 Tf = functor.fmap(f)
-                src = functor(self.source(f))
-                N   = src.size if 'size' in dir(src) else fp.Torus(src).size
-                gf = Tf(torch.arange(N)) 
+                src = functor(f[0])
+                N = src.size if 'size' in dir(src) else fp.Torus(src).size
+                gf = Tf(torch.arange(src.size)) 
                 graphT.append(gf.data)
             graphT = self[1].field(torch.cat(graphT))
         else:
