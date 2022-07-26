@@ -39,13 +39,12 @@ class FreeFunctor(Functor):
     See Graph.quiver() to compute such labeled arows. 
     """
 
-    def __init__(self, graph, shape):
+    def __init__(self, shape):
         """ 
         Create a free functor from atomic degrees of freedom.
 
         The `shape` argument can be an int, a mapping or a callable.
         """
-        self.graph = graph
         if not callable(shape) and '__getitem__' in dir(shape):
             F = shape.__getitem__
             self.atomic = F
@@ -59,16 +58,12 @@ class FreeFunctor(Functor):
 
         # object map
         def obj(a):
-            face = graph.coords(a)
-            return fp.Torus([F(i) for i in face])
+            return fp.Torus([F(i) for i in a])
 
         # arrow map
         def fmap(f):
-            f = io.readTensor(f)
-            src = obj(f[0])
-            tgt = obj(f[1])
-            a = graph.coords(f[0]).contiguous()
-            b = graph.coords(f[1]).contiguous()
+            a, b = f
+            src, tgt = obj(a), obj(b)
             js = torch.bucketize(b, a)
             return tgt.index @ src.res(*js) @ src.coords 
 

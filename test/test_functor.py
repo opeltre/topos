@@ -12,7 +12,7 @@ class TestFunctor(test.TestCase):
 
     def test_constant_free(self):
         """ Constant atomic shapes (binary variables) """
-        F = FreeFunctor(G, 2)
+        F = FreeFunctor(2) @ G.Coords
         T1, T3 = fp.Torus([2]), fp.Torus([2, 2, 2])
         # object map
         result = F(5)
@@ -25,7 +25,7 @@ class TestFunctor(test.TestCase):
     
     def test_free(self):
         """ Variable atomic degrees of freedom """
-        F = FreeFunctor(G, lambda i: int(2 + i))
+        F = FreeFunctor(lambda i: int(2 + i)) @ G.Coords
         # object map
         T12 = fp.Torus([3, 4])
         T012 = fp.Torus([2, 3, 4])

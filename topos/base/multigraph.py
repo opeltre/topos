@@ -1,4 +1,5 @@
 from .sheaf     import Sheaf
+from .functor   import Functor
 
 from topos.core import sparse, Shape, simplices
 from topos.io   import alignString, readTensor
@@ -69,6 +70,10 @@ class MultiGraph (Sheaf):
         self.vertices   = G[0].squeeze(1)
         self.dim        = len(G) - 1
 
+        #--- Index <-> Coordinate functors ---
+        self.Coords = Functor(self.coords, self.coords_fmap)
+        self.Index = Functor(self.index, self.index_fmap)
+
     def __getitem__(self, d):
         """ Return sparse domain at degree d. """
         return self.fibers[d] 
@@ -91,6 +96,9 @@ class MultiGraph (Sheaf):
         mask = sparse.mask_index(self.adj[n], js)
         return idx + offset, mask
 
+    def index_fmap(self, f):
+        return torch.stack([self.index(f[0]), self.index(f[1])])
+
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
         i, begin = readTensor(i), 0
@@ -101,6 +109,10 @@ class MultiGraph (Sheaf):
             if i0 - begin < Gn.keys.shape[0]:
                 return Gn[i - begin]
             begin += Gn.keys.shape[0]
+
+    def coords_fmap(self, f):
+        """ Map a pair of indices to coordinates. """
+        return self.coords(f[0]).contiguous(), self.coords(f[1]).contiguous()
 
     def __len__(self):
         """ Maximal degree. """
