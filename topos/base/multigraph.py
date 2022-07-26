@@ -71,8 +71,9 @@ class MultiGraph (Sheaf):
         self.dim        = len(G) - 1
 
         #--- Index <-> Coordinate functors ---
-        self.Coords = Functor(self.coords, self.coords_fmap)
-        self.Index = Functor(self.index, self.index_fmap)
+        self.functor = functor
+        self.Coords  = Functor(self.coords, self.coords_fmap)
+        self.Index   = Functor(self.index, self.index_fmap)
 
     def __getitem__(self, d):
         """ Return sparse domain at degree d. """

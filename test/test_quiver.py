@@ -10,7 +10,7 @@ Q1 = torch.tensor([[0, 1, 1],
                    [2, 3, 1], 
                    [2, 3, 2]])
 
-Q = Quiver(Q0, Q1)
+Q = Quiver([Q0, Q1])
 
 
 
@@ -49,7 +49,7 @@ class SomeFunctor:
 
 F = SomeFunctor()
 
-FQ = Quiver(Q0, Q1, functor=F)
+FQ = Quiver([Q0, Q1], functor=F)
 
 class TestQuiverFunctor(unittest.TestCase):
 

@@ -33,7 +33,7 @@ Q1 = torch.tensor([[0, 2, 2], [2, 4, 2], [4, 0, 2],
 Q1 = torch.cat([Q1, flip(Q1)])
 
 # quiver               
-Q = Quiver(Q0, Q1)
+Q = Quiver([Q0, Q1])
 
 # arrow indices as integer field
 print(f"Q[1].range() :\n{Q[1].range()}")
@@ -95,7 +95,7 @@ class SomeFunctor:
 F = SomeFunctor()
 
 # Quiver with functorial coefficients
-FQ = Quiver(Q0, Q1, functor=F)
+FQ = Quiver([Q0, Q1], functor=F)
 
 # indices of FQ[0] = prod [Fi for i in Q[0]]
 print(f"FQ[0].range() :\n{FQ[0].range()}")

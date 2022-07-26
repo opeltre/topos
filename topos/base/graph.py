@@ -36,6 +36,7 @@ class Graph (MultiGraph):
                 if sort else [readTensor(js) for js in grades])
         super().__init__(G, functor)
         self._quiver = None
+        self.__name__ = 'G'
 
     def adjacency(self, k):
         """ Symmetric adjacency tensor in degree k. """
@@ -91,6 +92,24 @@ class Graph (MultiGraph):
         if self.trivial:
             return sparse.matrix(shape, ij, t=False)
     
+    def pull(self, functor): 
+        """ 
+        Pre-compose a functor by the index to coordinates mapping. 
+        """
+        def obj(i): 
+            return functor(self.coords(i))
+
+        def fmap(f):
+            src, tgt = ob.gradej(f[0]), obj(f[1])
+            a, b = self.coords(f[0]).contiguous(), self.coords(f[1]).contiguous()
+            return tgt.index @ functor.fmap((a, b)) @ src.coords
+    
+    def push(self, functor):
+        """
+        Post-compose by a functor on local objects.
+        """
+        pass
+
     def quiver(self):
         """
         Quiver of strict 1-chains a > b for inclusion.
@@ -140,12 +159,16 @@ class Graph (MultiGraph):
                 Q1 += sparse.matrix(shape, edges)
 
         edges = Q1.coalesce().indices().T
-        Q = Quiver(torch.arange(Ntot), edges)
-        self._quiver = Q if self.trivial else Quiver(Q.grades, self.functor)
+        Q = Quiver([torch.arange(Ntot), edges])
+        if self.trivial: 
+            self._quiver = Q
+        else:
+            F = self.functor @ self.Coords 
+            self._quiver = Quiver(Q.grades, F)
         return self._quiver
 
     def __repr__(self):
-        return f"{self.dim} Graph {self}"
+        return f"{self.__name__}"
 
     def nerve(self):
-        return topos.base.nerve.Nerve.classify(self.quiver())
+        return topos.base.nerve.Nerve.classify(self)

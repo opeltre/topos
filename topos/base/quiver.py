@@ -20,12 +20,20 @@ def lexsorting(a, b):
 
 class Quiver(MultiGraph):
     """
-    Quivers are sets of vertices and arrows, i.e. directed  1-multigraphs
+    Quivers are sets of vertices and arrows, i.e. directed  1-multigraphs.
+
+    Quiver diagrams carry index maps between some of their fibers.
+
+    One purpose of this class is to provide fast access to 
+    (batched) functorial maps, returned as indices-value pairs.
     """
 
-    def __init__(self, keys, arrows, functor=None, sort=True):
+    def __init__(self, grades, functor=None, sort=True):
         """
         Create a quiver from integer tensors. 
+
+        The `grades = [keys, arrows]` argument should be a list of tensorlike
+        objects representing vertices and relationships.
 
         The last dimension of the arrows tensor is understood as [src, tgt, ...].
         This means shape [N, 2 + d] for d > 0 can be used to describe arrows 
@@ -35,6 +43,8 @@ class Quiver(MultiGraph):
         `Q.begin_hom` and `Q.end_hom` yielding index ranges of the 
         `Q._arrows` tensor. 
         """
+        keys, arrows = grades
+
         self.is_sparse = True
         self.keys = keys
         
@@ -99,54 +109,9 @@ class Quiver(MultiGraph):
         return self.functor_graph 
 
     def __repr__(self):
-        return f"Quiver {self}"
-
-
-class Diagram (Quiver):
-    """
-    Diagrams carry index maps between some of their fibers.
-
-    The purpose of this class is to provide fast access to 
-    (batched) functorial maps, returned as indices-value pairs. 
-    """ 
-    def __init__(self, quiver, functor=None):
-        self.base = quiver
-        self.keys = quiver.keys
-        self.Obj = Sheaf(quiver[0], functor)
-        self.Hom = Sheaf(quiver[1], lambda f : functor(quiver.source(f)))
-        images = torch.cat([functor.fmap(a) for a in quiver.arrows()])        
-        self.images = self.Hom.field(images)
-
-    def hom(self, src, tgt):
-        """ Return arrows between source and target. """
-        f = self.base.hom(src, tgt) 
-
-    def fmap(self, a):
-        pass
-
-    def __repr__(self):
-        return f'Diagram {self.base}'
-
-
-class Functor:
-
-    def __init__(self, f0, f1):
-        self.obj_map = f0
-        self.hom_map = f1
-
-    def __call__(self, a):
-        return self.obj_map(a)
-    
-    def fmap(self, f):
-        return self.hom_map(f)
-
-class FreeFunctor:
-
-    def __init__(self, shape):
-        if not callable(shape)  : shape = shape.__getitem__
-        def obj(a)  : return fp.Torus([shape(i) for i in a])
-        def fmap(f) : return obj(f.src).res(*f.indices)
-        super().__init__(obj, fmap)
+        name = self.__name__ if '__name__' in dir(self) else 'Q'
+        return name
+        
 
 class Supset(fp.Arrow):
 

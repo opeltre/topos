@@ -1,6 +1,7 @@
 from topos.core import sparse, Shape, Linear, linear_cache
 from topos.io   import readTensor
 from .complex   import Complex
+from .graph     import Graph
 
 import torch
 
@@ -122,15 +123,22 @@ class Nerve (Complex):
     @classmethod
     def classify (cls, quiver, d=-1):
         """ Nerve of a quiver (e.g. hypergraph ordering or category). """
+        if isinstance(quiver, Graph):
+            name = quiver.__name__
+            quiver = quiver.quiver()
+            quiver.__name__ = name
+        # vertices and arrows
         Ntot = quiver[0].size
         Q1 = quiver.grades[1]
         N0   = torch.ones([Ntot]).to_sparse()
-        N1   = sparse.matrix([Ntot, Ntot], Q1[:,:2].T, t=0)
+        N1   = sparse.matrix([Ntot, Ntot], Q1[:,:2])
         N1   = N1.coalesce()
+        # nerve Nd, d <= 1
         N = [N0, N1]
         arr = [N1[i].coalesce().indices() for i in range(Ntot)]
         deg = 2
         if d == 1: return N
+        # nerve Nd, d > 1
         while deg != d:
             ijk = [torch.cat([ij, k]) for ij in N[-1].indices().T \
                                 for k in arr[ij[-1]].T]
@@ -138,7 +146,11 @@ class Nerve (Complex):
             Nd = sparse.matrix([Ntot] * (deg + 1), torch.stack(ijk))
             N += [Nd.coalesce()]
             deg += 1
-        return cls((Nd.indices().T for Nd in N), sort=False)
+        NQ = cls((Nd.indices().T for Nd in N), sort=False)
+        NQ.__name__ = f'N({quiver.__name__})' if '__name__' in dir(quiver) else 'N(Q)'
+        return NQ
+
 
     def __repr__(self):
-        return f'{self.dim} Nerve {self}'
+        name = self.__name__ if '__name__' in dir(self) else 'N'
+        return f'{name}'

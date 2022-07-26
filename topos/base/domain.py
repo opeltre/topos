@@ -4,7 +4,9 @@ import torch
 from topos.core import sparse, Field, Shape
 from topos.io   import alignString
 
-class Domain(abc.ABC):
+import fp
+
+class Domain(fp.meta.Type):
 
     def __init__(self, size, degree=None, device=None):
         self.degree = degree
