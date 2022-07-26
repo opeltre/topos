@@ -50,4 +50,6 @@ class TestFunctor(test.TestCase):
     def test_quiver(self):
         F = FreeFunctor(2)
         GF = Graph(G.grades, F)
-        self.assertEqual(GF.Ntot, 22)
+        self.assertEqual(GF.Ntot, G.Ntot)
+        self.assertEqual(GF.size, 8 + 4 * 2 + 2 * 3)
+        Q = GF.quiver()

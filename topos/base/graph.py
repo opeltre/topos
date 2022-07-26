@@ -5,6 +5,7 @@ from topos.io   import alignString, readTensor
 import topos.base.nerve 
 import torch
 
+from .functor import Functor
 from .multigraph import MultiGraph
 
 
@@ -69,11 +70,11 @@ class Graph (MultiGraph):
         i, begin = readTensor(i), 0
         if not isinstance(d, type(None)):
             return self.grades[d][i]
-        for Gn in self.fibers:
-            i0 = i[0] if i.dim() == 1 else i
-            if i0 - begin < Gn.keys.shape[0]:
-                return Gn.keys[i - begin]
-            begin += Gn.keys.shape[0]
+        off = self.sizes.cumsum(0).contiguous()
+        d = torch.bucketize(i, off, right=True)
+        d = int(d.flatten()[0]) if d.numel() > 1 else int(d)
+        return self[d].keys[i - (off[d-1] if d > 0 else 0)]
+        raise IndexError(f'Invalid index {i} for size {self.size} domain {self}')
 
     def arrow (self, a, b):
         """
@@ -119,9 +120,19 @@ class Graph (MultiGraph):
         where j0, ..., jk are the position (< a.dim) of 
         forgotten indices in the restriction a -> b.
         """
+        # Cache quiver
         if not isinstance(self._quiver, type(None)):
             return self._quiver
-        
+
+        # Functor valued quiver
+        if not self.trivial:
+            T = self.scalars()
+            Q = T.quiver()
+            last = Functor(lambda a:a[-1], lambda f:f)
+            F = self.functor @ T.Coords @ last
+            return Quiver(Q, F)
+
+        # Base quiver i.e. scalar valued
         Ntot = self.Ntot
         Q1  = sparse.matrix([Ntot, Ntot], [])
         fibers = []
@@ -147,17 +158,9 @@ class Graph (MultiGraph):
                 # Label edges by forgotten indices
                 Q1 += sparse.matrix([Ntot, Ntot], AB.T)
 
-        # Base quiver
         edges = Q1.coalesce().indices().T
         Q = Quiver([torch.arange(Ntot), edges])
-        if self.trivial: 
-            self._quiver = Q
-            
-        # Functor valued quiver
-        else:
-            F = self.functor @ self.Coords 
-            self._quiver = Quiver(Q, F)
-
+        self._quiver = Q   
         return self._quiver
 
     def __repr__(self):

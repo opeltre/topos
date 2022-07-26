@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="39.773499mm"
-   height="32.657528mm"
-   viewBox="0 0 39.773499 32.657528"
+   width="72.608032mm"
+   height="59.617561mm"
+   viewBox="0 0 72.608033 59.617561"
    version="1.1"
    id="svg775"
    inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
@@ -26,7 +26,7 @@
      showgrid="false"
      inkscape:zoom="3.2842864"
      inkscape:cx="86.472361"
-     inkscape:cy="76.881236"
+     inkscape:cy="93.627644"
      inkscape:window-width="1920"
      inkscape:window-height="1131"
      inkscape:window-x="0"
@@ -41,15 +41,15 @@
      id="layer1"
      transform="translate(-26.732971,-62.962051)">
     <rect
-       style="fill:#ffffff;stroke:none;stroke-width:0.15;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.356494"
+       style="fill:#ffffff;stroke:none;stroke-width:0.273831;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.356494"
        id="rect1255"
-       width="39.773499"
-       height="32.657528"
+       width="72.608032"
+       height="59.617561"
        x="26.732971"
        y="62.962051" />
     <g
        id="g25384"
-       transform="translate(19.887022,42.535569)">
+       transform="matrix(1.825538,0,0,1.825538,14.23543,25.672731)">
       <path
          style="fill:none;stroke:#123274;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
          d="m 24.377,33.031518 -10.481211,12.191085 19.92921,3.41105 -9.467637,-15.611829"

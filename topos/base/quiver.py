@@ -79,11 +79,17 @@ class Quiver(MultiGraph):
         # functor graph
         self.functor = functor
         if not isinstance(functor, type(None)):
-            graphF = [functor.fmap(a) for a in arrows]
-            graphF = self[1].field(torch.cat(graphF))
+            graphT = []
+            for f in arrows:
+                Tf = functor.fmap(f)
+                src = functor(self.source(f))
+                N   = src.size if 'size' in dir(src) else fp.Torus(src).size
+                gf = Tf(torch.arange(N)) 
+                graphT.append(gf.data)
+            graphT = self[1].field(torch.cat(graphT))
         else:
-            graphF = self[1].zeros()
-        self.functor_graph = graphF
+            graphT = self[1].zeros()
+        self.functor_graph = graphT
     
     def source(self, a):
         """ Source of arrow. """

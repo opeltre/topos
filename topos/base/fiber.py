@@ -1,6 +1,7 @@
 from .domain    import Domain
 from topos.io   import readTensor
 
+import fp
 import torch
 
 class Fiber (Domain):

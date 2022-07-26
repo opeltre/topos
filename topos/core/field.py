@@ -39,7 +39,7 @@ class Field (fp.meta.Functor):
                 D = self.domain
                 if 'keys' in dir(D):
                     for k, i, j, fiber in zip(D.keys, D.begin, D.end, D.fibers):
-                        yield (k, fiber.field(self.data[i:j]))
+                        yield (k, cls(fiber)(self.data[i:j]))
                 else:
                     yield(None, D.field(self.data))
 
@@ -58,7 +58,7 @@ class Field (fp.meta.Functor):
                     return K[a].field(self.data[begin:end])
                 #--- Access fiber slice
                 begin, end, fiber = self.domain.slice(a)
-                return fiber.field(self.data[begin:end])
+                return cls(fiber)(self.data[begin:end])
 
             def __setitem__(self, a, va):
                 """
@@ -75,8 +75,11 @@ class Field (fp.meta.Functor):
                     self.data[begin:end] = data
                 except:
                     raise FieldError(f"scalar or size {fiber.size} tensor expected")
-        
+
             def __repr__(self):
+                return self.__str__()
+                
+            def __str__(self):
                 if self.domain.size == 0:
                     return ""
                 if not 'keys' in dir(self.domain):
@@ -90,7 +93,7 @@ class Field (fp.meta.Functor):
                         sc = f' {k} : '
                     pad = len(sc)
                     tensor = (showTensor(xk.data.view(fk.shape), pad) 
-                            if "shape" in fk.__dir__()  else 
+                            if "shape" in dir(fk)  else 
                             str(xk).replace("\n", "\n" + " " * pad))
                     s += sc + tensor + "\n"
                 return s 

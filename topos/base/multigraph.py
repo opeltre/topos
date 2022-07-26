@@ -5,6 +5,7 @@ from topos.core import sparse, Shape, simplices
 from topos.io   import alignString, readTensor
 
 import torch
+import fp
 
 class MultiGraph (Sheaf):
     """
@@ -70,7 +71,8 @@ class MultiGraph (Sheaf):
         #--- Graph attributes ---
         self.adj   = [Gd.adj for Gd in fibers]
         self.idx   = [Gd.idx for d, Gd in enumerate(fibers)]
-        self.Ntot  = self.sizes.sum()
+        self.Ntot  = sum(len(Gd) for Gd in G)
+        self.size  = self.sizes.sum()
         self.Nvtx  = self.adj[0].shape[0]
         self.vertices   = G[0].squeeze(1)
 
@@ -81,6 +83,9 @@ class MultiGraph (Sheaf):
         
         self._quiver = None
         self.__name__ = 'G'
+
+    def scalars(self):
+        return self if self.trivial else self.__class__(self.grades)
 
     def __getitem__(self, d):
         """ Return sparse domain at degree d. """
