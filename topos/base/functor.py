@@ -62,7 +62,7 @@ class FreeFunctor(Functor):
 
         # arrow map
         def fmap(f):
-            a, b = f
+            a, b = io.readTensor(f[0]), io.readTensor(f[1])
             src, tgt = obj(a), obj(b)
             js = torch.bucketize(b, a)
             return tgt.index @ src.res(*js) @ src.coords 

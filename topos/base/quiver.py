@@ -9,7 +9,7 @@ import topos.io as io
 import fp
 import torch
 
-# Lexicographic sorting of (src, tgt) for SparseQuiver arrows
+# Lexicographic sorting of (src, tgt) for Quiver arrows
 def lexsorting(a, b):
     """ Index map sorting integer tensors (a, b) lexicographically. """
     m = b.max() + 1
@@ -43,7 +43,8 @@ class Quiver(MultiGraph):
         `Q.begin_hom` and `Q.end_hom` yielding index ranges of the 
         `Q._arrows` tensor. 
         """
-        keys, arrows = grades
+        keys, arrows = (grades if not isinstance(grades, MultiGraph)
+                               else grades.grades)
 
         self.is_sparse = True
         self.keys = keys
@@ -111,7 +112,7 @@ class Quiver(MultiGraph):
     def __repr__(self):
         name = self.__name__ if '__name__' in dir(self) else 'Q'
         return name
-        
+
 
 class Supset(fp.Arrow):
 

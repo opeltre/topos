@@ -45,3 +45,10 @@ class TestGraph (test.TestCase):
         expect = ([0], [0, 1], [0, 1, 2])
         for e, r in zip(expect, result):
             self.assertEqual(e, r.long().tolist())
+
+    def test_quiver(self):
+        Q = G.quiver()
+        Q0, Q1 = Q[0].keys[:,0].tolist(), Q[1].keys.tolist()
+        self.assertEqual(Q0, [0, 1, 2, 3, 4, 5])
+        self.assertEqual(Q1, [[3, 0], [3, 1], [4, 1], [4, 2],
+                              [5, 0], [5, 1], [5, 2], [5, 3], [5, 4]])

@@ -32,11 +32,8 @@ class Graph (MultiGraph):
             G = Graph([[0], [1], [2]],
                       [[0, 1], [1, 2]])
         """
-        G = ([readTensor(js).sort(-1).values for js in grades]
-                if sort else [readTensor(js) for js in grades])
-        super().__init__(G, functor)
-        self._quiver = None
-        self.__name__ = 'G'
+        super().__init__(grades, functor, sort)
+        
 
     def adjacency(self, k):
         """ Symmetric adjacency tensor in degree k. """
@@ -126,8 +123,7 @@ class Graph (MultiGraph):
             return self._quiver
         
         Ntot = self.Ntot
-        Nlbl = [2 + self.dim] * self.dim
-        Q1  = sparse.matrix([Ntot, Ntot, *Nlbl], [])
+        Q1  = sparse.matrix([Ntot, Ntot], [])
         fibers = []
         maps = []
 
@@ -137,8 +133,7 @@ class Graph (MultiGraph):
             nd = Ad.shape[0]
             idx_src = sparse.select(self.idx[d], Ad) + self.begin[d]
             # subfaces and forgotten indices
-            faces, indices = simplices(Ad, True)
-            Js = []
+            faces = simplices(Ad)
             # Target k-cells
             for k, Bk in enumerate(faces[:-1]):
                 # Bk is of shape (nd, nk, k+1):
@@ -150,21 +145,19 @@ class Graph (MultiGraph):
                 tgt  = sparse.select(self[k].idx, Bk) + self.begin[k]
                 AB   = torch.stack([src[mask], tgt[mask]])
                 # Label edges by forgotten indices
-                js  = torch.tensor(indices[k])
-                pad = torch.zeros([self.dim - js.shape[-1]]).repeat(js.shape[0], 1)
-                label = torch.cat([1 + js, pad], dim=-1).repeat(nd, 1)
-                edges = torch.cat([AB.T, label[mask]], dim=-1)
-                # arrow index pairs
-                shape = [Ntot, Ntot, *Nlbl]
-                Q1 += sparse.matrix(shape, edges)
+                Q1 += sparse.matrix([Ntot, Ntot], AB.T)
 
+        # Base quiver
         edges = Q1.coalesce().indices().T
         Q = Quiver([torch.arange(Ntot), edges])
         if self.trivial: 
             self._quiver = Q
+            
+        # Functor valued quiver
         else:
             F = self.functor @ self.Coords 
-            self._quiver = Quiver(Q.grades, F)
+            self._quiver = Quiver(Q, F)
+
         return self._quiver
 
     def __repr__(self):

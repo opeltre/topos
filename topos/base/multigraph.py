@@ -19,7 +19,7 @@ class MultiGraph (Sheaf):
     of arrows, see subclasses e.g. Quiver, Graph, Complex, Nerve...
     """
 
-    def __init__(self, grades, functor=None):
+    def __init__(self, grades, functor=None, sort=False):
         """
         Create multigraph G from list of graded multiedges.
 
@@ -46,11 +46,17 @@ class MultiGraph (Sheaf):
 
         >>> FG = MultiGraph(G, functor=lambda g : [2] * len(g))
         """
-
-        G = ([readTensor(js) for js in grades] if not isinstance(grades, MultiGraph)
-                                               else grades.grades)
+        if isinstance(grades, MultiGraph):
+            G = grades.grades
+        else:
+            G = [readTensor(js) for js in grades] 
         if len(G) and G[0].dim() == 1:
             G[0] = G[0].unsqueeze(1)
+
+        self.grades  = G
+        self.dim     = len(G) - 1
+
+        #--- Label sizes
         nlabels = [Gi.shape[-1] - (i + 1) for i, Gi in enumerate(G)]
         self.nlabels = nlabels
 
@@ -66,14 +72,15 @@ class MultiGraph (Sheaf):
         self.idx   = [Gd.idx for d, Gd in enumerate(fibers)]
         self.Ntot  = self.sizes.sum()
         self.Nvtx  = self.adj[0].shape[0]
-        self.grades     = G
         self.vertices   = G[0].squeeze(1)
-        self.dim        = len(G) - 1
 
         #--- Index <-> Coordinate functors ---
         self.functor = functor
         self.Coords  = Functor(self.coords, self.coords_fmap)
         self.Index   = Functor(self.index, self.index_fmap)
+        
+        self._quiver = None
+        self.__name__ = 'G'
 
     def __getitem__(self, d):
         """ Return sparse domain at degree d. """
