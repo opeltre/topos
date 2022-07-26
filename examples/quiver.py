@@ -90,7 +90,7 @@ class SomeFunctor:
         """
         src, tgt = a[0], a[1]
         b = a[2]
-        return (src + (b * torch.arange((self(src)[0])))) % self(tgt)[0]
+        return lambda x: (src + (b * x)) % self(tgt)[0]
 
 F = SomeFunctor()
 
