@@ -5,6 +5,7 @@ from topos.io   import readTensor, readFunctor
 from topos.core import sparse
 
 import torch
+import fp
 
 class Sheaf (Domain):
     """
@@ -41,13 +42,15 @@ class Sheaf (Domain):
             Sheaf({'a': [2, 3], 'b': [3, 4]})
             Sheaf(['a', 'b'], [[2, 3], [3, 4]])
         """
+        is_domain = lambda f: 'coords' in dir(f) or isinstance(f, Domain)
+        is_trivial = lambda f: f.trivial if 'trivial' in dir(f) else f.size == 1
         #--- Sparse sheaves ---
         self.is_sparse, self.adj = False, None
         #--- Fiber index ---
         self.idx, self.keys, fibers = readFunctor(keys, functor)
-        self.fibers = [f if isinstance(f, Domain) else Fiber(None, f) for f in fibers]
+        self.fibers = [f if is_domain(f) else Fiber(None, f) for f in fibers]
         #--- Domain attributes ---
-        self.trivial = all(f.trivial for f in self.fibers)
+        self.trivial = all(is_trivial(f) for f in self.fibers)
         sizes  = torch.tensor([fiber.size for fiber in self.fibers])
         offset = sizes.cumsum(0)
         size = offset[-1]

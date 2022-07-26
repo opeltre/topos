@@ -27,16 +27,21 @@ class Functor:
 
 class FreeFunctor(Functor):
     """
-    Free functor on a hypergraph.
+    Free functor on the powerset of integers.
 
-    A region a is mapped to the cartesian product Fa 
-    of shapes Fi for i vertex of a.
+    A region a = [i0, ..., in] is mapped to the cartesian product: 
+    
+        F(a) = Fi0 x ... x Fin
 
-    An inclusion b <= a is assumed represented by a labeled arrow 
-    f = [a, b, 1+i0, ..., i+ik, 0, ..., 0] where i0 < ... < ik < len(a)
-    are the position of forgotten vertices from a to b.
+    An inclusion b <= a is here assumed represented by a pair
+        
+        (a, b) = ([i0, ..., in], [j0, ..., jk]).
 
-    See Graph.quiver() to compute such labeled arows. 
+    and it is mapped to the restriction that forgets variables in a - b:
+
+        F.fmap((a, b)) : F(a) -> F(b)
+
+    See Graph.quiver() to compute inclusions and associated restrictions.
     """
 
     def __init__(self, shape):

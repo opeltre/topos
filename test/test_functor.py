@@ -36,3 +36,18 @@ class TestFunctor(test.TestCase):
         result = F.fmap([[0, 1, 2], [1, 2]])(idx)
         expect = (T12.index @ T012.res(1, 2) @ T012.coords)(idx)
         self.assertClose(expect.data, result.data)
+
+    def test_graph(self):
+        """ Functor restricted to G """
+        F = FreeFunctor(3)
+        FG = F @ G.Coords
+        self.assertEqual(FG(5), fp.Torus([3, 3, 3]))
+        idx = torch.arange(27)
+        result = FG.fmap([5, 1])(idx)
+        expect = (FG(1).index @ FG(5).res(1) @ FG(5).coords)(idx)
+        self.assertClose(expect.data, result.data)
+
+    def test_quiver(self):
+        F = FreeFunctor(2)
+        GF = Graph(G.grades, F)
+        self.assertEqual(GF.Ntot, 22)
