@@ -52,6 +52,9 @@ class FreeFunctor(Functor):
         elif isinstance(shape, int):
             self.atomic = shape
             F = lambda i: shape
+        elif callable(shape):
+            F = shape
+            self.atomic = F
         assert(callable(F))
 
         # object map
@@ -64,7 +67,9 @@ class FreeFunctor(Functor):
             f = io.readTensor(f)
             src = obj(f[0])
             tgt = obj(f[1])
-            js = torch.bucketize(graph.coords(f[1]), graph.coords(f[0]))
+            a = graph.coords(f[0]).contiguous()
+            b = graph.coords(f[1]).contiguous()
+            js = torch.bucketize(b, a)
             return tgt.index @ src.res(*js) @ src.coords 
 
         super().__init__(obj, fmap)

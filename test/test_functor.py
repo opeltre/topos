@@ -1,22 +1,38 @@
 from topos import Graph, Functor, FreeFunctor
 
 import torch
-import unittest
+import test
 import fp
 
 G = Graph([[0, 1, 2], 
            [[0, 1], [1, 2]],
            [[0, 1, 2]]])
 
-class TestFunctor(unittest.TestCase):
+class TestFunctor(test.TestCase):
 
     def test_constant_free(self):
+        """ Constant atomic shapes (binary variables) """
         F = FreeFunctor(G, 2)
         T1, T3 = fp.Torus([2]), fp.Torus([2, 2, 2])
+        # object map
         result = F(5)
         self.assertEqual(T3, result)
-        result = F.fmap([5, 0])
-        expect = (T1.index @ T3.res(0) @ T3.coords)(torch.arange(8))
+        # morphism map
+        idx = torch.arange(8)
+        result = F.fmap([5, 0])(idx)
+        expect = (T1.index @ T3.res(0) @ T3.coords)(idx)
+        self.assertClose(expect.data, result.data)
     
     def test_free(self):
-        pass
+        """ Variable atomic degrees of freedom """
+        F = FreeFunctor(G, lambda i: int(2 + i))
+        # object map
+        T12 = fp.Torus([3, 4])
+        T012 = fp.Torus([2, 3, 4])
+        self.assertEqual(F(4), T12)
+        self.assertEqual(F(5), T012)
+        # morphism map
+        idx = torch.arange(2 * 3 * 4)
+        result = F.fmap([5, 4])(idx)
+        expect = (T12.index @ T012.res(1, 2) @ T012.coords)(idx)
+        self.assertClose(expect.data, result.data)
