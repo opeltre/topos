@@ -1,7 +1,8 @@
 from topos import Quiver, FreeFunctor, Graph
 
 import torch
-import unittest
+import fp
+import test
 
 Q0 = torch.arange(4)
 Q1 = torch.tensor([[0, 1, 1], 
@@ -14,7 +15,7 @@ Q = Quiver([Q0, Q1])
 
 
 
-class TestQuiver(unittest.TestCase):
+class TestQuiver(test.TestCase):
 
     def test_arrows(self):
         arr = Q.arrows()
@@ -51,7 +52,7 @@ F = SomeFunctor()
 
 FQ = Quiver([Q0, Q1], functor=F)
 
-class TestQuiverFunctor(unittest.TestCase):
+class TestQuiverFunctor(test.TestCase):
 
     def test_objects(self):
         """ objects of functorial quiver """
@@ -70,18 +71,24 @@ G1 = [[0, 1], [1, 2]]
 G2 = [[0, 1, 2]]
 G = Graph([G0, G1, G2], FreeFunctor(2))
 
-class TestFunctorQuiver(unittest.TestCase):
+class TestFunctorQuiver(test.TestCase):
     """ Quiver GF.quiver() associated to a functorial graph GF 
     
-                012 ---> 01 -.--> 0
-                    `-> 12 --`-> 1
+                012 .--> 01 -.--> 0
+                     `-> 12 ---`-> 1
     """
-    
+
     def test_quiver(self):
         """ quiver construction """
         Q = G.quiver()
         self.assertEqual(Q[0].size, 8     + 4 * 2 + 2 * 2)
         self.assertEqual(Q[1].size, 8 * 4 + 4 * 3)
 
-
-
+    def test_arrows(self):
+        """ arrows of a functorial graph """
+        Q = G.quiver()
+        F = Q.arrows()
+        T2 = fp.Torus([2, 2])
+        result = F.data[:Q[1].sizes[0]] 
+        expect = (T2.res(0) @ T2.coords)(torch.arange(4))
+        self.assertClose(expect.data.flatten(), result.data)
