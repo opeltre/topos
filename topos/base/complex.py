@@ -25,13 +25,27 @@ class Complex (Graph):
     @linear_cache("d")
     def diff(self, d):
         """ Differential d: K[d] -> K[d + 1]. """
-        src, tgt = self[d].keys, self[d + 1].keys
-        N, P = tgt.shape[0], src.shape[0]
-        out = sparse.matrix([N, P], [])
-        for k in range(d + 2):
-            fk = self.fmap((tgt, face(k, tgt)))
-            out += (-1.) ** k * fk
-        return Linear(self[d], self[d + 1])(out, degree=1, name="d")
+
+        #-- Scalar coefficients ---
+        if self.trivial:
+            src, tgt = self[d].keys, self[d + 1].keys
+            N, P   = tgt.shape[0], src.shape[0]
+            N0, P0 = self.begin[d+1], self.begin[d]
+            out = sparse.matrix([N, P], [])
+            off = torch.stack([N0, P0])
+            for k in range(d + 2):
+                Fk = self.fmap((tgt, face(k, tgt))).T - off 
+                out += (-1.) ** k * sparse.matrix([N, P], Fk)
+            return Linear(self[d], self[d + 1])(out, degree=1, name="d")
+
+        #--- Functorial coefficients ---
+        if not self.trivial:
+            T = self.scalars()
+            diff = T.diff(d)
+            src, tgt = self[d], self[d+1]
+            N, P = tgt.size, src.size
+            ij = diff.indices()
+            
     
     @classmethod
     def simplicial(cls, faces):

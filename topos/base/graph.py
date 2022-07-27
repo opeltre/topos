@@ -49,7 +49,11 @@ class Graph (MultiGraph):
         """
         Functorial map associated to f = [a, b] or f = [[*as], [*bs]]
         """
-        
+        Q = self.quiver()
+        a, b = io.readTensor(f[0]), io.readTensor(f[1])
+        i, j = self.index(a), self.index(b)
+        Fij = Q.fmap([i, j])
+        return Fij
     
     def pull(self, functor): 
         """ 
