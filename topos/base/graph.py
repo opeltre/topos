@@ -33,8 +33,7 @@ class Graph (MultiGraph):
             G = Graph([[0], [1], [2]],
                       [[0, 1], [1, 2]])
         """
-        super().__init__(grades, functor, sort)
-        
+        super().__init__(grades, functor, sort)     
 
     def adjacency(self, k):
         """ Symmetric adjacency tensor in degree k. """
@@ -46,51 +45,11 @@ class Graph (MultiGraph):
             Ak += sparse.tensor(shape, self[k].index_select(1, sigma))
         return Ak
 
-    
-
     def fmap (self, f):
         """
-        Return a size G[da] x G[db] matrix representing functorial maps.
-
-        Input: f = (a, b) where
-            - a: tensor of shape (da) or (N, da)
-            - b: tensor of shape (db) or (N, db)
+        Functorial map associated to f = [a, b] or f = [[*as], [*bs]]
         """
-        T = self.scalars()
-        a, b     = io.readTensor(f[0]), io.readTensor(f[1])
-        da, db   = a.shape[-1] - 1, b.shape[-1] - 1
-        src, tgt = self[da], self[db]
-        i, j = src.index(a), tgt.index(b)
-        ij   = torch.stack([i, j])
-
-        #--- Scalar coefficients ---
-        if self.trivial:
-            shape = self[da].size, self[db].size
-            return sparse.matrix(shape, ij, t=False)
         
-        #--- Functorial coefficients ---
-        Q = self.quiver()
-        IJ = ij.repeat_interleave(src.sizes[i])
-        # functor graph
-        F = Q.arrows()
-        # last elements of the chain
-        a1 = self[0].index(a.select(-1, -1))
-        b1 = self[0].index(b.select(-1, -1))
-        # arrow index
-        k = Q[1].index(torch.stack([a1, b1], dim=1))
-        K = k.repeat_interleave(src.sizes[i])
-        # relative source index
-        Ioff = torch.arange(K.shape[0]) - Q[1].begin[K]
-        # relative target index
-        Joff = F[K + Ioff]
-        # absolute source and target indices 
-        Fi = src.begin[I] + Ioff
-        Fj = tgt.begin[J] + Joff
-        # sparse matrix
-        shape = src.size, tgt.size
-        Fij = torch.stack([Fi, Fj])
-        return sparse.matrix(shape, Fij.T)
-            
     
     def pull(self, functor): 
         """ 
@@ -131,10 +90,10 @@ class Graph (MultiGraph):
             T = self.scalars()
             Q = T.quiver()
             def obj (a): return a[0] if a.dim() else a
-            def hom (f): return f
-                
-            last = Functor(obj, hom)
-            F = self.functor @ T.Coords @ last
+            def hom (f): return f    
+            lift = Functor(lambda a: a[0] if a.dim() else a,
+                           lambda f: f)
+            F = self.functor @ T.Coords @ lift
             return Quiver(Q, F)
 
         # Base quiver i.e. scalar valued

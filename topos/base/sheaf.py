@@ -1,7 +1,7 @@
 from .domain    import Domain
 from .fiber     import Fiber
 
-from topos.io   import readTensor, readFunctor 
+import topos.io as io
 from topos.core import sparse
 
 import torch
@@ -14,7 +14,7 @@ class Sheaf (Domain):
 
     @classmethod
     def sparse (cls, shape, indices, functor=None, degree=None):
-        idx  = readTensor(indices, dtype=torch.long)
+        idx  = io.readTensor(indices, dtype=torch.long)
         adj  = sparse.tensor(shape, idx, dtype=torch.long).coalesce()
         sheaf = cls(adj, functor, degree)
         sheaf.adj = adj
@@ -47,7 +47,7 @@ class Sheaf (Domain):
         #--- Sparse sheaves ---
         self.is_sparse, self.adj = False, None
         #--- Fiber index ---
-        self.idx, self.keys, fibers = readFunctor(keys, functor)
+        self.idx, self.keys, fibers = io.readFunctor(keys, functor)
         self.fibers = [f if is_domain(f) else Fiber(None, f) for f in fibers]
         #--- Domain attributes ---
         self.trivial = all(is_trivial(f) for f in self.fibers)
@@ -64,6 +64,7 @@ class Sheaf (Domain):
     def index(self,  key, output=None):
         """ Index of a key """
         if self.is_sparse:
+            key = io.readTensor(key)
             idx = sparse.select(self.idx, key)
             if output == "mask":
                 mask = sparse.index_mask(self.adj, key)
