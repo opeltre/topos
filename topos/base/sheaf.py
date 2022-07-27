@@ -1,5 +1,4 @@
 from .domain    import Domain
-from .fiber     import Fiber
 
 import topos.io as io
 from topos.core import sparse
@@ -48,7 +47,7 @@ class Sheaf (Domain):
         self.is_sparse, self.adj = False, None
         #--- Fiber index ---
         self.idx, self.keys, fibers = io.readFunctor(keys, functor)
-        self.fibers = [f if is_domain(f) else Fiber(None, f) for f in fibers]
+        self.fibers = [f if is_domain(f) else fp.Torus(f) for f in fibers]
         #--- Domain attributes ---
         self.trivial = all(is_trivial(f) for f in self.fibers)
         sizes  = torch.tensor([fiber.size for fiber in self.fibers])
