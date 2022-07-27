@@ -94,6 +94,8 @@ class MultiGraph (Sheaf):
 
     def index (self, js, output=None):
         """ Index i of hyperedge [j0, ..., jn]. """
+        if not self.trivial:
+            return self.scalars().index(js, output)
         #--- Degree access
         if isinstance(js, int):
             return js
@@ -119,6 +121,8 @@ class MultiGraph (Sheaf):
 
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
+        if not self.trivial:
+            return self.scalars().coords(i, d)
         i, begin = io.readTensor(i), 0
         if not isinstance(d, type(None)):
             return self.grades[d][i]
