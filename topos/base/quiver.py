@@ -138,7 +138,9 @@ class Quiver(MultiGraph, Functor):
         I = i.repeat_interleave(obj.sizes[i])
         J = j.repeat_interleave(obj.sizes[i])
         # arrow indices
-        k = hom.index(io.readTensor(f).view([hom.keys.shape[1], -1]).T)
+        narr = hom.keys.shape[-1]
+        f = io.readTensor(f, dtype=torch.long).view([narr, -1])
+        k = hom.index(f.T)
         K = k.repeat_interleave(obj.sizes[i])
         # functor graph
         F = self.arrows().data

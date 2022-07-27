@@ -52,7 +52,7 @@ class Graph (MultiGraph):
         Q = self.quiver()
         a, b = io.readTensor(f[0]), io.readTensor(f[1])
         i, j = self.index(a), self.index(b)
-        Fij = Q.fmap([i, j])
+        Fij = Q.fmap(torch.stack([i, j]))
         return Fij
     
     def pull(self, functor): 
