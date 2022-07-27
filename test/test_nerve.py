@@ -39,5 +39,17 @@ class TestNerveFunctor(test.TestCase):
         self.assertEqual(NF.sizes[0], 2 + 4*3 + 8*3)
         self.assertEqual(NF.sizes[1], 2*6 + 4*6)
         self.assertEqual(NF.sizes[2], 2*6)
+        # fmap . last
+        Fij = NF.fmap(torch.tensor([[4, 1], [4, 0]]))
+        Fij = (Fij.T - Fij.T[0]).T
+        Fi = torch.arange(4)
+        Fj = torch.arange(2).repeat_interleave(2)
+        self.assertClose(Fij, torch.stack([Fi, Fj]))
+        Fii = NF.fmap([[4, 2], [2]])
+        Fii = Fii - Fii[:,0][:,None]
+        self.assertClose(Fii, torch.arange(Fii.shape[1]).repeat(2, 1))
 
-        
+    def test_zeta(self):
+        GF = Graph(G, FreeFunctor(3))
+        NF = GF.nerve()
+        zts = NF.zetas()

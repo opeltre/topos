@@ -28,7 +28,7 @@ def linear_cache (name, symbol=None):
                 op = cache[name]
             else:
                 op = operator(self) if deg else operator(self, d) 
-                op.name = symbol
+                op.__name__ = symbol
                 cache[name] = op
             #-- Apply to x / return op
             if isinstance(x, self.Field(d)):

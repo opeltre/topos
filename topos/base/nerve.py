@@ -1,5 +1,6 @@
 from topos.core import sparse, Shape, Linear, linear_cache
-from topos.io   import readTensor
+import topos.io as io
+
 from .functor   import Functor
 from .complex   import Complex
 from .graph     import Graph
@@ -47,7 +48,16 @@ class Nerve (Complex):
         Recursive function. 
         Calls `Nerve.zetas(d)` to compute graded components up to degree d.
         """
-        return self.zetas(d)[d]
+        if self.trivial:
+            return self.zetas(d)[d]
+        # extend scalar valued transform
+        O = self.scalars()
+        zt = O.zeta(d)
+        i, j = O.begin[d] + zt.data.indices()
+        a, b = self.coords(i), self.coords(j)
+        Fab  = self.fmap([a, b])
+        N = self[d].size
+        return sparse.matrix([N, N], Fab - self.begin[d], t=False)
 
     def zetas (self, d=-1):
         """
@@ -64,7 +74,9 @@ class Nerve (Complex):
                                         b0 !<= a1, ..., bd_1 !<= ad]
         """
         if d < 0 : 
-            d = max(0, len(self) - d)
+            d = max(0, len(self.grades) - 1)
+        if not self.trivial:
+            return [self.zeta(k) for k in range(d)]
         # sizes
         N = [Nd.keys.shape[0] for Nd in self.fibers]
         # strict inclusions : adj[1]
@@ -121,6 +133,46 @@ class Nerve (Complex):
             self[d]._cache["zeta"] = lin
         return out
 
+    def fmap(self, f):
+        """
+        Functor graph over chains [a0, ..., ak], [b0, ..., br] with ak -> br.
+        """
+        Q = self.quiver()
+        a, b = io.readTensor(f[0]), io.readTensor(f[1])
+        if a.dim() == 1: 
+            a, b = a.unsqueeze(0), b.unsqueeze(0)
+        k, r = a.shape[-1] - 1, b.shape[-1] - 1
+        i, j = self[k].index(a), self[r].index(b)
+        ak, br = (a[-1], b[-1]) if a.dim() == 1 else (a[:,-1], b[:,-1])
+        # outside identities
+        eq = (ak == br)
+        if (~eq).sum() > 0:
+            Qab = Q.fmap(torch.stack([ak[~eq], br[~eq]]))
+            Fa, Fb = torch.zeros([2, ak[~eq].shape[0]])
+            off_a = Q[0].begin[ak[~eq]] - self.begin[k] - self[k].begin[i[~eq]]
+            off_b = Q[0].begin[br[~eq]] - self.begin[r] - self[r].begin[j[~eq]] 
+            Fa = Qab[0] - off_a.repeat_interleave(Q[0].sizes[ak[~eq]])
+            Fb = Qab[1] - off_b.repeat_interleave(Q[0].sizes[ak[~eq]])
+            Fab = torch.stack([Fa, Fb])
+        else: 
+            Fab = torch.zeros([2, 0])
+        # identities 
+        if eq.sum() > 0:
+            ns = Q[0].sizes[ak[eq]]
+            off_eq = Q[0].sizes[ak[eq]].cumsum(0).roll(1)
+            off_eq[0] = 0
+            off_a = off_eq.repeat_interleave(ns)
+            begin_a = self.begin[k] + Q[0].begin[ak[eq]].repeat_interleave(ns)
+            begin_b = self.begin[r] + Q[0].begin[br[eq]].repeat_interleave(ns)
+            n = off_a.shape[0]
+            Fa = torch.arange(n) - off_a + begin_a
+            Fb = torch.arange(n) - off_a + begin_b
+            Faa = torch.stack([Fa, Fb])
+        else:
+            Faa = torch.zeros([2, 0])
+        # total graph
+        return torch.cat([Fab, Faa], dim=1)
+
     @classmethod
     def classify (cls, quiver, d=-1):
         """ Nerve of a quiver (e.g. hypergraph ordering or category). """
@@ -154,6 +206,7 @@ class Nerve (Complex):
         # functorial coefficients
         else:
             def last_obj(a):
+                a = io.readTensor(a, dtype=torch.long)
                 return a[-1] if a.dim() == 1 else a[:,-1]
             def last_hom(f):
                 a, b = f[0], f[1]
@@ -162,7 +215,9 @@ class Nerve (Complex):
             F = quiver.functor @ last
 
         NQ = cls((Nd.indices().T for Nd in N), functor=F, sort=False)
-        NQ.__name__ = f'N({quiver.__name__})' if '__name__' in dir(quiver) else 'N(Q)'
+        NQ.__name__ = (f'N({quiver.__name__})' 
+                       if '__name__' in dir(quiver) else 'N(Q)')
+        NQ._quiver = quiver
         return NQ
 
     def __repr__(self):
