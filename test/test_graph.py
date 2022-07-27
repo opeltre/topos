@@ -1,7 +1,7 @@
 import test
 import torch
 
-from topos.base import Graph
+from topos.base import Graph, FreeFunctor
 
 G = Graph([[[0], [1], [2]],
            [[0, 1], [1, 2]],
@@ -52,3 +52,15 @@ class TestGraph (test.TestCase):
         self.assertEqual(Q0, [0, 1, 2, 3, 4, 5])
         self.assertEqual(Q1, [[3, 0], [3, 1], [4, 1], [4, 2],
                               [5, 0], [5, 1], [5, 2], [5, 3], [5, 4]])
+
+
+GF = Graph(G, FreeFunctor(3))
+
+class TestFunctorGraph(test.TestCase):
+
+    def test_fmap(self):
+        Q = GF.quiver()
+        Fij = GF.fmap([[0, 1, 2], [1, 2]])
+        Fi = 27 + torch.arange(27)
+        Fj = 18 + torch.arange(9).repeat(3)
+        self.assertClose(Fij, torch.stack([Fi, Fj]))

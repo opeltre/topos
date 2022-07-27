@@ -5,5 +5,4 @@ from .quiver        import Quiver
 from .graph         import Graph
 from .multigraph    import MultiGraph
 from .sheaf         import Sheaf
-from .fiber         import Fiber
 from .domain        import Domain

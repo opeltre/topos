@@ -26,12 +26,15 @@ class Complex (Graph):
     def diff(self, d):
         """ Differential d: K[d] -> K[d + 1]. """
         src, tgt = self[d].keys, self[d + 1].keys
-        N, P = tgt.shape[0], src.shape[0]
+        N, P   = self[d+1].size, self[d].size
+        N0, P0 = self.begin[d+1], self.begin[d]
         out = sparse.matrix([N, P], [])
+        off = torch.stack([N0, P0]).long()
         for k in range(d + 2):
-            fk = self.arrow(tgt, face(k, tgt))
-            out += (-1.) ** k * fk
+            Fk = self.fmap((tgt, face(k, tgt))).T - off 
+            out += (-1.) ** k * sparse.matrix([N, P], Fk)
         return Linear(self[d], self[d + 1])(out, degree=1, name="d")
+            
     
     @classmethod
     def simplicial(cls, faces):

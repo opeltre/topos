@@ -46,10 +46,3 @@ class TestFunctor(test.TestCase):
         result = FG.fmap([5, 1])(idx)
         expect = (FG(1).index @ FG(5).res(1) @ FG(5).coords)(idx)
         self.assertClose(expect.data, result.data)
-
-    def test_quiver(self):
-        F = FreeFunctor(2)
-        GF = Graph(G.grades, F)
-        self.assertEqual(GF.Ntot, G.Ntot)
-        self.assertEqual(GF.size, 8 + 4 * 2 + 2 * 3)
-        Q = GF.quiver()

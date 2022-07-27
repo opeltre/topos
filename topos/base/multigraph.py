@@ -2,6 +2,7 @@ from .sheaf     import Sheaf
 from .functor   import Functor
 
 from topos.core import sparse, Shape, simplices
+import topos.io as io
 from topos.io   import alignString, readTensor
 
 import torch
@@ -71,7 +72,7 @@ class MultiGraph (Sheaf):
         #--- Graph attributes ---
         self.adj   = [Gd.adj for Gd in fibers]
         self.idx   = [Gd.idx for d, Gd in enumerate(fibers)]
-        self.Ntot  = sum(len(Gd) for Gd in G)
+        self.Ntot  = sum(Gd.keys.shape[0] for Gd in fibers)
         self.size  = self.sizes.sum()
         self.Nvtx  = self.adj[0].shape[0]
         self.vertices   = G[0].squeeze(1)
@@ -93,20 +94,26 @@ class MultiGraph (Sheaf):
 
     def index (self, js, output=None):
         """ Index i of hyperedge [j0, ..., jn]. """
+        if not self.trivial:
+            return self.scalars().index(js, output)
         #--- Degree access
         if isinstance(js, int):
             return js
         #--- Index of hyperedge batch
-        js = readTensor(js)
+        js = io.readTensor(js)
         n = 0
         while js.shape[-1] != (n + 1) + self.nlabels[n]:
             n += 1
         offset = self.sizes[n]
         idx = sparse.select(self.idx[n], js)
-        if output != 'mask':
+        #--- Graded fiber offset
+        offsets = self.sizes.cumsum(0).roll(1)
+        offset  = offsets[n] if n > 0 else 0
+        #--- Return index only
+        if output == None:
             return idx + offset
         #--- Keep mask
-        mask = sparse.mask_index(self.adj[n], js)
+        mask = sparse.index_mask(self.adj[n], js)
         return idx + offset, mask
 
     def index_fmap(self, f):
@@ -114,14 +121,17 @@ class MultiGraph (Sheaf):
 
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
-        i, begin = readTensor(i), 0
+        if not self.trivial:
+            return self.scalars().coords(i, d)
+        i, begin = io.readTensor(i), 0
         if not isinstance(d, type(None)):
-            return self[d][i]
-        for Gn in self.fibers:
-            i0 = i[0] if i.dim() == 1 else i
-            if i0 - begin < Gn.keys.shape[0]:
-                return Gn[i - begin]
-            begin += Gn.keys.shape[0]
+            return self.grades[d][i]
+        off = self.sizes.cumsum(0).contiguous()
+        d = torch.bucketize(i, off, right=True)
+        d = int(d.flatten()[0]) if d.numel() > 1 else int(d)
+        if d >= 0 and d < len(self.grades):
+            return self[d].keys[i - (off[d-1] if d > 0 else 0)]
+        raise IndexError(f'Invalid index {i} for size {self.size} domain {self}')
 
     def coords_fmap(self, f):
         """ Map a pair of indices to coordinates. """
@@ -137,9 +147,9 @@ class MultiGraph (Sheaf):
     def show (self, json=False):
         s = '{\n\n'
         degree = lambda d: (f'  {d}: ' if not json else f'  "{d}": ')
-        s += alignString(degree(0), self[0].keys) + ',\n\n'
+        s += io.alignString(degree(0), self[0].keys) + ',\n\n'
         for d in range(1, self.dim + 1):
-            s += alignString(degree(d), self[d].keys) \
+            s += io.alignString(degree(d), self[d].keys) \
                 + (',\n\n' if d < self.dim else '\n\n')
         return s + '}'
         

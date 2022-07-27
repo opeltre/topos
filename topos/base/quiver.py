@@ -1,6 +1,7 @@
 from .domain    import Domain
 from .sheaf     import Sheaf
 
+from .functor import Functor
 from .multigraph import MultiGraph
 
 from topos.core import sparse
@@ -18,7 +19,7 @@ def lexsorting(a, b):
     return idx
 
 
-class Quiver(MultiGraph):
+class Quiver(MultiGraph, Functor):
     """
     Quivers are sets of vertices and arrows, i.e. directed  1-multigraphs.
 
@@ -82,15 +83,15 @@ class Quiver(MultiGraph):
             graphT = []
             for f in arrows:
                 Tf = functor.fmap(f)
-                src = functor(self.source(f))
-                N   = src.size if 'size' in dir(src) else fp.Torus(src).size
+                src = functor(f[0])
+                N = src.size if 'size' in dir(src) else fp.Torus(src).size
                 gf = Tf(torch.arange(N)) 
                 graphT.append(gf.data)
             graphT = self[1].field(torch.cat(graphT))
         else:
             graphT = self[1].zeros()
         self.functor_graph = graphT
-    
+
     def source(self, a):
         """ Source of arrow. """
         a = io.readTensor(a).long()
@@ -115,12 +116,54 @@ class Quiver(MultiGraph):
         """ Yield arrows """
         return self.functor_graph 
 
+    def fmap (self, f):
+        """
+        Functorial graph associated to f = [a, b] or f = [[*as], [*bs]].
+
+        In the case of multiple arrows we return the concatenated 
+        functorial graphs (i.e. coproduct of arrows). The associated
+        sparse matrix acting on Q[0] will then yield the sum of arrows.
+        """
+        i, j = io.readTensor(f[0]), io.readTensor(f[1])
+        i, j = i.view([-1]), j.view([-1])
+        ij   = torch.stack([i, j])
+
+        #--- Scalar coefficients ---
+        if self.trivial:
+            return ij
+
+        #--- Functorial coefficients ---
+        obj, hom = self[0], self[1]
+        # object indices
+        I = i.repeat_interleave(obj.sizes[i])
+        J = j.repeat_interleave(obj.sizes[i])
+        # arrow indices
+        narr = hom.keys.shape[-1]
+        f = io.readTensor(f, dtype=torch.long).view([narr, -1])
+        k = hom.index(f.T)
+        K = k.repeat_interleave(obj.sizes[i])
+        # functor graph
+        F = self.arrows().data
+        # relative source index
+        off_i  = obj.sizes[i].cumsum(0).roll(1)
+        off_i[0] = 0
+        off_I = off_i.repeat_interleave(obj.sizes[i])
+        Ioff = torch.arange(I.shape[0]) - off_I
+        # relative target index
+        Joff = F[hom.begin[K] + Ioff]
+        # absolute source and target indices
+        Fi = obj.begin[I] + Ioff
+        Fj = obj.begin[J] + Joff
+        Fij = torch.stack([Fi, Fj])
+        return Fij
+
     def __repr__(self):
         name = self.__name__ if '__name__' in dir(self) else 'Q'
         return name
 
 
 class Supset(fp.Arrow):
+
 
     def __new__(cls, A, B):
         TAB = super().__new__(cls, A, B)
