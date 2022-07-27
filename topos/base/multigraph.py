@@ -72,7 +72,7 @@ class MultiGraph (Sheaf):
         #--- Graph attributes ---
         self.adj   = [Gd.adj for Gd in fibers]
         self.idx   = [Gd.idx for d, Gd in enumerate(fibers)]
-        self.Ntot  = sum(len(Gd) for Gd in G)
+        self.Ntot  = sum(Gd.keys.shape[0] for Gd in fibers)
         self.size  = self.sizes.sum()
         self.Nvtx  = self.adj[0].shape[0]
         self.vertices   = G[0].squeeze(1)
