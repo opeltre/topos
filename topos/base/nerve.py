@@ -1,5 +1,6 @@
 from topos.core import sparse, Shape, Linear, linear_cache
 from topos.io   import readTensor
+from .functor   import Functor
 from .complex   import Complex
 from .graph     import Graph
 
@@ -128,7 +129,7 @@ class Nerve (Complex):
             quiver = quiver.quiver()
             quiver.__name__ = name
         # vertices and arrows
-        Ntot = quiver[0].size
+        Ntot = quiver[0].keys.shape[0]
         Q1 = quiver.grades[1]
         N0   = torch.ones([Ntot]).to_sparse()
         N1   = sparse.matrix([Ntot, Ntot], Q1[:,:2])
@@ -146,10 +147,23 @@ class Nerve (Complex):
             Nd = sparse.matrix([Ntot] * (deg + 1), torch.stack(ijk))
             N += [Nd.coalesce()]
             deg += 1
-        NQ = cls((Nd.indices().T for Nd in N), sort=False)
+       
+        # scalar coefficients
+        if quiver.trivial:
+            F = None
+        # functorial coefficients
+        else:
+            def last_obj(a):
+                return a[-1] if a.dim() == 1 else a[:,-1]
+            def last_hom(f):
+                a, b = f[0], f[1]
+                return last_obj(a), last_obj(b)
+            last = Functor(last_obj, last_hom)
+            F = quiver.functor @ last
+
+        NQ = cls((Nd.indices().T for Nd in N), functor=F, sort=False)
         NQ.__name__ = f'N({quiver.__name__})' if '__name__' in dir(quiver) else 'N(Q)'
         return NQ
-
 
     def __repr__(self):
         name = self.__name__ if '__name__' in dir(self) else 'N'

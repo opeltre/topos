@@ -1,7 +1,7 @@
 import test
 import torch
 
-from topos.base import Graph, Nerve
+from topos.base import Graph, Nerve, FreeFunctor
 
 G = Graph([[0],
            [[0, 1],[0, 2], [0, 3]],
@@ -9,7 +9,7 @@ G = Graph([[0],
 
 N = Nerve.classify(G.quiver())
 
-class TestComplex (test.TestCase):
+class TestNerve (test.TestCase):
 
     def test_zeta(self):
         zeta = N.zeta(0).data
@@ -30,4 +30,14 @@ class TestComplex (test.TestCase):
         # zt2 = id2 as 2 = len(N) is the maximal degree.
         id2 = torch.eye(6)
         self.assertClose(id2, zt[2].to_dense())
+
+class TestNerveFunctor(test.TestCase):
+
+    def test_classify(self):
+        GF = Graph(G, FreeFunctor(2))
+        NF = GF.nerve()
+        self.assertEqual(NF.sizes[0], 2 + 4*3 + 8*3)
+        self.assertEqual(NF.sizes[1], 2*6 + 4*6)
+        self.assertEqual(NF.sizes[2], 2*6)
+
         
