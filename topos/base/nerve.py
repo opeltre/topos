@@ -57,7 +57,8 @@ class Nerve (Complex):
         a, b = self.coords(i), self.coords(j)
         Fab  = self.fmap([a, b])
         N = self[d].size
-        return sparse.matrix([N, N], Fab - self.begin[d], t=False)
+        zt = sparse.matrix([N, N], Fab - self.begin[d], t=False)
+        return Linear(self[d], self[d])(zt, 0, "\u03b6")
 
     def zetas (self, d=-1):
         """
@@ -162,8 +163,8 @@ class Nerve (Complex):
             off_eq = Q[0].sizes[ak[eq]].cumsum(0).roll(1)
             off_eq[0] = 0
             off_a = off_eq.repeat_interleave(ns)
-            begin_a = self.begin[k] + Q[0].begin[ak[eq]].repeat_interleave(ns)
-            begin_b = self.begin[r] + Q[0].begin[br[eq]].repeat_interleave(ns)
+            begin_a = self.begin[k] + self[k].begin[i[eq]].repeat_interleave(ns)
+            begin_b = self.begin[r] + self[r].begin[j[eq]].repeat_interleave(ns)
             n = off_a.shape[0]
             Fa = torch.arange(n) - off_a + begin_a
             Fb = torch.arange(n) - off_a + begin_b
