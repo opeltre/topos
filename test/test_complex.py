@@ -29,11 +29,24 @@ class TestComplex (test.TestCase):
         self.assertClose(expect, result)
 
     def test_functor(self):
+        """ 
+        Test functor-valued differential 
+        
+        N.B: Different from the free functor on the nerve of a covering. 
+        Here a constant p in K0 is extended by local constants in K1 
+        """
         F = FreeFunctor(2)
         KF = Complex(K, F)
+        # d0 : K0 -> K1 
         d0 = KF.diff(0)
         self.assertEqual(d0.src, KF.Field(0))
         self.assertEqual(d0.tgt, KF.Field(1))
+        p = KF.ones(0)
+        self.assertClose(d0(p).data, KF.zeros(1).data)
+        q = KF.zeros(0)
+        q.data[KF[0].begin] = 1
+        self.assertTrue(d0(q).data.norm() > 1)
+        # d1 : K1 -> K2 vanishes on Im(d0)
         d1 = KF.diff(1)
         self.assertEqual(d1.src, KF.Field(1))
         self.assertEqual(d1.tgt, KF.Field(2))
