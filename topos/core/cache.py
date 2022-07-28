@@ -21,7 +21,6 @@ def linear_cache (name, symbol=None):
         def runCached (self, x=None):
             #-- Degree and cache key
             d     = x.degree if 'degree' in dir(x) else x
-            print(d)
             deg   = isinstance(d, type(None))
             cache = self._cache if deg else self[d]._cache
             #-- Read/write cache
@@ -33,7 +32,7 @@ def linear_cache (name, symbol=None):
                 cache[name] = op
             #-- Apply to x / return op
             if isinstance(x, self.Field(d)):
-                return op @ x
+                return op @ x.data
             elif isinstance(x, torch.Tensor):
                 return op.tgt.field(op.data @ x)
             return op

@@ -53,3 +53,10 @@ class TestNerveFunctor(test.TestCase):
         GF = Graph(G, FreeFunctor(3))
         NF = GF.nerve()
         zts = NF.zetas()
+        # commutes with scalar extension
+        N = NF.scalars()
+        j0 = NF[0].to_scalars().t()
+        x = N.ones(0)
+        X0 = NF.zeta(j0 @ x)
+        X1 = j0 @ N.zeta(x)
+        self.assertClose(X0.data, X1.data)

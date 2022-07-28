@@ -33,7 +33,7 @@ class Linear(fp.Linear):
 
             def t(self):
                 d, name = self.degree, self.__name__ + '*'
-                return self.__class__(self.data.T, d, name)
+                return Linear(B, A)(self.data.t(), d, name)
 
             def __truediv__(self, other): 
                 """ 
