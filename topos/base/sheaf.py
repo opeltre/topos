@@ -61,12 +61,6 @@ class Sheaf (Domain):
         self.begin = begin[:-1]
         self.end   = begin[1:]
     
-    def scalars(self):
-        """ Trivial sheaf i.e. scalar-valued. """
-        if self.is_sparse:
-            return self.__class__(self.adj, None, self.degree)
-        return self.__class__(self.keys, None, self.degree)
-    
     def index(self,  key, output=None):
         """ Index of a key """
         if self.is_sparse:
@@ -78,7 +72,15 @@ class Sheaf (Domain):
             return idx
         else:
             return self.idx[key]
-            
+
+    #--- Trivial sheaf --- 
+
+    def scalars(self):
+        """ Trivial sheaf i.e. scalar-valued. """
+        if self.is_sparse:
+            return self.__class__(self.adj, None, self.degree)
+        return self.__class__(self.keys, None, self.degree)
+    
     @linear_cache("\u03c0")
     def to_scalars(self):
         O = self.scalars()
@@ -90,6 +92,14 @@ class Sheaf (Domain):
     
     def from_scalars(self):
         return self.to_scalars().t()
+    
+    #--- Morphisms ---
+    
+    def eye(self, i=None):
+    #--- Iterators ---
+        if not isinstance(i, type(None)):
+            return self[i].eye()
+        return Linear(self, self)(sparse.eye(self.size), 0, "I")
 
     def arrow (self, a, b):
         n = self.size

@@ -40,6 +40,20 @@ class Nerve (Complex):
         https://arxiv.org/abs/2009.11631
     """
     
+    @linear_cache("mu", "\u03bc")
+    def mu(self, d=0):
+        n = self.dim + 1
+        zt = self.zeta(d)
+        Id = self.eye(d)
+        dz1 = self.zeta(d) - Id
+        dzi = dz1 + (Id - Id)
+        mobius = Id
+        mobius.__name__ = '\u03bc'
+        for i in range(1, n):
+            mobius = mobius + (-1)**i * dzi
+            dzi = dzi @ dz1
+        return mobius
+
     @linear_cache("zeta", "\u03b6")
     def zeta (self, d=0):
         """ 

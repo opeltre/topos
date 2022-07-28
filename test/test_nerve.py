@@ -66,11 +66,22 @@ class TestNerveFunctor(test.TestCase):
         y = N.ones(1)
         j1 = NF.from_scalars(1)
         Y1, Y2 = NF.zeta(1)(j1 @ y), j1 @ N.zeta(y)
-        print('y1:\n', j1 @ y)
-        print('Y1:\n', Y1)
-        print('Y2:\n', Y2)
         self.assertClose(Y1.data, Y2.data)
         # N2
         zt2 = NF.zeta(2).data.to_dense()
-        print(zt2)
         self.assertClose(zt2, torch.eye(zt2.shape[0]))
+
+    def test_mu(self):
+        """ Functor valued Möbius inversion """
+        GF = Graph(G, FreeFunctor(3))
+        N = G.nerve()
+        # mu0
+        mu0, zt0 = N.mu(0), N.zeta(0)
+        result = (mu0 @ zt0).data.to_dense()
+        expect = torch.eye(N[0].size)
+        self.assertClose(expect, result)     
+        # mu1
+        mu1, zt1 = N.mu(1), N.zeta(1)
+        result = (mu1 @ zt1).data.to_dense()
+        expect = torch.eye(N[1].size)
+        self.assertClose(expect, result)     

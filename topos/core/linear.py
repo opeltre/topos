@@ -55,6 +55,7 @@ class Linear(fp.Linear):
                     w = diag(D.size, other.data)
                     out = matmul(self.data, w)
                     return self.__class__(out)
+                return super().__mul__(other)
 
             def __rmul__(self, other):
                 if isinstance(other, self.__class__):
@@ -64,6 +65,7 @@ class Linear(fp.Linear):
                     w = diag(D.size, other.data)
                     out = matmul(w, self.data)
                     return self.__class__(out)
+                return super().__rmul__(other)
             
         return LinAB
     
