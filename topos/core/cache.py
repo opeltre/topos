@@ -21,6 +21,7 @@ def linear_cache (name, symbol=None):
         def runCached (self, x=None):
             #-- Degree and cache key
             d     = x.degree if 'degree' in dir(x) else x
+            print(d)
             deg   = isinstance(d, type(None))
             cache = self._cache if deg else self[d]._cache
             #-- Read/write cache

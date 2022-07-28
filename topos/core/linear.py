@@ -31,6 +31,10 @@ class Linear(fp.Linear):
                 if name:
                     self.__name__ = name
 
+            def t(self):
+                d, name = self.degree, self.__name__ + '*'
+                return self.__class__(self.data.T, d, name)
+
             def __truediv__(self, other): 
                 """ 
                 Divide coefficients by numerical data (e.g. scalar).
@@ -74,7 +78,6 @@ class Linear(fp.Linear):
         g_base = fp.Linear(g.src.shape, g.tgt.shape)(g.data)
         fg = fp.Linear.compose(f_base, g_base)
         return cls(g.src.domain, f.tgt.domain)(fg.data)
-
 
 
 class Linear2 (Functional, Vect): 
