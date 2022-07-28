@@ -1,7 +1,7 @@
 import test
 import torch
 
-from topos.base import Complex
+from topos import Complex, FreeFunctor
 
 K = Complex.simplicial([[0, 1, 2, 3], [1, 2, 3, 4]])
 
@@ -27,3 +27,15 @@ class TestComplex (test.TestCase):
         result = torch.sparse.mm(d2, d1).to_dense()
         expect = torch.zeros([2, 9])
         self.assertClose(expect, result)
+
+    def test_functor(self):
+        F = FreeFunctor(2)
+        KF = Complex(K, F)
+        d0 = KF.diff(0)
+        self.assertEqual(d0.src, KF.Field(0))
+        self.assertEqual(d0.tgt, KF.Field(1))
+        d1 = KF.diff(1)
+        self.assertEqual(d1.src, KF.Field(1))
+        self.assertEqual(d1.tgt, KF.Field(2))
+        result = (d1 @ d0).data.to_dense()
+        expect = torch.zeros([KF.sizes[2], KF.sizes[0]])
