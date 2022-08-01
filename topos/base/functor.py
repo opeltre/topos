@@ -29,19 +29,19 @@ class FreeFunctor(Functor):
     """
     Free functor on the powerset of integers.
 
-    A region a = [i0, ..., in] is mapped to the cartesian product: 
+    A region a = [i0, ..., ik] is mapped to the cartesian product: 
     
-        F(a) = Fi0 x ... x Fin
+        F(a) = Fi0 x ... x Fik
 
     An inclusion b <= a is here assumed represented by a pair
         
-        (a, b) = ([i0, ..., in], [j0, ..., jk]).
+        (a, b) = ([i0, ..., ik], [j0, ..., jr]).
 
     and it is mapped to the restriction that forgets variables in a - b:
 
         F.fmap((a, b)) : F(a) -> F(b)
 
-    See Graph.quiver() to compute inclusions and associated restrictions.
+    See `Graph.quiver()` to compute inclusions and associated restrictions.
     """
 
     def __init__(self, shape):
@@ -63,10 +63,16 @@ class FreeFunctor(Functor):
 
         # object map
         def obj(a):
+            """ 
+            Cartesian product of objects over a = [i0, ..., ik].
+            """
             return fp.Torus([F(i) for i in a])
 
         # arrow map
         def fmap(f):
+            """ 
+            Restriction map from dims [i0, ..., ik] to dims [j0, ..., ir]. 
+            """
             a, b = io.readTensor(f[0]), io.readTensor(f[1])
             src, tgt = obj(a), obj(b)
             js = torch.bucketize(b, a)
