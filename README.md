@@ -41,14 +41,16 @@ _Github doesn't render this section's md + tex properly... Find a better way to 
 
 The purpose of this library is to provide efficient data structures for 
 [sheaves](sheaf) $F : \mathcal{P}(\Omega)^{op} \to \mathrm{Set}$, where
-$\Omega = \{ 0, \dots, N_{\rm vtx} - 1 \}$ is a possibly large set of indices. 
-Canonical examples are given by 
-random variables <span>$X = (X_i)_{i \in \Omega}$</span> such that each $X_i$ is valued in a set $F_i$,
-as for every $a \subseteq \Omega$ 
+$\Omega = \{ 0, \dots, N_{\rm vtx} - 1 \}$ is a possibly large set of indices.
+
+<p>
+Canonical examples are given by random variables $X = (X_i)_{i \in \Omega}$ such that each $X_i$
+is valued in a set $F_i$, as for every $a \subseteq \Omega$ 
 one may observe a restricted joint variable $X_a$ 
-valued in <span>$F_a = \prod_{i \in \Omega} F_i$</span>.
-The sheaf $F$ is then called a [free functor](topos/base/functor.py) over $\mathcal{P}(\Omega)^{op}$.
+valued in $F_a = \prod_{i \in \Omega} F_i$.
+The sheaf $F$ is then called a <a href='topos/base/functor.py'>free functor</a> over $\mathcal{P}(\Omega)^{op}$.
 On top of such a sheaf lie algebras of local observables defined by $\mathbb{R}^F : {\cal P}(\Omega) \to \mathbf{Alg}_c$.
+</p>
 
 Because integration is not tractable on the global configuration space $F_\Omega$ for large $N_{\rm vtx}$, it is preferable to work with local 
 functionals with respect to a covering $K \subseteq {\cal P}(\Omega)$. More precisely, when $K$ is graded e.g. by the dimension ${\rm dim}(a) = 1 + {\rm card}(a)$, we may define an algebra of _degree-n local fields on_ $K$:
@@ -114,7 +116,9 @@ A field instance `x = D.field(data)` can be created from any numerical data of t
 
 The `Sheaf` class is a generic base class representing finite 
 domains defined as a [dependent sum] type:
+
 $$ F(K) = \bigsqcup_{a \in K} F_a $$
+
 i.e. points of $F(K)$ are key-value pairs
 $(a, x_a)$ for $a$ in a set of keys $K$ and $x_a$ in the finite set $F_a$.
 A trivial sheaf, i.e. with a point above each key, is constructed by default. No categorical structure is assumed on $K$ so that one may create a non-trivial `Sheaf` instance by supplying shapes above each key by a list of shapes, a callable, or aggregate keys and shapes in a dictionnary. 
