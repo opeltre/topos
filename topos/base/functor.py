@@ -9,6 +9,11 @@ class Functor:
         """ Create functor from object and arrow maps. """
         self.obj_map = f0
         self.hom_map = f1
+        try:
+            if f0.__doc__: self.__call__.__func__.__doc__ = f0.__doc__
+            if f1.__doc__:self.fmap.__func__.__doc__ = f1.__doc__ 
+        except:
+            pass
 
     def __call__(self, i):
         """ Object map. """
@@ -24,6 +29,15 @@ class Functor:
         f1 = lambda f:self.fmap(other.fmap(f))
         return Functor(f0, f1)
 
+
+class ConstantFunctor(Functor):
+    """
+    Constant Functor i.e. with one target object and identities. 
+    """
+    def __init__(self, shape):
+        self.shape = shape
+        super().__init__(lambda _: shape, lambda _:lambda x: x)
+    
 
 class FreeFunctor(Functor):
     """
