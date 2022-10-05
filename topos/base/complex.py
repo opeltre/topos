@@ -34,7 +34,11 @@ class Complex (Graph):
             Fk = self.fmap((tgt, face(k, tgt))).T - off 
             out += (-1.) ** k * sparse.matrix([N, P], Fk)
         return Linear(self[d], self[d + 1])(out, degree=1, name="d")
-            
+    
+    @linear_cache("d*")
+    def codiff(self, d):
+        """ Codifferential d* : K[d] -> K[d - 1]. """
+        return self.diff(d - 1).t()
     
     @classmethod
     def simplicial(cls, faces):

@@ -110,7 +110,8 @@ class Field (fp.meta.Functor):
 
     @classmethod
     def name(cls, A):
-        return f'Field {A.size}'
+        name = A.__name__ if '__name__' in dir(A) else "\u03a9"
+        return f'Field {name}'
         
 
 class Field2 :

@@ -31,6 +31,10 @@ class Linear(fp.Linear):
                 if name:
                     self.__name__ = name
 
+            def t(self):
+                d, name = self.degree, self.__name__ + '*'
+                return Linear(B, A)(self.data.t(), d, name)
+
             def __truediv__(self, other): 
                 """ 
                 Divide coefficients by numerical data (e.g. scalar).
@@ -51,6 +55,7 @@ class Linear(fp.Linear):
                     w = diag(D.size, other.data)
                     out = matmul(self.data, w)
                     return self.__class__(out)
+                return super().__mul__(other)
 
             def __rmul__(self, other):
                 if isinstance(other, self.__class__):
@@ -60,6 +65,7 @@ class Linear(fp.Linear):
                     w = diag(D.size, other.data)
                     out = matmul(w, self.data)
                     return self.__class__(out)
+                return super().__rmul__(other)
             
         return LinAB
     
@@ -74,7 +80,6 @@ class Linear(fp.Linear):
         g_base = fp.Linear(g.src.shape, g.tgt.shape)(g.data)
         fg = fp.Linear.compose(f_base, g_base)
         return cls(g.src.domain, f.tgt.domain)(fg.data)
-
 
 
 class Linear2 (Functional, Vect): 

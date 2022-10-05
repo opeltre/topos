@@ -1,7 +1,7 @@
 from .sheaf     import Sheaf
 from .functor   import Functor
 
-from topos.core import sparse, Shape, simplices
+from topos.core import sparse, Shape, simplices, Linear, linear_cache
 import topos.io as io
 from topos.io   import alignString, readTensor
 
@@ -85,12 +85,11 @@ class MultiGraph (Sheaf):
         self._quiver = None
         self.__name__ = 'G'
 
-    def scalars(self):
-        return self if self.trivial else self.__class__(self.grades)
-
     def __getitem__(self, d):
         """ Return sparse domain at degree d. """
         return self.fibers[d] 
+
+    #--- Index functor [j0, ..., jn] -> i ---
 
     def index (self, js, output=None):
         """ Index i of hyperedge [j0, ..., jn]. """
@@ -119,6 +118,8 @@ class MultiGraph (Sheaf):
     def index_fmap(self, f):
         return torch.stack([self.index(f[0]), self.index(f[1])])
 
+    #--- Coords functor i -> [j0, ..., jn] ---
+
     def coords(self, i, d=None):
         """ Hyperedge [j0, ..., jn] at index i. """
         if not self.trivial:
@@ -136,6 +137,28 @@ class MultiGraph (Sheaf):
     def coords_fmap(self, f):
         """ Map a pair of indices to coordinates. """
         return self.coords(f[0]).contiguous(), self.coords(f[1]).contiguous()
+
+    #--- Trivial sheaf --- 
+
+    def scalars(self):
+        return self if self.trivial else self.__class__(self.grades)
+
+    @linear_cache("\u03c0")
+    def to_scalars(self, d=None): 
+        if not isinstance(d, type(None)):
+            return self[d].to_scalars()
+        sizes = torch.cat([Gd.sizes for Gd in self.fibers])
+        O = self.scalars()
+        i = O.range().data.repeat_interleave(sizes)
+        j = self.range().data
+        ij = torch.stack([i, j])
+        mat = sparse.matrix([O.size, self.size], ij, t=False)
+        return Linear(self, O)(mat, degree=0, name="\u03c0")
+    
+    def from_scalars(self, d=None):
+        return self.to_scalars(d).t()
+
+    #--- Other ---
 
     def __len__(self):
         """ Maximal degree. """

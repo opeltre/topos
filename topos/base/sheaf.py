@@ -1,7 +1,7 @@
 from .domain    import Domain
 
 import topos.io as io
-from topos.core import sparse
+from topos.core import sparse, linear_cache, Linear
 
 import torch
 import fp
@@ -16,8 +16,6 @@ class Sheaf (Domain):
         idx  = io.readTensor(indices, dtype=torch.long)
         adj  = sparse.tensor(shape, idx, dtype=torch.long).coalesce()
         sheaf = cls(adj, functor, degree)
-        sheaf.adj = adj
-        sheaf.is_sparse = True
         return sheaf
 
     def __init__(self, keys=None, functor=None, degree=None):
@@ -44,7 +42,10 @@ class Sheaf (Domain):
         is_domain = lambda f: 'coords' in dir(f) or isinstance(f, Domain)
         is_trivial = lambda f: f.trivial if 'trivial' in dir(f) else f.size == 1
         #--- Sparse sheaves ---
-        self.is_sparse, self.adj = False, None
+        if isinstance(keys, torch.Tensor) and keys.is_sparse:
+            self.is_sparse, self.adj = True, keys
+        else:
+            self.is_sparse, self.adj = False, None
         #--- Fiber index ---
         self.idx, self.keys, fibers = io.readFunctor(keys, functor)
         self.fibers = [f if is_domain(f) else fp.Torus(f) for f in fibers]
@@ -59,7 +60,7 @@ class Sheaf (Domain):
         self.sizes = sizes
         self.begin = begin[:-1]
         self.end   = begin[1:]
-   
+    
     def index(self,  key, output=None):
         """ Index of a key """
         if self.is_sparse:
@@ -71,6 +72,34 @@ class Sheaf (Domain):
             return idx
         else:
             return self.idx[key]
+
+    #--- Trivial sheaf --- 
+
+    def scalars(self):
+        """ Trivial sheaf i.e. scalar-valued. """
+        if self.is_sparse:
+            return self.__class__(self.adj, None, self.degree)
+        return self.__class__(self.keys, None, self.degree)
+    
+    @linear_cache("\u03c0")
+    def to_scalars(self):
+        O = self.scalars()
+        i = O.range().data.repeat_interleave(self.sizes)
+        j = self.range().data
+        N, P = O.size, self.size
+        pi = sparse.matrix([N, P], torch.stack([i, j]), t=0)
+        return Linear(self, O)(pi, degree=0, name="\u03c0")
+    
+    def from_scalars(self):
+        return self.to_scalars().t()
+    
+    #--- Morphisms ---
+    
+    def eye(self, i=None):
+    #--- Iterators ---
+        if not isinstance(i, type(None)):
+            return self[i].eye()
+        return Linear(self, self)(sparse.eye(self.size), 0, "I")
 
     def arrow (self, a, b):
         n = self.size

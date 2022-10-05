@@ -50,6 +50,38 @@ class TestNerveFunctor(test.TestCase):
         self.assertClose(Fii, torch.arange(Fii.shape[1]).repeat(2, 1))
 
     def test_zeta(self):
+        """ Functor-valued zeta commutes with scalar extension """
         GF = Graph(G, FreeFunctor(3))
         NF = GF.nerve()
+        N = NF.scalars()
+        # compute zeta[d] for all degrees
         zts = NF.zetas()
+        # N0
+        x = N.ones(0)
+        j0 = NF[0].to_scalars().t()
+        X0 = NF.zeta(j0 @ x)
+        X1 = j0 @ N.zeta(x)
+        self.assertClose(X0.data, X1.data)
+        # N1 
+        y = N.ones(1)
+        j1 = NF.from_scalars(1)
+        Y1, Y2 = NF.zeta(1)(j1 @ y), j1 @ N.zeta(y)
+        self.assertClose(Y1.data, Y2.data)
+        # N2
+        zt2 = NF.zeta(2).data.to_dense()
+        self.assertClose(zt2, torch.eye(zt2.shape[0]))
+
+    def test_mu(self):
+        """ Functor valued Möbius inversion """
+        GF = Graph(G, FreeFunctor(3))
+        N = G.nerve()
+        # mu0
+        mu0, zt0 = N.mu(0), N.zeta(0)
+        result = (mu0 @ zt0).data.to_dense()
+        expect = torch.eye(N[0].size)
+        self.assertClose(expect, result)     
+        # mu1
+        mu1, zt1 = N.mu(1), N.zeta(1)
+        result = (mu1 @ zt1).data.to_dense()
+        expect = torch.eye(N[1].size)
+        self.assertClose(expect, result)     

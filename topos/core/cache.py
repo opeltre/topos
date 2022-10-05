@@ -32,7 +32,7 @@ def linear_cache (name, symbol=None):
                 cache[name] = op
             #-- Apply to x / return op
             if isinstance(x, self.Field(d)):
-                return op @ x
+                return op @ x.data
             elif isinstance(x, torch.Tensor):
                 return op.tgt.field(op.data @ x)
             return op
