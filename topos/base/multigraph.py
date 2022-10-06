@@ -21,7 +21,7 @@ class MultiGraph (Sheaf):
     of arrows, see subclasses e.g. Quiver, Graph, Complex, Nerve...
     """
 
-    def __init__(self, grades, functor=None, sort=False):
+    def __init__(self, grades, functor=None, sort=False, name='G'):
         """
         Create multigraph G from list of graded multiedges.
 
@@ -57,6 +57,8 @@ class MultiGraph (Sheaf):
 
         self.grades  = G
         self.dim     = len(G) - 1
+        self.__name__ = name
+        self._quiver  = None
 
         #--- Label sizes
         nlabels = [Gi.shape[-1] - (i + 1) for i, Gi in enumerate(G)]
@@ -66,8 +68,9 @@ class MultiGraph (Sheaf):
         Nvtx  = int(1 + max(Gi[:,:i+1].max() for i, Gi in enumerate(G)))
         Nlbl  = [(int(1 + Gi[:,i+1:].max()) if nlabels[i] else 1) for i, Gi in enumerate(G)]
         shapes = [[Nvtx] * (d + 1) + [Nlbl[d]] * nlabels[d] for d in range(len(G))]
-        fibers = [Sheaf.sparse(shapes[d], G[d], functor, degree=d) for d in range(len(G))]
-        super().__init__(functor=fibers)
+        fibers = [Sheaf.sparse(shapes[d], G[d], functor, degree=d, name=f'{name}[{d}]') 
+                    for d in range(len(G))]
+        super().__init__(functor=fibers, name=name)
 
         #--- Graph attributes ---
         self.adj   = [Gd.adj for Gd in fibers]
@@ -81,10 +84,7 @@ class MultiGraph (Sheaf):
         self.functor = functor
         self.Coords  = Functor(self.coords, self.coords_fmap)
         self.Index   = Functor(self.index, self.index_fmap)
-        
-        self._quiver = None
-        self.__name__ = 'G'
-
+          
     def __getitem__(self, d):
         """ Return sparse domain at degree d. """
         return self.fibers[d] 
