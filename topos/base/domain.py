@@ -14,6 +14,19 @@ class Domain(fp.meta.Type):
         self.device = device
         self._cache = {}
 
+    def torch_fmap(self, f, name='\u033b'):
+        def map_f(x):
+            if isinstance(x, int):
+                src = self.Field(x)
+                F = fp.Arrow(src, src)(f)
+                F.__name__ = name
+                return F
+            elif isinstance(x, Field):
+                src = self.Field(x.degree)
+                return src(f(x))
+        map_f.__name__ = name
+        return map_f
+
     #--- Field Creation ---
 
     def Field(self, degree=None):
@@ -47,6 +60,8 @@ class Domain(fp.meta.Type):
         tgt = self if d == None else self[d]
         return self.field(torch.arange(tgt.size), d)
 
+    #--- Fiber iteration --- 
+
     def __iter__(self):
         return range(self.size).__iter__()
 
@@ -58,6 +73,8 @@ class Domain(fp.meta.Type):
         """ Slice (begin, end, domain) at key k. """
         return (0, self.size, self)
 
+    #--- Show --- 
+
     def __str__(self):
         return self.show()
     
@@ -65,4 +82,5 @@ class Domain(fp.meta.Type):
         return f"Domain {self}"
 
     def show (self, json=False):
-        return f'(size:{self.size})'
+        return (self.__name__ if '__name__' in dir(self)
+                              else f'(size:{self.size})')

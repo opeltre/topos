@@ -6,3 +6,4 @@ build
 *.egg-info
 
 **/_*
+!**/__init__.py
