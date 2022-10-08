@@ -2,6 +2,7 @@ import fp
 import torch
 
 from topos.base import Nerve
+from topos.core import linear_cache, face
 
 
 def graded_map(method):
@@ -11,8 +12,12 @@ def graded_map(method):
         return method(self, x, *args, **kwargs)
     return run
 
+
 class Network(Nerve):
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     @graded_map
     def exp_(self, d, beta=1):
         """
@@ -55,10 +60,19 @@ class Network(Nerve):
         
     def freeEnergy(self, x):
         pass
-
+    
     def freeGrad(self, x):
+        d0 = self.face(0)
         # => cache face(0) and face(1) linear maps 
         pass
+
+    @linear_cache('face0')
+    def face_0(self):
+        return super().face(0, 0)
+    
+    @linear_cache('face1')
+    def face_1(self):
+        return super().face(0, 1)
 
 
 def GBPDiffusion(network):
