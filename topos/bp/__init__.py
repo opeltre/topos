@@ -1,1 +1,1 @@
-from .belief_propagation import Network
+from .network import Network

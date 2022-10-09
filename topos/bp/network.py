@@ -23,7 +23,7 @@ class Network(Nerve):
         """
         Exponential map from energies to unnormalized Gibbs densities. 
 
-        Returns `torch.exp(- beta * x)`. 
+        Returns `H -> torch.exp(- beta * H)`. 
         """
         src = self.Field(d)
         f = fp.Arrow(src, src)(lambda t: torch.exp(- beta * t.data))
@@ -35,7 +35,7 @@ class Network(Nerve):
         """
         Logarithmic map from densities to energies.
 
-        Returns `- torch.log(x) / beta`. 
+        Returns `G -> - torch.log(G) / beta`. 
         """
         src = self.Field(d)
         f = fp.Arrow(src, src)(lambda t: - torch.log(t.data) / beta)
@@ -47,7 +47,10 @@ class Network(Nerve):
         """
         Normalized Gibbs density. 
 
-        Defined by `p(x) = exp(- beta * x) / Z` (sometimes called a softmin).
+        Defined by `p(H) = exp(- beta * H) / Z` 
+        
+        These beliefs may sometimes be called 'softmins' of H at inverse
+        temperature beta.
         """
         src = self.Field(d)
         def p(H):
@@ -57,21 +60,58 @@ class Network(Nerve):
         f = fp.Arrow(src, src)(p)
         f.__name__ = "gibbs"
         return f
+
+    def uniform(self, d=None):
+        """
+        Uniform beliefs.
+        """
+        return self.gibbs(self.zeros(d))
         
     def freeEnergy(self, x):
         pass
     
-    def freeGrad(self, x):
-        d0 = self.face(0)
-        # => cache face(0) and face(1) linear maps 
-        pass
+    def freeGrad(self, beta=1):
+        """
+        Free Energy Gradient N[0] -> N[1].
+
+        Given an input energy H in N[0], the free energy
+        gradient D(H) in N[1] associates to every 1-chain 'a > b'
+        the difference:
+
+            D(H)[a, b] = H[b] + ln sum_{a - b} exp(-H[a])
+
+        The inverse temperature parameter `beta` represents conjugation by energy 
+        scalings: 
+
+            D_beta(H) = D(beta * H) / beta
+    
+        Higher beta = 1 / T means lower temperature and higher non-linearity. 
+
+        The tangent map at H of D is a linear operator N[0] -> N[1] 
+        where conditional free energies are replaced by conditional expectations
+        with respect to local Gibbs states induced by H. 
+
+        The tangent map TD(H) extends to a differential if on N[.] iff
+        local gibbs states are consistent.
+        """
+
+        d0, d1 = self.face0(), self.face1()
+        e0, ln1 = self.exp_(0, beta), self._ln(1, beta)
+
+        @fp.Arrow(self.Field(0), self.Field(1))
+        def D(H):
+            return d0(H) - ln1 (d1(e0(H)))
+        
+        return D
+
+
 
     @linear_cache('face0')
-    def face_0(self):
+    def face0(self):
         return super().face(0, 0)
     
     @linear_cache('face1')
-    def face_1(self):
+    def face1(self):
         return super().face(0, 1)
 
 
