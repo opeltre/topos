@@ -69,7 +69,7 @@ class Network(Nerve):
         """
         return self.gibbs(self.zeros(d))
 
-    def BetheFreeEnergy(self, beta=1):
+    def freeBethe(self, beta=1):
         """
         Bethe free energy F_Bethe: N[0] -> R. 
 
@@ -110,18 +110,17 @@ class Network(Nerve):
         
         return F
     
-    def freeGrad(self, beta=1):
+    def freeDiff(self, beta=1):
         """
-        Free Energy Gradient N[0] -> N[1].
+        Conditional free energy differences N[0] -> N[1].
 
         Given an input energy H in N[0], the free energy
-        gradient D(H) in N[1] associates to every 1-chain 'a > b'
-        the difference:
+        difference D(H) associates to every 1-chain 'a > b' in N[1]
 
             D(H)[a, b] = H[b] + ln sum_{a - b} exp(-H[a])
 
-        The inverse temperature parameter `beta` represents conjugation by energy 
-        scalings: 
+        The inverse temperature parameter `beta` acts as
+        conjugation by energy scalings: 
 
             D_beta(H) = D(beta * H) / beta
     
