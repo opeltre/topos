@@ -74,6 +74,10 @@ class Nerve (Complex):
         zt = sparse.matrix([N, N], Fab - self.begin[d], t=False)
         return Linear(self[d], self[d])(zt, 0, "\u03b6")
 
+    def bethe (self, d=0):
+        O = self.scalars()
+        return O.mu(d).t() @ O.ones(d)
+
     def zetas (self, d=-1):
         """
         List of zeta transforms in degrees <= d.

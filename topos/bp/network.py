@@ -21,9 +21,9 @@ class Network(Nerve):
     @graded_map
     def exp_(self, d, beta=1):
         """
-        Exponential map from energies to unnormalized Gibbs densities. 
+        Exponential map N[d] -> N[d] from energies to positive densities. 
 
-        Returns `H -> torch.exp(- beta * H)`. 
+        Returns `H -> exp(- beta * H)`. 
         """
         src = self.Field(d)
         f = fp.Arrow(src, src)(lambda t: torch.exp(- beta * t.data))
@@ -33,9 +33,9 @@ class Network(Nerve):
     @graded_map
     def _ln(self, d, beta=1):
         """
-        Logarithmic map from densities to energies.
+        Logarithmic map N[d] -> N[d] from positive densities to energies.
 
-        Returns `G -> - torch.log(G) / beta`. 
+        Returns `G -> - ln(G) / beta`. 
         """
         src = self.Field(d)
         f = fp.Arrow(src, src)(lambda t: - torch.log(t.data) / beta)
@@ -45,12 +45,14 @@ class Network(Nerve):
     @graded_map
     def gibbs(self, d, beta=1):
         """
-        Normalized Gibbs density. 
+        Gibbs state map N[d] -> N[d] from energies to probabilities. 
 
-        Defined by `p(H) = exp(- beta * H) / Z` 
+        Returns `H -> exp(- beta * H) / Z` 
         
-        These beliefs may sometimes be called 'softmins' of H at inverse
-        temperature beta.
+        These beliefs might be called 'softmins' of H 
+        at inverse temperature beta = 1 / T. 
+        They concentrate on minima of H when T goes to 0, 
+        i.e. beta goes to infinity.
         """
         src = self.Field(d)
         def p(H):
@@ -63,13 +65,40 @@ class Network(Nerve):
 
     def uniform(self, d=None):
         """
-        Uniform beliefs.
+        Uniform beliefs on N[d].
         """
         return self.gibbs(self.zeros(d))
+
+    def BetheFreeEnergy(self, beta=1):
+        """
+        Bethe free energy F_Bethe: N[0] -> R. 
+
+        The Bethe free energy of H is a weighted sum of 
+        local free energies 
+
+            F_Bethe(H) = sum [c[a] * F(H)[a] for a in N[0]]
+
+        The Bethe-Kikuchi coefficients satisfy for all b in N[0]
+        the inclusion-exclusion principle:
+
+            sum [c[a] for a >= b] == 1
+
+        Hence F_Bethe(H) provides a combinatorially reasonable 
+        local approximation of the global free energy. 
+        """
+        F = self.freeEnergy(beta)
+        c = self.bethe(0)
+
+        @fp.Arrow(self.Field(0), fp.Tens([1]))
+        def F_Bethe(H):
+            return (c * F(H)).data.sum()
         
+        return F_Bethe
+
+
     def freeEnergy(self, beta=1):
         """
-        Local free energies.
+        Local free energies F: N[0] -> R[0].
         """
         e_  = self.exp_(0, beta)
         _ln = self.scalars()._ln(0, beta)
@@ -114,8 +143,6 @@ class Network(Nerve):
             return d0(H) - ln1 (d1(e0(H)))
         
         return D
-
-
 
     @linear_cache('face0')
     def face0(self):
