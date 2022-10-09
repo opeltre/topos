@@ -69,7 +69,7 @@ class Nerve (Complex):
         zt = O.zeta(d)
         i, j = O.begin[d] + zt.data.indices()
         a, b = self.coords(i), self.coords(j)
-        Fab  = self.fmap([a, b])
+        Fab  = self.cofmap([a, b])
         N = self[d].size
         zt = sparse.matrix([N, N], Fab - self.begin[d], t=False)
         return Linear(self[d], self[d])(zt, 0, "\u03b6")
@@ -149,6 +149,18 @@ class Nerve (Complex):
         return out
 
     def fmap(self, f):
+        """
+        Functor graph over chains [a0, ..., ak], [b0, ..., br] with br -> ak.
+
+        Computation of N.diff and N.codiff: 
+        -----------------------------------
+        If `b = face(k, a)` we have a relation `a[k-1] -> a[k] = b[r]` and
+        if `b = face(j, a)` for j < k we have the identity `a[k] -> a[k] = b[r]`. 
+        """
+        i, j = self.cofmap((f[1], f[0]))
+        return torch.stack([j, i])
+
+    def cofmap(self, f):
         """
         Functor graph over chains [a0, ..., ak], [b0, ..., br] with ak -> br.
         """

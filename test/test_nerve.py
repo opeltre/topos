@@ -40,7 +40,7 @@ class TestNerveFunctor(test.TestCase):
         self.assertEqual(NF.sizes[1], 2*6 + 4*6)
         self.assertEqual(NF.sizes[2], 2*6)
         # fmap . last
-        Fij = NF.fmap(torch.tensor([[4, 1], [4, 0]]))
+        Fij = NF.cofmap(torch.tensor([[4, 1], [4, 0]]))
         Fij = (Fij.T - Fij.T[0]).T
         Fi = torch.arange(4)
         Fj = torch.arange(2).repeat_interleave(2)
@@ -84,4 +84,4 @@ class TestNerveFunctor(test.TestCase):
         mu1, zt1 = N.mu(1), N.zeta(1)
         result = (mu1 @ zt1).data.to_dense()
         expect = torch.eye(N[1].size)
-        self.assertClose(expect, result)     
+        self.assertClose(expect, result)
