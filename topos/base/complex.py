@@ -46,7 +46,8 @@ class Complex (Graph):
         N, P   = self[d+1].size, self[d].size
         N0, P0 = self.begin[d+1], self.begin[d]
         off = torch.stack([N0, P0]).long()
-        Fk = self.fmap((tgt, face(k, tgt))).T - off
+        ij = self.fmap((tgt, face(k, tgt))).T - off
+        Fk = sparse.matrix([N, P], ij)
         return Linear(self[d], self[d + 1])(Fk, degree=1, name=f"face{k}")
     
     @classmethod

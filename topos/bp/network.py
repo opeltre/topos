@@ -67,8 +67,19 @@ class Network(Nerve):
         """
         return self.gibbs(self.zeros(d))
         
-    def freeEnergy(self, x):
-        pass
+    def freeEnergy(self, beta=1):
+        """
+        Local free energies.
+        """
+        e_  = self.exp_(0, beta)
+        _ln = self.scalars()._ln(0, beta)
+        sum = self.to_scalars(0)
+
+        @fp.Arrow(self.Field(0), self.scalars().Field(0))
+        def F(H):
+            return _ln(sum(e_(H)))
+        
+        return F
     
     def freeGrad(self, beta=1):
         """
