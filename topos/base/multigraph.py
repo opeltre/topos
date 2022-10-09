@@ -156,7 +156,10 @@ class MultiGraph (Sheaf):
         return Linear(self, O)(mat, degree=0, name="\u03c0")
     
     def from_scalars(self, d=None):
-        return self.to_scalars(d).t()
+        if isinstance(d, (int, type(None))):
+            return self.to_scalars(d).t()
+        elif isinstance(d, fp.Tensor) and 'degree' in dir(d):
+            return self.from_scalars(d.degree)(d)
 
     #--- Other ---
 
