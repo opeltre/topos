@@ -16,7 +16,7 @@ class Field (fp.meta.Functor):
         class Field_A (fp.Tens([A.size])): 
 
             domain = A
-            shape  = [A.size]
+            shape  = [int(A.size)]
             device = A.device if 'device' in dir(A) else 'cpu'
             degree = A.degree if 'degree' in dir(A) else None
 
@@ -25,7 +25,6 @@ class Field (fp.meta.Functor):
                     data = torch.tensor(data, device=cls.device)
                 field = object.__new__(cls)
                 field.data   = data
-                field.device = cls.device
                 field.degree = cls.degree
                 return field
 

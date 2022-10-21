@@ -2,6 +2,7 @@ from .sheaf     import Sheaf
 from .functor   import Functor
 
 from topos.core import sparse, Shape, simplices, Linear, linear_cache
+from topos.core import once
 import topos.io as io
 from topos.io   import alignString, readTensor
 
@@ -140,6 +141,7 @@ class MultiGraph (Sheaf):
 
     #--- Trivial sheaf --- 
 
+    @once
     def scalars(self):
         return self if self.trivial else self.__class__(self.grades)
 

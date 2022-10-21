@@ -25,6 +25,11 @@ class Linear(fp.Linear):
                 cls.__init__(lin, data, degree)
                 return lin
 
+            @property
+            def T(self):
+                LinBA = cls(B, A)
+                return LinBA(self.data.T)
+
             def __init__(self, data, degree=None, name=None):
                 super().__init__(data)
                 self.degree = degree

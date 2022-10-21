@@ -12,6 +12,13 @@ def graded_map(method):
         return method(self, x, *args, **kwargs)
     return run
 
+def temperature_map(method):
+    def run(self, H, beta=1):
+        if isinstance(H, (float, int)):
+            return method(self, H)
+        return method(self, beta)(H)
+    return run
+
 class Network(Nerve):
     
     def __init__(self, *args, **kwargs):
@@ -77,6 +84,7 @@ class Network(Nerve):
         """
         return self.gibbs(self.zeros(d))
 
+    @temperature_map
     def freeEnergy(self, beta=1):
         """
         Local free energies F: N[0] -> R[0].
@@ -91,6 +99,7 @@ class Network(Nerve):
         
         return F
     
+    @temperature_map
     def freeDiff(self, beta=1):
         """
         Conditional free energy differences N[0] -> N[1].
@@ -132,6 +141,7 @@ class Network(Nerve):
     def face1(self):
         return super().face(0, 1)
 
+    @temperature_map
     def freeBethe(self, beta=1):
         """
         Bethe free energy F_Bethe: N[0] -> R. 

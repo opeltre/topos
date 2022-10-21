@@ -34,29 +34,31 @@ class Smooth (fp.Arrow):
         return f'Smooth {rep(A)} -> {rep(B)}'
 
 
-def integrator(method):
-    def loop_method(self, dt, n=1):
-        step = method(dt)
-        @fp.Arrow(self.src, self.tgt)
-        def integrate(x0):
-            x = x0 + 0
-            for k in range(n):
-                x = step(x)
-            return X
-        return integrate
-    return loop_method
-
-
 class VectorField:
 
     def __new__(cls, A):
 
         class VecA(Smooth(A, A)):
-
+            
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self._writers = []
+            
             @cls.integrator
             def euler(self, dt):
                 """ Explicit Euler integrator. """
                 return lambda x: x + dt * self(x)
+
+            def writer(self, callback):
+                """ 
+                Use as decorator to append an iteration callback.
+
+                The writer will be called as `callback(x, n)` where:
+                    - `x` is the vector field argument,
+                    - `n` is the current iteration number. 
+                """
+                self._writers.append(callback)
+                return callback
         
         VecA.__name__ = f'VectorField {A}'
         return VecA
@@ -66,31 +68,20 @@ class VectorField:
 
         def loop_method(self, dt, n=1):
 
-            step = cls.runStep(method(self, dt))
+            step = method(self, dt)
 
             @fp.Arrow(self.src, self.tgt)
             def integrate(x0):
                 x = x0 + 0
                 for k in range(n):
+                    #--- writers ---
+                    if len(self._writers):
+                        for w in self._writers:
+                            w(x, n)
+                    #--- callback ---
                     x = step(x)
                 return x
             integrate.__name__ = f'{method.__name__} {dt} x {n}'
             return integrate
 
         return loop_method
-
-    @classmethod
-    def runStep(cls, step):
-        return step
-
-
-class Diffusion(VectorField):
-
-    beta = 1
-
-    @classmethod
-    def runStep(cls, step):
-        N = cls.src
-        F = N.from_scalars() @ N.freeEnergy(cls.beta)
-        retract = lambda H : H - F(H)
-        return lambda H:retract(step(H))

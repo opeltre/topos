@@ -1,49 +1,54 @@
-from topos.core import VectorField
+from topos.core import Smooth,VectorField
 
 
-def codiff_zeta(network, d=1):
-    N = network
-    return N.zeta(d-1) @ N.codiff(d) @ N.mu(d)
+class Diffusion(VectorField):
 
-def BetheDiffusion(N, beta=1):
+    def __new__(cls, N, beta=1):
+
+        DiffN = super().__new__(cls, N[0])
+        DiffN.network = N
+        
+        def retract(self):
+            beta = self.beta if 'beta' in dir(self) else 1
+            N = self.network
+            F = lambda x: N.from_scalars(N.freeEnergy(beta)(x))
+            return Smooth(N[0], N[0])(lambda H : H - F(H))
+
+        setattr(DiffN, "retract", retract)
+
+        DiffN.__name__ = f'Diffusion {N}'
+        return DiffN
+
+    @classmethod
+    def integrator(cls, method):
+        def with_retraction(self, dt):
+            r = self.retract()
+            step = method(self, dt)
+            return lambda x: r(step(x))
+        return VectorField.integrator(with_retraction)
+
+
+def BetheDiffusion(network, beta=1):
     """ Bethe diffusion on hamiltonians. """
-    delta = codiff_zeta(N, 1)
-    D = N.freeDiff(beta)
-    F = N.freeEnergy(beta)
-    j = N.from_scalars(0)
-
-    @VectorField(N[0])
-    def diffusion(H):
-        return (-1) * (delta(D(H)) + j(F(H)))
-
-    return diffusion
-
-def BetheDiffusion_mu(network, beta=1):
-    """ Bethe diffusion on potentials. """
     N = network
-    delta, D = N.codiff(1), N.freeDiff(beta)
-    zeta, mu = N.zeta(0), N.mu(1)
-    F = N.freeEnergy(beta)
-
-    @VectorField(N[0])
-    def diffusion(h):
-        return (-1) * (
-            delta(mu(D(zeta(h))))
-          + N.mu((N.from_scalars(F(zeta(h)))))
-        )
+    delta = N.codiff_zeta(1)
+    D = N.freeDiff(beta)
     
+    @Diffusion(N, beta)
+    def diffusion(H):
+        return (-1) * delta(D(H))
+
     return diffusion
+   
 
 def GBPDiffusion(network, beta=1):
-    """ GBP diffusion on potentials. """
+    """ GBP diffusion on hamiltonians. """
     N = network
     delta, D = N.codiff(1), N.freeDiff(beta)
     zeta = N.zeta(0)
 
-    @VectorField(N[0])
-    def diffusion(h):
-        return (-1) * (
-            delta(D(zeta(h)))
-          + N.mu(N.from_scalars(N.freeEnergy(beta)(N.zeta(h))))
-        )    
+    @Diffusion(N, beta)
+    def diffusion(H):
+        return (-1) * zeta(delta(D(H)))
+
     return diffusion

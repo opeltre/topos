@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
 
-def plot_graph(G, r=.3, c0='#52b', c1='#Cab', size=(10, 10)):
+def plot_graph(G, x=None, r=.3, c0='#52b', c1='#Cab', size=(10, 10)):
     """ Plot graph using laplacian eigenmodes 1 and 2. """
     G = G.scalars()
     fig = plt.figure(figsize=size)
@@ -10,10 +10,11 @@ def plot_graph(G, r=.3, c0='#52b', c1='#Cab', size=(10, 10)):
     if isinstance(c0, str): c0 = [c0] * G.Nvtx
     if isinstance(c1, str): c1 = [c1] * len(G[1].keys)
     #-- eigenmodes --
-    L = G.codiff(1) @ G.diff(0)
-    L = L.data.to_dense()
-    eigval, eigvec = torch.linalg.eigh(L)
-    x = eigvec[:,1:3] * G.Nvtx
+    if type(x) == type(None):
+        L = G.codiff(1) @ G.diff(0)
+        L = L.data.to_dense()
+        eigval, eigvec = torch.linalg.eigh(L)
+        x = eigvec[:,1:3] * G.Nvtx
     #-- arrows --
     for p, ep in enumerate(G[1].keys):
         i, j = ep

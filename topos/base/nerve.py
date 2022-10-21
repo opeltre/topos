@@ -208,9 +208,12 @@ class Nerve (Complex):
     def classify (cls, quiver, d=-1):
         """ Nerve of a quiver (e.g. hypergraph ordering or category). """
         if isinstance(quiver, Graph):
+            classified = quiver
             name = quiver.__name__
             quiver = quiver.quiver()
             quiver.__name__ = name
+        else:
+            classified = quiver
         # vertices and arrows
         Ntot = quiver[0].keys.shape[0]
         Q1 = quiver.grades[1]
@@ -249,6 +252,7 @@ class Nerve (Complex):
         NQ.__name__ = (f'N({quiver.__name__})' 
                        if '__name__' in dir(quiver) else 'N(Q)')
         NQ._quiver = quiver
+        NQ._classified = classified
         return NQ
 
     def __repr__(self):
