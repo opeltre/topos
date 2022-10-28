@@ -72,6 +72,11 @@ class Linear(fp.Linear):
                     return self.__class__(out)
                 return super().__rmul__(other)
             
+            def batch(self, N):
+                """ Batched instance. """
+                Lin = self.functor
+                return Lin.batched(A, B, N)(self.data)
+
         return LinAB
     
     @classmethod
@@ -85,6 +90,22 @@ class Linear(fp.Linear):
         g_base = fp.Linear(g.src.shape, g.tgt.shape)(g.data)
         fg = fp.Linear.compose(f_base, g_base)
         return cls(g.src.domain, f.tgt.domain)(fg.data)
+
+    @classmethod
+    def batched(cls, A, B, N):
+        
+        LinAB = cls(A, B)
+        FA = Field.batched(A, N)
+        FB = Field.batched(A, N)
+
+        class BatchedLinear(LinAB, fp.Arrow(FA, FB)):
+
+            src = FA
+            tgt = FB
+            batched = True
+        
+        BatchedLinear.__name__ = LinAB.__name__ + f' ({N})'
+        return BatchedLinear
 
 
 class Linear2 (Functional, Vect): 

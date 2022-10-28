@@ -24,7 +24,6 @@ def eigvec(pi):
 
 def beliefs(pi, pj, eigval):
     pi, pj = pi.view([-1, 2]), pj.view([-1, 2])
-    print(pi.shape, eigval.shape)
     sigma = eigval * gmean(pi) * gmean(pj)
     pij = pi[:,:,None] * pj[:,None,:]
     pij += sigma[:,None,None] * torch.tensor([[1, -1], [-1, 1]])

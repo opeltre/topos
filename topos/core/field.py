@@ -19,6 +19,7 @@ class Field (fp.meta.Functor):
             shape  = [int(A.size)]
             device = A.device if 'device' in dir(A) else 'cpu'
             degree = A.degree if 'degree' in dir(A) else None
+            batched = False
 
             def __new__(cls, data):
                 if not isinstance(data, torch.Tensor):
@@ -31,6 +32,20 @@ class Field (fp.meta.Functor):
             def __init__(self, data):
                 pass
 
+            @classmethod
+            def batched(cls, N):
+                """ Class for batched fields. """
+                domain = fp.Torus([N, A.size])
+                return cls.functor(domain)
+
+            @classmethod
+            def batch(cls, xs):
+                """ Batch a collection of field instances. """
+                N = len(xs)
+                if not isinstance(xs, (fp.Tensor, torch.Tensor)):
+                    xs = torch.stack([x.data for x in xs])
+                return cls.batched(N)(xs)
+            
             def items(self):
                 """
                 Yield (key, value) pairs.
@@ -104,6 +119,15 @@ class Field (fp.meta.Functor):
         return FA
     
     @classmethod
+    def batched(cls, A, N):
+        domain = fp.Torus([N, int(A.size)])
+        domain.__name__ = f'{A.__name__} ({N})'
+        BatchedField = cls(domain)
+        BatchedField.shape   = [N, int(A.size)]
+        BatchedField.batched = True
+        return BatchedField
+
+    @classmethod
     def fmap(cls, A):
         pass
 
@@ -111,8 +135,7 @@ class Field (fp.meta.Functor):
     def name(cls, A):
         name = A.__name__ if '__name__' in dir(A) else "\u03a9"
         return f'Field {name}'
-        
-
+   
 class Field2 :
     @classmethod
     def cast2(cls, u, v):
