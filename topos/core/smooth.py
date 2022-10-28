@@ -15,23 +15,67 @@ class Smooth (fp.Arrow):
             src = Fa
             tgt = Fb
 
-            def __new__(cls, f, df=None, name='\u03bb'):
-                map = object.__new__(cls)
-                cls.__init__(map, f, df, name)
-                return map
+            def batch(self, N):
+                Smooth = self.functor
+                return Smooth.batched(A, B, N)(self)
 
             def __init__(self, f, df=None, name='\u03bb'):
                 super().__init__(f)
                 self.__name__ = name
                 if callable(df):
                     self.tangent = fp.Arrow(Field(A), Linear(A, B))
-
+            
         return SmoothAB
     
+    @classmethod
+    def batched(cls, A, B, N):
+        """ Class for batched maps. """
+        SmoothAB = cls(A, B)
+        FA = Field.batched(A, N)
+        FB = Field.batched(B, N)
+
+        class BatchedSmooth(SmoothAB, fp.Arrow(FA, FB)):
+
+            src = FA
+            tgt = FB
+            batched = True
+
+        BatchedSmooth.__name__ = SmoothAB.__name__ + f' ({N})'
+        return BatchedSmooth
+
+    @classmethod
+    def compose(cls, f, g):
+        return SmoothPipe(g.src.domain, f.tgt.domain)([g, f])
+
     @classmethod
     def name(cls, A, B):
         rep = lambda D: D.__name__ if '__name__' in dir(D) else D.size
         return f'Smooth {rep(A)} -> {rep(B)}'
+
+class SmoothPipe(Smooth):
+
+    def __new__(cls, A, B):
+
+        class Pipe_AB(Smooth(A, B)):
+            
+            def __init__(self, fs, name='\u03bbs'):
+                self.__name__ = name
+                self.pipe = fs
+                def call(x):
+                    out = x
+                    for f in fs:
+                        out = f(out)
+                    return out
+                super().__init__(call, None, name)
+                self.call = call
+
+            def batch(self, N):
+                Fs = [f.batch(N) for f in self.pipe]
+                name = self.__name__
+                Cls = self.functor.batched(A, B, N)
+                return Cls(Fs, name)                
+        
+        return Pipe_AB
 
 
 class VectorField:

@@ -19,6 +19,7 @@ def temperature_map(method):
         return method(self, beta)(H)
     return run
 
+
 class Network(Nerve):
     
     def __init__(self, *args, **kwargs):
@@ -120,7 +121,7 @@ class Network(Nerve):
         where conditional free energies are replaced by conditional expectations
         with respect to local Gibbs states induced by H. 
 
-        The tangent map TD(H) extends to a differential if on N[.] iff
+        The tangent map TD(H) extends to a differential on N[.] iff
         local gibbs states are consistent.
         """
 

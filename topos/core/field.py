@@ -35,8 +35,7 @@ class Field (fp.meta.Functor):
             @classmethod
             def batched(cls, N):
                 """ Class for batched fields. """
-                domain = fp.Torus([N, A.size])
-                return cls.functor(domain)
+                return cls.functor.batched(cls.domain, N)
 
             @classmethod
             def batch(cls, xs):
