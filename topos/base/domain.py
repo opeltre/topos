@@ -11,6 +11,7 @@ class Domain(fp.meta.Type):
     def __init__(self, size, degree=None, device=None):
         self.degree = degree
         self.size   = size
+        self.shape  = [size]
         self.device = device
         self._cache = {}
 

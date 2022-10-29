@@ -18,7 +18,7 @@ GBP = bp.GBPDiffusion(N)
 
 log = {"DH": []}
 
-@GBP.writer
+#@GBP.writer
 def log_freeDiff(x, n):
     log["DH"].append(N.freeDiff(x).norm())
 

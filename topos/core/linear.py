@@ -86,6 +86,26 @@ class Linear(fp.Linear):
         fg = fp.Linear.compose(f_base, g_base)
         return cls(g.src.domain, f.tgt.domain)(fg.data)
 
+    @classmethod
+    def source_type(cls, f, xs):
+        assert(len(xs) == 1)
+        x = xs[0]
+        s_x, s_in = tuple(x.shape), tuple(f.src.shape)
+        if s_x == s_in: 
+            return f.src
+        elif s_x[-len(s_in):] == s_in: 
+            return f.src.batched(s_x[0])
+
+    @classmethod
+    def target_type(cls, f, xs):
+        x = xs[0]
+        s_x = tuple(x.shape)
+        s_in, s_out = tuple(f.src.shape), tuple(f.tgt.shape)
+        if s_x == s_in:
+            return f.tgt
+        elif s_x[-len(s_in):] == s_in:
+            return f.tgt.batched(s_x[0])
+
 
 class Linear2 (Functional, Vect): 
     """ 

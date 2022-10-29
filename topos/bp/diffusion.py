@@ -22,9 +22,10 @@ class Diffusion(VectorField):
     @classmethod
     def integrator(cls, method):
         def with_retraction(self, dt):
+            N = self.network
             r = self.retract()
             step = method(self, dt)
-            return lambda x: r(step(x))
+            return Smooth(N[0], N[0])(lambda x: r(step(x)))
         return VectorField.integrator(with_retraction)
 
 

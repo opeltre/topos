@@ -32,7 +32,26 @@ class Smooth (fp.Arrow):
     def name(cls, A, B):
         rep = lambda D: D.__name__ if '__name__' in dir(D) else D.size
         return f'Smooth {rep(A)} -> {rep(B)}'
+    
+    @classmethod
+    def source_type(cls, f, xs):
+        assert(len(xs) == 1)
+        x = xs[0]
+        s_x, s_in = tuple(x.shape), tuple(f.src.shape)
+        if s_x == s_in: 
+            return f.src
+        elif s_x[-len(s_in):] == s_in: 
+            return f.src.batched(s_x[0])
 
+    @classmethod
+    def target_type(cls, f, xs):
+        x = xs[0]
+        s_x = tuple(x.shape)
+        s_in, s_out = tuple(f.src.shape), tuple(f.tgt.shape)
+        if s_x == s_in:
+            return f.tgt
+        elif s_x[-len(s_in):] == s_in:
+            return f.tgt.batched(s_x[0])
 
 class VectorField:
 
@@ -68,9 +87,11 @@ class VectorField:
 
         def loop_method(self, dt, n=1):
 
-            step = method(self, dt)
+            src = self.src.domain
 
-            @fp.Arrow(self.src, self.tgt)
+            step = Smooth(src, src)(method(self, dt))
+
+            @Smooth(src, src)
             def integrate(x0):
                 x = x0 + 0
                 for k in range(n):
@@ -78,7 +99,7 @@ class VectorField:
                     if len(self._writers):
                         for w in self._writers:
                             w(x, n)
-                    #--- callback ---
+                    #--- step ---
                     x = step(x)
                 return x
             integrate.__name__ = f'{method.__name__} {dt} x {n}'

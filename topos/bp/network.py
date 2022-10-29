@@ -7,7 +7,7 @@ from topos.core import Smooth, VectorField
 
 def graded_map(method):
     def run(self, x, *args, **kwargs):
-        if isinstance(x, fp.Tensor):
+        if not isinstance(x, int) and 'degree' in dir(x):
             return method(self, x.degree, *args, **kwargs)(x)
         return method(self, x, *args, **kwargs)
     return run
@@ -73,8 +73,8 @@ class Network(Nerve):
         @Smooth(self[d], self[d])
         def gibbs(H):
             y = self.exp_(d, beta)(H.data)
-            Z = self.to_scalars(y)
-            return y / self.from_scalars(Z)
+            Z = self.to_scalars(d)(y)
+            return y / self.from_scalars(d)(Z)
 
         return gibbs
 
