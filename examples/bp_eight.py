@@ -2,6 +2,7 @@ import topos
 import topos.bp as bp
 
 import torch
+import matplotlib.pyplot as plt
 
 import matplotlib.pyplot as plt 
 
@@ -24,6 +25,9 @@ log = {"DH": []}
 def log_freeDiff(x, n):
     log["DH"].append(N.freeDiff(x).norm(dim=[-1]))
 
+def clear_logs():
+    log["H"], log["DH"] = [], []
+
 #--- Belief Propagation --- 
 
 H0 = N.Field(0).batch([N.randn(0) for i in range(2000)])
@@ -38,15 +42,82 @@ for t in traces[:10]:
 #--- Nerve slices : patch ---
 
 def get_slice(js, degree):
+    """
+    Helper: return slice associated to a nerve hyperedge. 
+    """
     idx1 = N.index(js) - N.scalars().begin[degree]
     begin = N[degree].begin[idx1]
     end   = N[degree].end[idx1]
     return begin, end 
 
+#--- Energy/temperature diagrams ---
+
+def initial_conditions(field=0, interval=(0, 2, 63), eps=1):
+    #--- singularity
+    p = singular_beliefs(field)
+    phi = eigen_flux(p)
+    dH = N.zeta(0) @ N.codiff(1) @ phi
+    #--- initial energies
+    H = N._ln(p)
+    betas = torch.linspace(*interval)
+    H0 = [beta * H for beta in betas]
+    H1 = [beta * H + eps * dH for beta in betas]
+    H2 = [beta * H - eps * dH for beta in betas]
+    return (H0, H1, H2)
+
+def energy_temperature(field=0, interval=(0, 2, 63), eps=1, dt=.3, n=200):
+    Hs = initial_conditions(field, interval, eps)
+    h0 = N.mu(N._ln(singular_beliefs(field)))
+    U = [[], [], []]
+    for i, His in enumerate(Hs): 
+        for H in His: 
+            Hf = GBP.euler(dt, n)(H)
+            pf = N.gibbs(Hf)
+            energies = N.to_scalars(pf * h0)
+            U[i].append(energies.data.sum())
+    return U
+
+#--- Plot trajectory --- 
+
+def plot_singular_freeDiff(b=0, c=None, eps=.1, dt=.2, n=100):
+    #--- initial condition
+    p   = singular_beliefs(b, c)
+    phi = eigen_flux(p)
+    dH  = N.zeta(N.codiff(phi))
+    H0 = N._ln(p) + eps * (dH / dH.norm())
+    #--- diffusion
+    clear_logs() 
+    H1 = GBP.euler(dt, n)(H0)
+    #--- plot inconsistency
+    plt.plot(torch.stack(log["DH"]), color="orange")
+    plt.title("Free Energy Differences")
+    plt.show()
+
 #--- Singularities ---
 
+def singular_interaction(fields=0, couplings=None):
+    """
+    Construct singular interaction from local fields and couplings. 
+    """
+    if type(couplings) == type(None):
+        C = torch.tensor([1/3])
+        logC = torch.log(C)
+        s_ij = (-logC/3).repeat(6)
+    if isinstance(fields, (int, float)):
+        s_i = torch.tensor([fields]).repeat(5)
+    interaction = torch.cat([s_i, s_ij])
+    return N.scalars().Field(0)(interaction)
+
+def singular_beliefs(fields=0, couplings=None):
+    """
+    Construct singular beliefs from local fields and couplings. 
+    """
+    return N.lift_interaction(singular_interaction(fields, couplings))
+
 def loop_couplings(p):
-    """ Return product of edge eigenvalues across loops. """
+    """
+    Return product of edge eigenvalues across loops. 
+    """
     G = N._classified 
     eigvals = N.edge_eigvals(p)
     #--- loop indices ---
@@ -61,11 +132,12 @@ def is_singular(p, tol=1e-6):
     """ 
     Check if consistent beliefs are singular.  
 
-    The tangent space of consistent potentials intersects 
-    the image of the codifferential (gauge) if and only if 
-    `p` is singular (see eigen_flux). 
+    Test if loop couplings cancel the determinant of linearised diffusion. 
 
-    Tests if loop couplings cancel the singular polynomial. 
+    The tangent space of consistent potentials intersects 
+    the image of the codifferential (space of gauge choices) 
+    if and only if `p` is singular. See `eigen_flux(p)` for 
+    a generator of the singular intersection. 
     """
     C1, C2 = loop_couplings(p)
     pol = (C1 + 1/3) * (C2 + 1/3) - 4/9   
