@@ -3,6 +3,8 @@ import topos.bp as bp
 
 import torch
 
+import matplotlib.pyplot as plt 
+
 #--- Warning: G1 has to be sorted ---
 
 G0 = [0, 1, 2, 3, 4]
@@ -18,15 +20,20 @@ GBP = bp.GBPDiffusion(N)
 
 log = {"DH": []}
 
-#@GBP.writer
+@GBP.writer
 def log_freeDiff(x, n):
-    log["DH"].append(N.freeDiff(x).norm())
+    log["DH"].append(N.freeDiff(x).norm(dim=[-1]))
 
 #--- Belief Propagation --- 
 
-H0 = N.randn(0)
-H1 = GBP.euler(.3, 30)(H0)
+H0 = N.Field(0).batch([N.randn(0) for i in range(2000)])
+H1 = GBP.euler(.3, 100)(H0)
 p = N.gibbs(H1)
+
+traces = torch.stack(log['DH']).T
+for t in traces[:10]:
+    plt.plot(t)
+
 
 #--- Nerve slices : patch ---
 
