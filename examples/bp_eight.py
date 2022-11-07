@@ -34,10 +34,13 @@ H0 = N.Field(0).batch([N.randn(0) for i in range(2000)])
 H1 = GBP.euler(.3, 100)(H0)
 p = N.gibbs(H1)
 
-traces = torch.stack(log['DH']).T
-for t in traces[:10]:
-    plt.plot(t)
+def main():
+    traces = torch.stack(log['DH']).T
+    for t in traces[:10]:
+        plt.plot(t)
 
+def energy(u, v):
+    return N.to_scalars(0)(u * v).data.sum([-1])
 
 #--- Nerve slices : patch ---
 
