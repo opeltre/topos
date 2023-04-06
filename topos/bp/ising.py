@@ -18,16 +18,19 @@ def gmean(pi):
     return (pi[:,0] * pi[:,1]).sqrt()
 
 def eigvec(pi):
+    Ns = pi.shape[:-1]
     pi = pi.view([-1, 2])
     vi = torch.stack([pi[:,1], -pi[:,0]], 1)
-    return vi / gmean(pi)[:, None]
+    vi = vi / gmean(pi)[:, None]
+    return vi.view([*Ns, -1, 2])
 
 def beliefs(pi, pj, eigval):
+    Ns = pi.shape[:-1]
     pi, pj = pi.view([-1, 2]), pj.view([-1, 2])
-    sigma = eigval * gmean(pi) * gmean(pj)
+    sigma = eigval.view([-1]) * gmean(pi) * gmean(pj)
     pij = pi[:,:,None] * pj[:,None,:]
     pij += sigma[:,None,None] * torch.tensor([[1, -1], [-1, 1]])
-    return pij
+    return pij.view([*Ns, 2, 2])
 
 for method in [eigval, eigvec, gmean, beliefs]:
     setattr(Ising, method.__name__, method)
@@ -46,42 +49,57 @@ class IsingNetwork(Network):
         """ Restrict beliefs to edges. """
         G = self._classified
         N0 = G.sizes[0]
-        return G.Field(1)(p.data[N0:])
+        slc = [slice(None)] * (p.dim() - 1)
+        pij = p.data[(*slc, slice(N0, None))]
+        return G[1].field(pij.contiguous())
 
     def on_nodes(self, p):
         """ Restrict beliefs to nodes. """
         G = self._classified
         N0 = G.sizes[0]
-        return G.Field(0)(p.data[:N0])
+        slc = [slice(None)] * (p.dim() - 1)
+        pi  = p.data[(*slc, slice(0, N0))]
+        return G[0].field(pi.contiguous())
 
     def edge_eigvals(self, p):
         """ Compute belief eigenvalues on edges. """
         G = self._classified
         pij = self.on_edges(p)
-        vals = eigval(pij.data)
-        return G.scalars().Field(1)(vals)
+        Ns = pij.shape[:-1]
+        vals = eigval(pij.data.view([-1, G.sizes[1]]))
+        return G[1].scalars().field(vals.view([*Ns, -1]))
 
     def node_eigvecs(self, p):
         """ Return normalized eigenvectors on nodes. """
         G = self._classified
         pi = self.on_nodes(p)
-        vecs = eigvec(pi.data)
-        return G.Field(0)(vecs.flatten())
+        vecs = eigvec(pi.data).flatten(start_dim=-2)
+        return G[0].field(vecs)
     
     def lift_node_beliefs(self, pi, eigvals=1):
         """ 
         Lift node beliefs with prescribed eigenvalues. 
         """
+        #--- batch shape
+        Ns = pi.shape[:-1]
+        slc = ([slice(None)] * len(Ns))
+        #--- split nodes
         G = self._classified
-        pi = pi.data.view([-1, 2])
+        pi = pi.data.view([*Ns, -1, 2])
         ij = G.grades[1]
-        qi = pi[ij[:,0]]
-        qj = pi[ij[:,1]]
+        #--- source and target beliefs 
+        qi = pi[(*slc, ij[:,0])]
+        qj = pi[(*slc, ij[:,1])]
+        #--- lift couplings to pairwise beliefs
         if isinstance(eigvals, (int, float)):
             eigvals = eigvals * torch.ones([G.sizes[1]])
         pij = beliefs(qi.data, qj.data, eigvals.data)
-        p = torch.cat([pi.data.flatten(), pij.data.flatten()])
-        return self.Field(0)(p)
+        #--- return batched beliefs
+        p = torch.cat([
+            pi.data.flatten(start_dim=-2), 
+            pij.data.flatten(start_dim=-3)
+        ], -1)
+        return self[0].field(p)
 
     def lift_interaction(self, s):
         """ 
@@ -95,12 +113,18 @@ class IsingNetwork(Network):
         G = self._classified
         n0, n1 = G.scalars().sizes[:2]
         s = s.data
-        si, sij = s[:n0], s[n0:]
+        last = [slice(None)] * (s.dim() - 1)
+        si  = s[(*last, slice(0, n0))]
+        sij = s[(*last, slice(n0, None))]
+        #--- check shapes
+        if sij.shape[-1] != n1 or si.shape[-1] != n0:
+            raise RuntimeError(
+            f'wrong interaction shape: {s.shape} for sizes {(n0, n1)}')
         #--- node beliefs ---
-        hi = torch.stack([si, -si], 1)
+        hi = torch.stack([si, -si], -1)
         pi = torch.exp(-hi)
-        pi /= pi.sum([1])[:,None]
-        pi = G.Field(0)(pi.flatten())
+        pi /= pi.sum([-1])[(*last, slice(None), None)]
+        pi = G[0].field(pi.flatten(start_dim=-2))
         #--- full beliefs ---
         p = self.lift_node_beliefs(pi, torch.exp(-sij))
         return p

@@ -142,7 +142,7 @@ class Network(Nerve):
         return super().face(0, 1)
 
     @temperature_map
-    def freeBethe(self, beta=1):
+    def freeBethe(self, beta=1.):
         """
         Bethe free energy F_Bethe: N[0] -> R. 
 
@@ -161,10 +161,13 @@ class Network(Nerve):
         """
         F = self.freeEnergy(beta)
         c = self.bethe(0)
+        tgt = self.Point()[0]
 
-        @Smooth(self[0], self.Point()[0])
+        @Smooth(self[0], tgt)
         def F_Bethe(H):
-            return (c * F(H)).data.sum()
+            Fb = (c.data * F(H).data).sum([-1])
+            print(Fb.shape)
+            return tgt.field(Fb)
         
         return F_Bethe
 
