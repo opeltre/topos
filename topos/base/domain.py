@@ -37,7 +37,12 @@ class Domain(fp.meta.Type):
         
     def field(self, data, degree=None):
         """ Create a field from numerical data. """
-        return self.Field(degree)(data)
+        data = (data if isinstance(data, (fp.Tensor, torch.Tensor))
+                     else torch.tensor(data))
+        if data.dim() <= 1:
+            return self.Field(degree)(data)
+        else:
+            return self.Field(degree).batch(data)
 
     def from_scalars(self, x):
         if self.trivial:

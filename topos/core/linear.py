@@ -94,7 +94,7 @@ class Linear(fp.Linear):
         if s_x == s_in: 
             return f.src
         elif s_x[-len(s_in):] == s_in: 
-            return f.src.batched(s_x[0])
+            return f.src.batched(*s_x[:-len(s_in)])
 
     @classmethod
     def target_type(cls, f, xs):
@@ -104,7 +104,7 @@ class Linear(fp.Linear):
         if s_x == s_in:
             return f.tgt
         elif s_x[-len(s_in):] == s_in:
-            return f.tgt.batched(s_x[0])
+            return f.tgt.batched(*s_x[:-len(s_in)])
 
 
 class Linear2 (Functional, Vect): 

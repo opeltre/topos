@@ -1,8 +1,9 @@
-from re import X
 import fp
 
 from .field  import Field
 from .linear import Linear
+
+from contextlib import contextmanager
 
 class Smooth (fp.Arrow):
     
@@ -41,7 +42,7 @@ class Smooth (fp.Arrow):
         if s_x == s_in: 
             return f.src
         elif s_x[-len(s_in):] == s_in: 
-            return f.src.batched(s_x[0])
+            return f.src.batched(*s_x[:-len(s_in)])
 
     @classmethod
     def target_type(cls, f, xs):
@@ -51,7 +52,7 @@ class Smooth (fp.Arrow):
         if s_x == s_in:
             return f.tgt
         elif s_x[-len(s_in):] == s_in:
-            return f.tgt.batched(s_x[0])
+            return f.tgt.batched(*s_x[:-len(s_in)])
 
 class VectorField:
 
@@ -62,11 +63,23 @@ class VectorField:
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self._writers = []
+                self._log = []
             
             @cls.integrator
             def euler(self, dt):
                 """ Explicit Euler integrator. """
                 return lambda x: x + dt * self(x)
+
+            @contextmanager
+            def write(self, **callbacks):
+                out = {k: [] for k in callbacks}
+                self._writers = ([
+                    (lambda x, _: out[k].append(fk(x)))
+                                for k, fk in callbacks.items()])
+                try:
+                    yield out
+                finally:
+                    self._writers = []
 
             def writer(self, callback):
                 """ 
@@ -81,6 +94,14 @@ class VectorField:
         
         VecA.__name__ = f'VectorField {A}'
         return VecA
+
+    def __pow__(self, n):
+        def fn(x):
+            y = x
+            for i in range(n):
+                y = self(y)
+            return y
+        return self.__class__(fn)
 
     @classmethod   
     def integrator(cls, method):

@@ -1,7 +1,7 @@
 import fp
 import torch
 
-from topos.io import showTensor, FieldError
+from topos.io import showTensor, FieldError, print_options
 
 class Field (fp.meta.Functor):
     """
@@ -32,21 +32,21 @@ class Field (fp.meta.Functor):
                 pass
             
             @classmethod
-            def batched(cls, N):
+            def batched(cls, *Ns):
                 """ Class for batched fields. """
-                domain = fp.Torus([N, int(A.size)])
+                domain = fp.Torus([*Ns, int(A.size)])
                 FN = cls.functor(domain)
-                FN.shape = [N, int(A.size)]
+                FN.shape = [*Ns, int(A.size)]
                 FN.degree = A.degree
                 return FN
 
             @classmethod
             def batch(cls, xs):
                 """ Batch a collection of field instances. """
-                N = len(xs)
                 if not isinstance(xs, (fp.Tensor, torch.Tensor)):
                     xs = torch.stack([x.data for x in xs])
-                return cls.batched(N)(xs)
+                Ns = xs.shape[:-1]
+                return cls.batched(*Ns)(xs.contiguous())
             
             def items(self):
                 """
@@ -122,6 +122,7 @@ class Field (fp.meta.Functor):
 
     @classmethod
     def batched(cls, A, N):
+        print("batched")
         domain = fp.Torus([N, int(A.size)])
         domain.__name__ = f'{A.__name__} ({N})'
         BatchedField = cls(domain)

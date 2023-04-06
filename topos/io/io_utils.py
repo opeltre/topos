@@ -4,12 +4,27 @@ from fp.meta import Functor
 
 from .exceptions import IOError
 
+print_options = dict(
+    lines_max = 20,
+    lines_pad = 4,
+    slice_max = 10,
+    slice_pad = 3
+)
 #--- Region keys
 
 def readKey(k):
     if isinstance(k, (int, str)):
         return k
     return tuple(readKey(ki) for ki in k)
+
+def cutLines(s, pad=0):
+    lines = s.splitlines()
+    maxl, padl = print_options['lines_max'], print_options['lines_pad']
+    if len(lines) <= maxl:
+        return s
+    return '\n'.join([*lines[:padl], 
+                      ' ' * pad + '...',
+                      *lines[-padl:]])
 
 #--- Functor I/O
 
@@ -96,12 +111,35 @@ def readTensor(x, dtype=None, device=None):
               else torch.tensor(x, dtype=dtype, device=device))
 
 def showTensor (t, pad):
-    return str(t).replace("tensor(", " " * 7)\
+    s = str(t).replace("tensor(", " " * 7)\
         .replace(")", "")\
         .replace("\n\n", "\n")\
         .replace("\t", "")\
         .replace(r'\s*', "")\
         .replace("\n", "\n" + " " * pad)
+    return cutLines(s, pad)
+
+
+def showField(field, key=None):
+    if field.domain.size == 0:
+        return ""
+    if not 'keys' in dir(field.domain):
+        return showTensor(field.data, 0)
+    s = ""
+    for k, xk in field.items():
+        fk = field.domain[k]
+        if key is not None:
+            sk = key(k)
+        elif isinstance(k, torch.LongTensor):
+            sk = f' {k.tolist()} : '
+        else:
+            sk = f' {k} : '
+        pad = len(sk)
+        tensor = (showTensor(xk.data.view(fk.shape), pad) 
+                if "shape" in dir(fk)  else 
+                str(xk).replace("\n", "\n" + " " * pad))
+        s += sk + tensor + "\n"
+    return cutLines(s)
 
 def alignString (alinea='', s='', prefix='tensor(', suffix=')'):
     return alinea + (str(s).replace(prefix, ' ' * len(prefix))

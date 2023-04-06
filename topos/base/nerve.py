@@ -248,7 +248,7 @@ class Nerve (Complex):
             last = Functor(last_obj, last_hom)
             F = quiver.functor @ last
 
-        NQ = cls((Nd.indices().T for Nd in N), functor=F, sort=False)
+        NQ = cls([Nd.indices().T for Nd in N], functor=F, sort=False)
         NQ.__name__ = (f'N({quiver.__name__})' 
                        if '__name__' in dir(quiver) else 'N(Q)')
         NQ._quiver = quiver
