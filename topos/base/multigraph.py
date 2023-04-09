@@ -55,8 +55,6 @@ class MultiGraph (Sheaf):
             G = [readTensor(js) for js in grades] 
         if len(G) and G[0].dim() == 1:
             G[0] = G[0].unsqueeze(1)
-        if sort:
-            G = [Gi.sort(-1).values for Gi in G]
 
         self.grades  = G
         self.dim     = len(G) - 1
