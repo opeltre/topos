@@ -1,4 +1,5 @@
-from topos.base import FreeFunctor
+from topos.base import Complex, FreeFunctor
+from topos.io   import readTensor
 from .network import Network
 import fp
 import torch
@@ -44,7 +45,22 @@ class IsingNetwork(Network):
     classifies a 1-dimensional `Complex` (i.e. a graph) 
     with binary variables on each node. 
     """
-
+    @classmethod
+    def lattice(cls, d, size):
+        if isinstance(size, int):
+            size = [size] * d
+        T = fp.Torus(size)
+        n = T.size
+        step = T.index(torch.eye(d))
+        G0 = torch.arange(n)
+        i = torch.cat([G0] * d)
+        j = torch.cat([(G0 + s) % n for s in step])
+        G1 = torch.stack([i, j], -1)
+        G0 = torch.arange(n)
+        G = Complex([G0, G1], FreeFunctor(2), sort=True)
+        return cls.classify(G)
+        
+            
     def on_edges(self, p):
         """ Restrict beliefs to edges. """
         G = self._classified
@@ -113,6 +129,9 @@ class IsingNetwork(Network):
         G = self._classified
         n0, n1 = G.scalars().sizes[:2]
         s = s.data
+        s = readTensor(s)
+        if s.numel() == 2:
+            s = torch.cat([s[0].repeat(n0), s[1].repeat(n1)])
         last = [slice(None)] * (s.dim() - 1)
         si  = s[(*last, slice(0, n0))]
         sij = s[(*last, slice(n0, None))]
