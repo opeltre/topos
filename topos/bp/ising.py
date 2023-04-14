@@ -50,14 +50,19 @@ class IsingNetwork(Network):
         if isinstance(size, int):
             size = [size] * d
         T = fp.Torus(size)
-        n = T.size
-        step = T.index(torch.eye(d))
+        #--- vertices
+        n = T.size        
         G0 = torch.arange(n)
+        #--- edges
+        step = T.index(torch.eye(d))
         i = torch.cat([G0] * d)
         j = torch.cat([(G0 + s) % n for s in step])
-        G1 = torch.stack([i, j], -1)
-        G0 = torch.arange(n)
-        G = Complex([G0, G1], FreeFunctor(2), sort=True)
+        G1 = torch.stack([i, j], -1).sort(-1).values
+        ##--- sort components
+        i, j = G1[:,0], G1[:,1]
+        rank = n * i + j
+        idx = rank.sort(-1).indices.flatten()
+        G = Complex([G0, G1[idx]], FreeFunctor(2))
         return cls.classify(G)
         
             
@@ -128,7 +133,6 @@ class IsingNetwork(Network):
         """
         G = self._classified
         n0, n1 = G.scalars().sizes[:2]
-        s = s.data
         s = readTensor(s)
         if s.numel() == 2:
             s = torch.cat([s[0].repeat(n0), s[1].repeat(n1)])

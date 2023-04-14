@@ -1,7 +1,7 @@
 import fp
 import torch
 
-from topos.io import showTensor, FieldError, print_options
+from topos.io import showField, FieldError
 
 class Field (fp.meta.Functor):
     """
@@ -96,23 +96,7 @@ class Field (fp.meta.Functor):
                 return self.__str__()
                 
             def __str__(self):
-                if self.domain.size == 0:
-                    return ""
-                if not 'keys' in dir(self.domain):
-                    return showTensor(self.data, 0)
-                s = ""
-                for k, xk in self.items():
-                    fk = self.domain[k]
-                    if isinstance(k, torch.LongTensor):
-                        sc = f' {k.tolist()} : '
-                    else:
-                        sc = f' {k} : '
-                    pad = len(sc)
-                    tensor = (showTensor(xk.data.view(fk.shape), pad) 
-                            if "shape" in dir(fk)  else 
-                            str(xk).replace("\n", "\n" + " " * pad))
-                    s += sc + tensor + "\n"
-                return s 
+                return showField(self) 
 
         name  = cls.name(A)
         bases = (fp.Tens([A.size]),)
