@@ -1,6 +1,6 @@
 from .io_utils import (
     readKey, readFunctor, readTensor, 
-    showTensor, alignString, print_options)
+    showTensor, showField, alignString, print_options)
 
 from .exceptions import ToposError, FieldError, VectError, LinearError
 
