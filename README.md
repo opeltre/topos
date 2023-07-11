@@ -26,7 +26,7 @@ a [Hopfield network][hopfield] in neuroscience, or a Boltzmann machine in artifi
 Higher-degree fields for instance describe the messages $m_{\mathrm{a \to b}}$ 
 which are iterated upon in the 
 [belief propagation](https://en.wikipedia.org/wiki/belief_propagation) algorithm as in [message-passing neural networks](https://en.wikipedia.org/wiki/graph_neural_network) (MPNNs). 
-They are indexed by ordered region pairs $\mathrm{a \supset b}$ which generate the [nerve] of $K$ [[2]].
+They are indexed by ordered region pairs $\mathrm{a \supset b}$ which generate the [nerve] of $K$ [[2]](#ref2).
 
 ### References 
 
