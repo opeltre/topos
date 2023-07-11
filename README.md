@@ -69,7 +69,40 @@ You should be able to run tests with:
 $ cd test && python -m unittest
 ```
 
-## Fields 
+## Interfacing with Pytorch
+
+The purpose of this library is to construct (wrapped) Pytorch tensor instances representing either _fields_ of values over a domain (dense vectors, wrapped in the `Field` class), 
+or linear operators between such data instances (sparse matrices, wrapped in the `Linear` class). 
+Working with these two classes has little more overhead than 
+storing a domain reference and providing a few convenient methods such as `f @ g` (calling `torch.sparse.matmul`) and `f @ x` (calling `torch.sparse.matvec`). Either way, the underlying Pytorch tensor may be accessed by the `.data` attribute, for seamless interfacing with other Pytorch or Pytorch-geometric code. 
+
+```py
+class GCN(nn.Module): 
+     """ Glass Convolutional Network """
+
+     def __init__(self, G, num_filters=10, degree=3):
+          self.graph   = topos.Graph(G)
+          self.weights = nn.Parameter(torch.randn(num_filters, degree))
+          #--- Powers of the laplacian --- 
+          L = self.graph.laplacian(0)
+          self.L_powers = [self.graph.eye(0)]
+          for i in range(degree):
+               self.L_powers.append(L @ self.L_powers[-1])
+
+
+     def forward(self, x):
+          X = self.graph[0].field(x)
+          #--- Convolutional filters are polynomials of the laplacian --- 
+          P_L = sum(wk * Lk for wk, Lk in zip(self.weights, self.L_powers))
+          return (P_L @ X).data
+
+```
+
+
+
+# Overview 
+
+## Fields and Domains
 
 Index ranges are represented by topos instances subclassing the `Domain` base class. The `Field` functor then maps any domain `D` to a tensor type 
 `Field(D)` wrapping 1D-torch vectors of length `D.size`:
@@ -122,9 +155,11 @@ Field Ω :  ij :        [[0, 1, 2],
 ```
 ## Graphs
 
-The `Graph` class is a base class for sheaves `G` whose keys can be represented by (positive) `torch.LongTensor` 
+The `Graph` class (which should be called [Hypergraph][hypergraph]) 
+is a base class for sheaves `G` whose keys can be represented by (positive) `torch.LongTensor` 
 instances of shape `(len(G[k].keys),  k + 1)`. In particular
 `G` is a _graded_ sheaf instance with fibers `G[0], ..., G[G.dim]` each containing `len(G[k].keys)` regions of cardinal `k + 1`, also called _hyperedges_ of dimension `k`. 
+Instantiating large graph instances is much more faster than large sheaf instances, as they enable to leverage on Pytorch's sparse matrix library. 
 
 A 1-graph `G` can for instance be created by:
 ```py
@@ -185,7 +220,9 @@ d1 = K.diff(1)
 K.zeros(2) == d1 @ d0 @ K.randn(0) 
 ```
 
-When `K` is a 1-complex (a 1-graph such that all edge vertices are in `K[0]`), the differential `K.diff(0)` simply computes differences between edge boundaries. Edge features need to be projected onto vertex features for vertex observables to be embedded into edge observables, e.g. with a free functor over ${\cal P}(\Omega)$. 
+When `K` has scalar or constant coefficients, 
+the first differential `K.diff(0)` from `K[0]` to `K[1]` simply maps a function on vertices to a function on directed edges by computing differences between end points. Edge features may also to be mapped to vertex features by a given functor. Its pullback then maps vertex observables to edge observables, allowing for a differential to be defined. The fundamental example consists of the `FreeFunctor` mapping every region $\mathrm{a} \subseteq \Omega$ to a local cartesian product 
+$E_{\mathrm{a}} = \prod_{i \in \mathrm{a}} E_i$. 
 
 The tranposed operator `K.codiff(k+1) = K.diff(k).t()` decreases degree by 1 and involves the linear adjoints of functorial maps when `K` is equipped with functorial coefficients (this means `Field(K)` is identified with its linear dual by the canonical metric of $\mathbb{R}^{\tt K.size}$). In the case of a 1-complex `K`, the codifferential `K.codiff(1)` 
 is the discrete divergence operator, aggregating directed edge values onto source and target vertices with opposite signs.
