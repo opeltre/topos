@@ -23,9 +23,10 @@ each vertex $i$ to a tensor $f_i$ of shape `[2]` (a function on `{-1, +1}`) and 
 This kind of structure may be called a spin glass in physics, 
 a [Hopfield network][hopfield] in neuroscience, or a Boltzmann machine in artificial intelligence, all of which are essentially equivalent to the famous [Ising model][ising].
 
-Higher-degree fields for instance describe the messages 
+Higher-degree fields for instance describe the messages $m_{\mathrm{a \to b}}$ 
 which are iterated upon in the 
-[belief propagation](https://en.wikipedia.org/wiki/belief_propagation) algorithm as in [message-passing neural networks](https://en.wikipedia.org/wiki/graph_neural_network) (MPNNs). They are indexed by ordered pairs which generate the [nerve] of $K$.  
+[belief propagation](https://en.wikipedia.org/wiki/belief_propagation) algorithm as in [message-passing neural networks](https://en.wikipedia.org/wiki/graph_neural_network) (MPNNs). 
+They are indexed by ordered region pairs $\mathrm{a \supset b}$ which generate the [nerve] of $K$ [[2]].
 
 ### References 
 
