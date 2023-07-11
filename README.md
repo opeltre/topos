@@ -208,3 +208,7 @@ Field K[1] : ...
 ## Nerves 
 
 ![nerve](assets/img/nerve.png)
+
+Nerve instance both leverage on the simplicial structure of `Complex` instances on the partial order structure of the underlying `Hypergraph` instance. 
+
+They are best constructed by calling `Graph.classify()`.
