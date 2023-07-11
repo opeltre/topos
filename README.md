@@ -6,10 +6,9 @@
 [sheaf]:       https://en.wikipedia.org/wiki/Sheaf_(mathematics)
 [dependent product]:https://en.wikipedia.org/wiki/Dependent_type#Pi_type
 [dependent sum]:https://en.wikipedia.org/wiki/Dependent_type#Sigma_type
-[hopfield] : https://en.wikipedia.org/wiki/Hopfield_network
+[hopfield]:https://en.wikipedia.org/wiki/Hopfield_network
 [ising]: https://en.wikipedia.org/wiki/Ising_model 
-[bp] : https://en.wikipedia.org/wiki/belief_propagation
-[mpnn]:https://en.wikipedia.org/wiki/graph_neural_network
+
 
 # Topos
 
@@ -19,12 +18,14 @@ They for instance yield message-passing algorithms on graph neural networks, and
 The main data structure consists of _fields_ of tensors, each having possibly different shapes, and stored internally as 1D Pytorch vectors. 
 They can be for instance indexed by the hyperedges of a [hypergraph] $K \subseteq \mathcal{P}(\Omega)$, i.e. a collection of _regions_ $\mathrm{a} \subseteq \Omega$ describing which variables are allowed to be measured simultaneously. In the case of a graph of  binary variables, a
 field $(f_{\mathrm{a}})$ maps 
-each vertex $i$ to a tensor $f_i$ of shape `[2]` (a function on $\{-1, +1\}$) and each edge $ij$ to tensor $f_{ij}$ of shape `[2, 2]` (a function on $\{-1, +1 \}^2$). 
+each vertex $i$ to a tensor $f_i$ of shape `[2]` (a function on `{-1, +1}`) and each edge $ij$ to tensor $f_{ij}$ of shape `[2, 2]` (a function on `{-1, +1}^2`). 
 
 This kind of structure may be called a spin glass in physics, 
 a [Hopfield network][hopfield] in neuroscience, or a Boltzmann machine in artificial intelligence, all of which are essentially equivalent to the famous [Ising model][ising].
 
-Higher-degree fields for instance describe the messages $m_{\mathrm{a \to b}}$ which are iterated upon in the [belief propagation][bp] algorithm as in [message-passing neural networks][mpnn] (MPNNs). They are indexed by ordered pairs $\mathrm{a \supset b}$, which generate the [nerve] of $K$.  
+Higher-degree fields for instance describe the messages 
+which are iterated upon in the 
+[belief propagation](https://en.wikipedia.org/wiki/belief_propagation) algorithm as in [message-passing neural networks](https://en.wikipedia.org/wiki/graph_neural_network) (MPNNs). They are indexed by ordered pairs which generate the [nerve] of $K$.  
 
 ### References 
 
