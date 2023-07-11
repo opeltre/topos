@@ -1,6 +1,7 @@
 from .field  import Field
 from .linear import Linear
 import torch
+import fp
 
 #--- Cached operators
 
@@ -35,6 +36,8 @@ def linear_cache (name, symbol=None):
                 return op @ x.data
             elif isinstance(x, torch.Tensor):
                 return op.tgt.field(op.data @ x)
+            elif isinstance(x, fp.Tensor):
+                return op(x)
             return op
         return runCached
 

@@ -40,6 +40,16 @@ class Complex (Graph):
         """ Codifferential d* : K[d] -> K[d - 1]. """
         return self.diff(d - 1).t()
     
+    def face(self, d, k):
+        """ Face map forgetting index k : K[d] -> K[d + 1]. """
+        src, tgt = self[d].keys, self[d + 1].keys
+        N, P   = self[d+1].size, self[d].size
+        N0, P0 = self.begin[d+1], self.begin[d]
+        off = torch.stack([N0, P0]).long()
+        ij = self.fmap((tgt, face(k, tgt))).T - off
+        Fk = sparse.matrix([N, P], ij)
+        return Linear(self[d], self[d + 1])(Fk, degree=1, name=f"face{k}")
+    
     @classmethod
     def simplicial(cls, faces):
         """ Simplicial closure.

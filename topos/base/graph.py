@@ -21,7 +21,7 @@ class Graph (MultiGraph):
     and more precisely it is a simplicial complex of dimension 1.
     """
 
-    def __init__(self, grades, functor=None, sort=True):
+    def __init__(self, grades, functor=None, sort=True, name='G'):
         """
         Construct hypergraph from lists of hyperedges by degrees.
 
@@ -33,7 +33,7 @@ class Graph (MultiGraph):
             G = Graph([[0], [1], [2]],
                       [[0, 1], [1, 2]])
         """
-        super().__init__(grades, functor, sort)     
+        super().__init__(grades, functor, sort, name)     
 
     def adjacency(self, k):
         """ Symmetric adjacency tensor in degree k. """
@@ -63,7 +63,7 @@ class Graph (MultiGraph):
             return functor(self.coords(i))
 
         def fmap(f):
-            src, tgt = ob.gradej(f[0]), obj(f[1])
+            src, tgt = obj(f[0]), obj(f[1])
             a, b = self.coords(f[0]).contiguous(), self.coords(f[1]).contiguous()
             return tgt.index @ functor.fmap((a, b)) @ src.coords
     

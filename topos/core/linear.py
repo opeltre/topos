@@ -25,6 +25,11 @@ class Linear(fp.Linear):
                 cls.__init__(lin, data, degree)
                 return lin
 
+            @property
+            def T(self):
+                LinBA = cls(B, A)
+                return LinBA(self.data.T)
+
             def __init__(self, data, degree=None, name=None):
                 super().__init__(data)
                 self.degree = degree
@@ -80,6 +85,26 @@ class Linear(fp.Linear):
         g_base = fp.Linear(g.src.shape, g.tgt.shape)(g.data)
         fg = fp.Linear.compose(f_base, g_base)
         return cls(g.src.domain, f.tgt.domain)(fg.data)
+
+    @classmethod
+    def source_type(cls, f, xs):
+        assert(len(xs) == 1)
+        x = xs[0]
+        s_x, s_in = tuple(x.shape), tuple(f.src.shape)
+        if s_x == s_in: 
+            return f.src
+        elif s_x[-len(s_in):] == s_in: 
+            return f.src.batched(*s_x[:-len(s_in)])
+
+    @classmethod
+    def target_type(cls, f, xs):
+        x = xs[0]
+        s_x = tuple(x.shape)
+        s_in, s_out = tuple(f.src.shape), tuple(f.tgt.shape)
+        if s_x == s_in:
+            return f.tgt
+        elif s_x[-len(s_in):] == s_in:
+            return f.tgt.batched(*s_x[:-len(s_in)])
 
 
 class Linear2 (Functional, Vect): 

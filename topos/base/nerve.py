@@ -69,10 +69,14 @@ class Nerve (Complex):
         zt = O.zeta(d)
         i, j = O.begin[d] + zt.data.indices()
         a, b = self.coords(i), self.coords(j)
-        Fab  = self.fmap([a, b])
+        Fab  = self.cofmap([a, b])
         N = self[d].size
         zt = sparse.matrix([N, N], Fab - self.begin[d], t=False)
         return Linear(self[d], self[d])(zt, 0, "\u03b6")
+
+    def bethe (self, d=0):
+        O = self.scalars()
+        return O.mu(d).t() @ O.ones(d)
 
     def zetas (self, d=-1):
         """
@@ -150,6 +154,18 @@ class Nerve (Complex):
 
     def fmap(self, f):
         """
+        Functor graph over chains [a0, ..., ak], [b0, ..., br] with br -> ak.
+
+        Computation of N.diff and N.codiff: 
+        -----------------------------------
+        If `b = face(k, a)` we have a relation `a[k-1] -> a[k] = b[r]` and
+        if `b = face(j, a)` for j < k we have the identity `a[k] -> a[k] = b[r]`. 
+        """
+        i, j = self.cofmap((f[1], f[0]))
+        return torch.stack([j, i])
+
+    def cofmap(self, f):
+        """
         Functor graph over chains [a0, ..., ak], [b0, ..., br] with ak -> br.
         """
         Q = self.quiver()
@@ -192,9 +208,12 @@ class Nerve (Complex):
     def classify (cls, quiver, d=-1):
         """ Nerve of a quiver (e.g. hypergraph ordering or category). """
         if isinstance(quiver, Graph):
+            classified = quiver
             name = quiver.__name__
             quiver = quiver.quiver()
             quiver.__name__ = name
+        else:
+            classified = quiver
         # vertices and arrows
         Ntot = quiver[0].keys.shape[0]
         Q1 = quiver.grades[1]
@@ -229,10 +248,11 @@ class Nerve (Complex):
             last = Functor(last_obj, last_hom)
             F = quiver.functor @ last
 
-        NQ = cls((Nd.indices().T for Nd in N), functor=F, sort=False)
+        NQ = cls([Nd.indices().T for Nd in N], functor=F, sort=False)
         NQ.__name__ = (f'N({quiver.__name__})' 
                        if '__name__' in dir(quiver) else 'N(Q)')
         NQ._quiver = quiver
+        NQ._classified = classified
         return NQ
 
     def __repr__(self):

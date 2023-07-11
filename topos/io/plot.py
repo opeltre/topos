@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
 
-def plot_graph(G, r=.3, c0='#52b', c1='#Cab', size=(10, 10)):
+def plot_graph(G, x=None, r=.3, c0='#52b', c1='#Cab', size=(10, 10)):
     """ Plot graph using laplacian eigenmodes 1 and 2. """
     G = G.scalars()
     fig = plt.figure(figsize=size)
@@ -10,10 +10,11 @@ def plot_graph(G, r=.3, c0='#52b', c1='#Cab', size=(10, 10)):
     if isinstance(c0, str): c0 = [c0] * G.Nvtx
     if isinstance(c1, str): c1 = [c1] * len(G[1].keys)
     #-- eigenmodes --
-    L = G.codiff(1) @ G.diff(0)
-    L = L.data.to_dense()
-    eigval, eigvec = torch.linalg.eigh(L)
-    x = eigvec[:,1:3] * G.Nvtx
+    if type(x) == type(None):
+        L = G.codiff(1) @ G.diff(0)
+        L = L.data.to_dense()
+        eigval, eigvec = torch.linalg.eigh(L)
+        x = eigvec[:,1:3] * G.Nvtx
     #-- arrows --
     for p, ep in enumerate(G[1].keys):
         i, j = ep
@@ -43,5 +44,28 @@ def add_arrow(xi, xj, r, w, c, label=None):
               color=c,
               head_length=.6)
 
-    
+def plot_contours(z, x=None, y=None, levels=10, lw=1, size=None):
+    """ Plot contour lines. """
+    if z.dim() == 2:
+        h, w = 1, 1
+    elif z.dim() == 3:
+        h, w = 1, z.shape[0]
+    elif z.dim() == 4:
+        h, w = z.shape[:2]
+    n = h * w
+    z = z.view([-1, *z.shape[-2:]])
+
+    if size is None:
+        size = (w * 4, h * 4)
+    fig = plt.figure(figsize=size)
+    for i in range(n):
+        plt.subplot(h, w, i+1)
+        if x is not None and y is not None:
+            plt.contour(x, y, z[i], levels, linewidths=lw)
+        else:
+            plt.contour(z[i], levels, linewidths=lw)
+            plt.xticks([])
+            plt.yticks([])
+    return fig
+
 

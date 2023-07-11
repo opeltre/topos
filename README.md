@@ -9,13 +9,33 @@
 
 # Topos
 
-_The library is being refactored to provide generic topological and algebraic tools
-for discrete mathematics and statistics._
+This library implements natural topological and combinatorial operators on statistical networks described in [[1]](#ref1) and [[2]](#ref2) 
+They for instance yield message-passing algorithms on graph neural networks, and the belief propagation or sum-product algorithm for efficient marginal estimation (particularly used in decoding applications [[3]](#ref3) ) 
 
-_This README provides a quick introduction to using the library. For motivations and examples of application, see:_
-1. [Graph convolutional networks via discrete Hodge theory](I_graph_networks.md)
-2. [Generalized Boltzmann machines and belief networks](I_belief_networks.md)
-3. [Equivariant message-passing for molecules and materials](II_equivariant_mpnn.md)
+### References 
+
+<span id="ref1"></span>
+[1] : Peltre, 2020, _Message-Passing Algorithms and Homology_, 
+PhD thesis. [arXiv:2009.11631][phd]
+
+<span id="ref2"></span>
+[2] : Peltre, 2021, _Belief Propagation as Diffusion_.
+GSI'21 proceedings. [arXiv:2107.12230][gsi21]
+
+
+[gsi21]: https://arxiv.org/abs/2107.12230
+[phd]:   https://arxiv.org/abs/2009.11631
+[YFW00]: https://https://proceedings.neurips.cc/paper/1832-generalized-belief-propagation.pdf
+[not_table]: https://arxiv.org/pdf/2009.11631#page=4
+[alg_table]: https://arxiv.org/pdf/2107.12230#page=7
+
+<span id="ref3"></span>
+[3] : Yedidia, Freeman and Weiss, 2000 - _Generalized Belief Propagation_,
+NeurIPS 2000. [full text][YFW00]
+
+
+# Usage 
+
 
 ## Installation 
 
@@ -32,69 +52,6 @@ You should be able to run tests with:
 ```
 $ cd test && python -m unittest
 ```
-
-# Usage 
-
-## Introduction
-
-_Github doesn't render this section's md + tex properly... Find a better way to document_
-
-The purpose of this library is to provide efficient data structures for 
-[sheaves](sheaf) $F : \mathcal{P}(\Omega)^{op} \to \mathrm{Set}$, where
-$\Omega = \{ 0, \dots, N_{\rm vtx} - 1 \}$ is a possibly large set of indices.
-
-<p>
-Canonical examples are given by random variables $X = (X_i)_{i \in \Omega}$ such that each $X_i$
-is valued in a set $F_i$, as for every $a \subseteq \Omega$ 
-one may observe a restricted joint variable $X_a$ 
-valued in $F_a = \prod_{i \in \Omega} F_i$.
-The sheaf $F$ is then called a <a href='topos/base/functor.py'>free functor</a> over $\mathcal{P}(\Omega)^{op}$.
-On top of such a sheaf lie algebras of local observables defined by $\mathbb{R}^F : {\cal P}(\Omega) \to \mathbf{Alg}_c$.
-</p>
-
-Because integration is not tractable on the global configuration space $F_\Omega$ for large $N_{\rm vtx}$, it is preferable to work with local 
-functionals with respect to a covering $K \subseteq {\cal P}(\Omega)$. More precisely, when $K$ is graded e.g. by the dimension ${\rm dim}(a) = 1 + {\rm card}(a)$, we may define an algebra of _degree-n local fields on_ $K$:
-
-$$ {\tt Field}(K_n, F)  = \prod_{a \in K_n} \mathbb{R}^{F_a}$$
-
-This [dependent product] type is realized by large 1D torch vectors.
-Specific operators can be cached as sparse matrices 
-depending on the
-topological structure of $K$, which could be any (directed) 
-(multi)-hypergraph. This lets one design efficient parallel computations on the GPU with great flexibility on the base space $K$ and the functor $F$. 
-Domain classes such as `MultiGraph, Graph, Quiver, Complex, Nerve, ...` are for instance distinguished. 
-
-Note than when $K$ is a simple 1-graph, 0-fields are vectors indexed 
-by vertices and 1-fields are vectors indexed by edges. The functorial data defines feature spaces $F_i$ above each vertex and $F_{ij}$ above each edge,
-together with restriction maps $F_{ij} \to F_i$ and $F_{ij} \to F_j$. 
-The pullback $\mathbb{R}^{F_i}\to \mathbb{R}^{F_{ij}}$ embeds any vertex observable to an edge observable that does not depend on the state of the other vertex. The algebra structure is given by pointwise addition and multiplication of real functions. The graph differential, codifferential and laplacian operators are inherited from the 
-`Complex` class (as a 1-graph in the usual sense is a 1-simplicial complex, i.e. if an edge $ij$ is in $K$ then both vertices $i$ and $j$ are in $K$).
-Powers of the laplacian yield the convolution kernels of graph convolutional networks. 
-
-### References 
-<span id="ref3"></span>
-[1] : Yedidia, Freeman and Weiss, 2000 - _Generalized Belief Propagation_,
-NeurIPS 2000. [full text][YFW00]
-
-<span id="ref2"></span>
-[2] : Peltre, 2020, _Message-Passing Algorithms and Homology_, 
-PhD thesis. [arXiv:2009.11631][phd]
-
-<span id="ref1"></span>
-[3] : Peltre, 2021, _Belief Propagation as Diffusion_.
-GSI'21 proceedings. [arXiv:2107.12230][gsi21]
-
-
-[gsi21]: https://arxiv.org/abs/2107.12230
-[phd]:   https://arxiv.org/abs/2009.11631
-[YFW00]: https://https://proceedings.neurips.cc/paper/1832-generalized-belief-propagation.pdf
-[not_table]: https://arxiv.org/pdf/2009.11631#page=4
-[alg_table]: https://arxiv.org/pdf/2107.12230#page=7
-
-
-
-
-# Usage
 
 ## Fields 
 

@@ -1,7 +1,7 @@
 import fp
 import torch
 
-from topos.io import showTensor, FieldError
+from topos.io import showField, FieldError
 
 class Field (fp.meta.Functor):
     """
@@ -13,10 +13,10 @@ class Field (fp.meta.Functor):
     
     def __new__(cls, A):
         
-        class Field_A (fp.Tens([A.size])): 
+        class Field_A (fp.Tens(A.shape)): 
 
             domain = A
-            shape  = [A.size]
+            shape  = [int(A.size)]
             device = A.device if 'device' in dir(A) else 'cpu'
             degree = A.degree if 'degree' in dir(A) else None
 
@@ -25,13 +25,29 @@ class Field (fp.meta.Functor):
                     data = torch.tensor(data, device=cls.device)
                 field = object.__new__(cls)
                 field.data   = data
-                field.device = cls.device
                 field.degree = cls.degree
                 return field
 
             def __init__(self, data):
                 pass
+            
+            @classmethod
+            def batched(cls, *Ns):
+                """ Class for batched fields. """
+                domain = fp.Torus([*Ns, int(A.size)])
+                FN = cls.functor(domain)
+                FN.shape = [*Ns, int(A.size)]
+                FN.degree = A.degree
+                return FN
 
+            @classmethod
+            def batch(cls, xs):
+                """ Batch a collection of field instances. """
+                if not isinstance(xs, (fp.Tensor, torch.Tensor)):
+                    xs = torch.stack([x.data for x in xs])
+                Ns = xs.shape[:-1]
+                return cls.batched(*Ns)(xs.contiguous())
+            
             def items(self):
                 """
                 Yield (key, value) pairs.
@@ -80,30 +96,24 @@ class Field (fp.meta.Functor):
                 return self.__str__()
                 
             def __str__(self):
-                if self.domain.size == 0:
-                    return ""
-                if not 'keys' in dir(self.domain):
-                    return showTensor(self.data, 0)
-                s = ""
-                for k, xk in self.items():
-                    fk = self.domain[k]
-                    if isinstance(k, torch.LongTensor):
-                        sc = f' {k.tolist()} : '
-                    else:
-                        sc = f' {k} : '
-                    pad = len(sc)
-                    tensor = (showTensor(xk.data.view(fk.shape), pad) 
-                            if "shape" in dir(fk)  else 
-                            str(xk).replace("\n", "\n" + " " * pad))
-                    s += sc + tensor + "\n"
-                return s 
+                return showField(self) 
 
         name  = cls.name(A)
         bases = (fp.Tens([A.size]),)
         dct   = dict(Field_A.__dict__)
         FA = fp.meta.RingMeta(name, bases, dct)
         return FA
-    
+
+    @classmethod
+    def batched(cls, A, N):
+        print("batched")
+        domain = fp.Torus([N, int(A.size)])
+        domain.__name__ = f'{A.__name__} ({N})'
+        BatchedField = cls(domain)
+        BatchedField.shape   = [N, int(A.size)]
+        BatchedField.batched = True
+        return BatchedField
+
     @classmethod
     def fmap(cls, A):
         pass

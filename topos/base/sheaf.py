@@ -12,13 +12,13 @@ class Sheaf (Domain):
     """
 
     @classmethod
-    def sparse (cls, shape, indices, functor=None, degree=None):
+    def sparse (cls, shape, indices, functor=None, degree=None, name='F'):
         idx  = io.readTensor(indices, dtype=torch.long)
         adj  = sparse.tensor(shape, idx, dtype=torch.long).coalesce()
-        sheaf = cls(adj, functor, degree)
+        sheaf = cls(adj, functor, degree, name)
         return sheaf
 
-    def __init__(self, keys=None, functor=None, degree=None):
+    def __init__(self, keys=None, functor=None, degree=None, name='F'):
         """  
         Create sheaf from keys and domains. 
 
@@ -39,6 +39,7 @@ class Sheaf (Domain):
             Sheaf({'a': [2, 3], 'b': [3, 4]})
             Sheaf(['a', 'b'], [[2, 3], [3, 4]])
         """
+        self.__name__ = name
         is_domain = lambda f: 'coords' in dir(f) or isinstance(f, Domain)
         is_trivial = lambda f: f.trivial if 'trivial' in dir(f) else f.size == 1
         #--- Sparse sheaves ---
@@ -130,4 +131,7 @@ class Sheaf (Domain):
         return self.keys.__iter__()
 
     def __repr__(self):
-        return f"Sheaf {self}"
+        return str(self)
+        
+    def __str__(self):
+        return self.__name__ if '__name__' in dir(self) else 'F'
