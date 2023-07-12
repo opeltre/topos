@@ -13,7 +13,7 @@
 # Topos
 
 This library implements natural topological and combinatorial operators on statistical networks described in [[1]](#ref1) and [[2]](#ref2) 
-They for instance yield message-passing algorithms on graph neural networks, and the belief propagation or sum-product algorithm for efficient marginal estimation (particularly used in decoding applications [[3]](#ref3)). 
+They for instance yield message-passing algorithms on graph neural networks, the belief propagation (BP) or sum-product algorithm for efficient marginal estimation (generalised to hypergraphs in [[3]](#ref3)), and the belief diffusions that regularise BP [[2]](#ref2).
 
 The main data structure consists of _fields_ of tensors, each having possibly different shapes, and stored internally as 1D Pytorch vectors. 
 They can be for instance indexed by the hyperedges of a [hypergraph] $K \subseteq \mathcal{P}(\Omega)$, i.e. a collection of _regions_ $\mathrm{a} \subseteq \Omega$ describing which variables are allowed to be measured simultaneously. In the case of a graph of  binary variables, a
@@ -71,10 +71,12 @@ $ cd test && python -m unittest
 
 ## Interfacing with Pytorch
 
-The purpose of this library is to construct (wrapped) Pytorch tensor instances representing either _fields_ of values over a domain (dense vectors, wrapped in the `Field` class), 
-or linear operators between such data instances (sparse matrices, wrapped in the `Linear` class). 
+The main purpose of this library is to construct various (wrapped) Pytorch tensors, 
+related to the topology of an underlying data structure (graph, hypergraph, simplicial complex...). These tensor either represent _fields_ of values over a domain (dense vectors, wrapped in the `Field` class), 
+or linear operators between field types (sparse matrices, wrapped in the `Linear` class). 
+
 Working with these two classes has little more overhead than 
-storing a domain reference and providing a few convenient methods such as `f @ g` (calling `torch.sparse.matmul`) and `f @ x` (calling `torch.sparse.matvec`). Either way, the underlying Pytorch tensor may be accessed by the `.data` attribute, for seamless interfacing with other Pytorch or Pytorch-geometric code. 
+storing a reference to underlying domains, while providing a few convenient methods (e.g. `f @ g` for calling `torch.sparse.matmul` and `f @ x` for calling `torch.sparse.matvec`). Either way, the underlying Pytorch tensor may be accessed by the `.data` attribute, for seamless interfacing with other Pytorch or Pytorch-geometric code. 
 
 ```py
 class GCN(nn.Module): 
@@ -98,6 +100,11 @@ class GCN(nn.Module):
 
 ```
 
+The mechanism for wrapping and typing Pytorch tensors has been moved to an other repository, [opeltre/fp](https://github.com). Its purpose is to provide generic functorial constructs to emulate type polymorphism in Python. It exposes an unsafe `Tensor` class, a typed `Tens : Shape -> Type` functor, a `Linear` bifunctor... all holding a `torch.Tensor` instance wrapped inside an `fp.Tensor` instance (algebraic methods are lifted from one type to the other by a `Wrap` monad). 
+
+## Contributing 
+
+Contributions are welcome. I am already grateful to @aklipfel for helping in the `sparse` module to speed up some of the index computations dramatically. If you enjoy this library and would like to help in any way please get in touch.  
 
 
 # Overview 
@@ -153,13 +160,13 @@ Field Ω :  ij :        [[0, 1, 2],
            i :        [ 9, 10, 11]
            j :        [12, 13, 14]
 ```
-## Graphs
+## (Hyper)graphs
 
 The `Graph` class (which should be called [Hypergraph][hypergraph]) 
 is a base class for sheaves `G` whose keys can be represented by (positive) `torch.LongTensor` 
 instances of shape `(len(G[k].keys),  k + 1)`. In particular
 `G` is a _graded_ sheaf instance with fibers `G[0], ..., G[G.dim]` each containing `len(G[k].keys)` regions of cardinal `k + 1`, also called _hyperedges_ of dimension `k`. 
-Instantiating large graph instances is much more faster than large sheaf instances, as they enable to leverage on Pytorch's sparse matrix library. 
+Instantiating large graph instances is much faster than large sheaf instances, as they enable to leverage on Pytorch's sparse matrix library. 
 
 A 1-graph `G` can for instance be created by:
 ```py
@@ -170,7 +177,7 @@ G = Graph([G0, G1])
 ```
 The resulting `Sheaf` instance has two keys 0 and 1 pointing to graded components of size `G.sizes[k]` and begining at `G.begin[k]`:
 ```py
-G.range()
+>>> G.range()
 Field G :  0 :  [0] :        0
                 [1] :        1
                 [2] :        2
@@ -181,7 +188,7 @@ Field G :  0 :  [0] :        0
                 [0, 3] :        6
 ```
 A general n-graph `G` defines n+1 sparse adjacency tensors `G.adj[k]` of 
-dimension `k + 1` for k = 0, ..., n. Sparse tensors `G.idx[k]` of identical shapes allow for fast index access (sometimes by custom routines defined in [core/sparse.py](topos/core/sparse.py)). This is particularly useful during the computation of topological 
+dimension `k + 1` for k = 0, ..., n. Sparse tensors `G.idx[k]` of identical shapes allow for fast index access (sometimes by custom routines defined in [core/sparse.py](topos/core/sparse.py), thanks to Astrid Klipfel). This is particularly useful during the computation of topological 
 operators when `G` is equipped with additional structure. 
 
 A functor-valued graph `GF = Graph(G, F)` 
