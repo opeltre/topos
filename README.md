@@ -83,9 +83,9 @@ class GCN(nn.Module):
      """ Glass Convolutional Network """
 
      def __init__(self, G, num_filters=10, degree=3):
-          self.graph   = topos.Graph(G)
+          self.graph   = topos.Complex(G)
           self.weights = nn.Parameter(torch.randn(num_filters, degree))
-          #--- Powers of the laplacian --- 
+          #--- Powers of the graph laplacian --- 
           L = self.graph.laplacian(0)
           self.L_powers = [self.graph.eye(0)]
           for i in range(degree):
@@ -98,6 +98,11 @@ class GCN(nn.Module):
           P_L = sum(wk * Lk for wk, Lk in zip(self.weights, self.L_powers))
           return (P_L @ X).data
 
+>>> V = torch.arange(12)
+>>> E = torch.randint(12, (10, 2))
+>>> gcn = GCN([V, E])
+>>> x = torch.randn([100, 12])
+>>> y  = gcn(x)
 ```
 
 The mechanism for wrapping and typing Pytorch tensors has been moved to an other repository, [opeltre/fp](https://github.com). Its purpose is to provide generic functorial constructs to emulate type polymorphism in Python. It exposes an unsafe `Tensor` class, a typed `Tens : Shape -> Type` functor, a `Linear` bifunctor... all holding a `torch.Tensor` instance wrapped inside an `fp.Tensor` instance (algebraic methods are lifted from one type to the other by a `Wrap` monad). 

@@ -39,7 +39,17 @@ class Complex (Graph):
     def codiff(self, d):
         """ Codifferential d* : K[d] -> K[d - 1]. """
         return self.diff(d - 1).t()
-    
+
+    @linear_cache("L")    
+    def laplacian(self, d):
+        """ Hodge Laplacian L : K[d] -> K[d]. """
+        if d == 0:
+            return self.codiff(1) @ self.diff(0)
+        if d == self.degree: 
+            return self.diff(d-1) @ self.codiff(d)
+        return (self.diff(d-1) @ self.codiff(d) 
+                + self.codiff(d+1) @ self.diff(d))
+
     def face(self, d, k):
         """ Face map forgetting index k : K[d] -> K[d + 1]. """
         src, tgt = self[d].keys, self[d + 1].keys
