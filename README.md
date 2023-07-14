@@ -28,7 +28,7 @@ a [Hopfield network][hopfield] in neuroscience, or a Boltzmann machine
 or energy-based model in artificial intelligence, all of which are essentially equivalent to the famous [Ising model][ising]. 
 
 Degree-0 fields are therefore collections of local functions 
-$(f_{\tt a})_{{\tt a \in }K}$, whose sum over $K$ is typically used to parameterise a global energy function (while such a global observable may be 
+$(f_{\tt a})$ for ${{\tt a \in }K}$, whose sum over $K$ is typically used to parameterise a global energy function (while such a global observable may be 
 evaluated quickly, computing integrals or expectations is intractable in high dimension). Higher-degree fields for instance describe the degree-1 messages $m_{\mathrm{a \to b}}$ 
 which are iterated upon in the 
 [belief propagation](https://en.wikipedia.org/wiki/belief_propagation) algorithm (for marginal estimation) or in [message-passing neural networks](https://en.wikipedia.org/wiki/graph_neural_network) (MPNNs). 
