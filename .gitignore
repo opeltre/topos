@@ -4,6 +4,7 @@ notebooks/*
 .vscode
 build
 *.egg-info
+*.code-workspace
 
 **/_*
 !**/__init__.py

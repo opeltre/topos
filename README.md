@@ -18,17 +18,27 @@ They for instance yield message-passing algorithms on graph neural networks, the
 The main data structure consists of _fields_ of tensors, each having possibly different shapes, and stored internally as 1D Pytorch vectors. 
 They can be for instance indexed by the hyperedges of a [hypergraph] $K \subseteq \mathcal{P}(\Omega)$, i.e. a collection of _regions_ $\mathrm{a} \subseteq \Omega$ describing which variables are allowed to be measured simultaneously. In the case of a graph of  binary variables, a
 field $(f_{\mathrm{a}})$ maps 
-each vertex $i$ to a tensor $f_i$ of shape `[2]` (a function on `{-1, +1}`) and each edge $ij$ to tensor $f_{ij}$ of shape `[2, 2]` (a function on `{-1, +1}^2`). 
+each vertex $i$ to a tensor $f_i$ of shape `[2]` 
+(a function on $\lbrace{-1, +1 \rbrace}$) and each edge 
+$ij$ to tensor $f_{ij}$ of shape `[2, 2]` (a function on 
+$\lbrace -1, +1 \rbrace^2$). 
 
 This kind of structure may be called a spin glass in physics, 
-a [Hopfield network][hopfield] in neuroscience, or a Boltzmann machine in artificial intelligence, all of which are essentially equivalent to the famous [Ising model][ising].
+a [Hopfield network][hopfield] in neuroscience, or a Boltzmann machine 
+or energy-based model in artificial intelligence, all of which are essentially equivalent to the famous [Ising model][ising]. 
 
-Higher-degree fields for instance describe the messages $m_{\mathrm{a \to b}}$ 
+Degree-0 fields are therefore collections of local functions 
+$(f_{\tt a})_{{\tt a \in }K}$, whose sum over $K$ is typically used to parameterise a global energy function (while such a global observable may be 
+evaluated quickly, computing integrals or expectations is intractable in high dimension). Higher-degree fields for instance describe the degree-1 messages $m_{\mathrm{a \to b}}$ 
 which are iterated upon in the 
-[belief propagation](https://en.wikipedia.org/wiki/belief_propagation) algorithm as in [message-passing neural networks](https://en.wikipedia.org/wiki/graph_neural_network) (MPNNs). 
+[belief propagation](https://en.wikipedia.org/wiki/belief_propagation) algorithm (for marginal estimation) or in [message-passing neural networks](https://en.wikipedia.org/wiki/graph_neural_network) (MPNNs). 
 They are indexed by ordered region pairs $\mathrm{a \supset b}$ which generate the [nerve] of $K$ [[2]](#ref2).
 
+
+
 ### References 
+
+[:book:] : [The topos wiki](https://github.com/opeltre/topos/wiki)
 
 <span id="ref1"></span>
 [1] : Peltre, 2020, _Message-Passing Algorithms and Homology_, 
