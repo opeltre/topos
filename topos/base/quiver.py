@@ -160,17 +160,3 @@ class Quiver(MultiGraph, Functor):
     def __repr__(self):
         name = self.__name__ if '__name__' in dir(self) else 'Q'
         return name
-
-
-class Supset(fp.Arrow):
-
-
-    def __new__(cls, A, B):
-        TAB = super().__new__(cls, A, B)
-        def _init_(Arr, indices):
-            f.indices = indices
-        return 
-
-    def __init__(self, A, B):
-        super().__init__(A, B)
-        self.arity = 0

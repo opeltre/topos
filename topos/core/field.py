@@ -13,8 +13,8 @@ class Field (fp.meta.Functor):
     
     def __new__(cls, A):
         
-        class Field_A (fp.Tens(A.shape)): 
-
+        class Field_A (fp.Tens([A.size]), fp.Arrow(fp.Tensor, fp.Tensor)): 
+            
             domain = A
             shape  = [int(A.size)]
             device = A.device if 'device' in dir(A) else 'cpu'
@@ -92,6 +92,16 @@ class Field (fp.meta.Functor):
                 except:
                     raise FieldError(f"scalar or size {fiber.size} tensor expected")
 
+            def __call__(self, x): 
+                """ Evaluate field on (batched) indices. """
+                if not x.data.dtype == torch.long:
+                    raise FieldError(f"field arguments should be long indices")
+                if x.data.min() < 0 or x.data.max() > self.domain.size:
+                    raise FieldError(
+                        f"Index range error ({x.data.min(), x.data.max()}) in size {self.domain.size}")
+                else: 
+                    return self.data.index_select(0, x) 
+
             def __repr__(self):
                 return self.__str__()
                 
@@ -99,11 +109,11 @@ class Field (fp.meta.Functor):
                 return showField(self) 
 
         name  = cls.name(A)
-        bases = (fp.Tens([A.size]),)
+        bases = (fp.Tens([A.size]), fp.Arrow(fp.Tensor, fp.Tensor))
         dct   = dict(Field_A.__dict__)
         FA = fp.meta.RingMeta(name, bases, dct)
         return FA
-
+    
     @classmethod
     def batched(cls, A, N):
         print("batched")
@@ -122,9 +132,7 @@ class Field (fp.meta.Functor):
     def name(cls, A):
         name = A.__name__ if '__name__' in dir(A) else "\u03a9"
         return f'Field {name}'
-        
 
-class Field2 :
     @classmethod
     def cast2(cls, u, v):
         """
@@ -141,70 +149,3 @@ class Field2 :
             elif v.domain.scalars == u.domain:
                 return v.domain.from_scalars(u).data, v.data, v.same
         return super().cast2(u, v)
-
-    def __init__(self, domain, data=0., degree=None, device=None):
-        """
-        Create a d-field on a domain from numerical data.
-
-        See Domain.field.
-        """
-        self.domain = domain
-        self.size   = domain.size + (domain.size == 0)
-        self.degree = degree
-       
-        #--- Inputs ---
-        if isinstance(data, torch.Tensor):
-            self.data = data
-        elif isinstance(data, list):
-            self.data = torch.tensor(data, device=device)
-        elif isinstance(data, (int, float)):
-            self.data = data * torch.ones([self.size], device=device)
-        else:
-            raise FieldError(
-                    f"Unsupported data type: {type(data)}",
-                    "use torch.Tensor, float, [float]...")
-   
-        #--- Check shape ---
-        if self.data.shape[0] != self.domain.size:
-            self.data = self.data.flatten()
-        if self.data.shape[0] != self.size:
-            raise FieldError(
-                f"Could not coerce to domain size {domain.size}",
-                f"invalid input shape {list(self.data.shape)}")
-        self.device = self.data.device
-
-    def same(self, other=None, name=None):
-        """
-        Create another field on the same domain.
-        """
-        #--- Copy ---
-        if isinstance(other, type(None)):
-            return self.__class__(self.domain, self.data, self.degree)
-        #--- Create ---
-        if not isinstance (other, Field):
-            return self.__class__(self.domain, other, self.degree)
-        #--- Pass ---
-        if self.domain == other.domain:
-            return other
-        #--- From scalars ---
-        if self.domain.scalars.size == other.domain.size:
-            return self.domain.from_scalars(other)
-
-    def norm(self):
-        """
-        Euclidean norm of the underlying vector.
-        """
-        return torch.sqrt((self.data.abs() ** 2).sum())
-
-    def sum(self):
-        """
-        Sum of scalar components.
-        """
-        return self.data.sum()
-
-    #--- Show ---
-
-    def __repr__(self):
-        prefix = self.degree if self.degree != None else ""
-        return f"{prefix} Field {self}"
-

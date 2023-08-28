@@ -1,8 +1,8 @@
 class ToposError (Exception):
     cls = "Topos"
-    def __init__(self, m1, m2):
+    def __init__(self, m1, m2=None):
         msg = ("\n" + "-" * 55 + "\n"\
-              + f"[{self.cls}]: {m1}\n" + f"\t {m2}\n"\
+              + f"[{self.cls}]: {m1}\n" + f"\t {m2 if m2 else ''}\n"\
               + "-" * 55)
         super().__init__(msg)
 

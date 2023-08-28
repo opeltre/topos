@@ -14,6 +14,7 @@ class Domain(fp.meta.Type):
         self.shape  = [size]
         self.device = device
         self._cache = {}
+        self.Point = fp.TensorMod(self.size)
 
     def torch_fmap(self, f, name='\u033b'):
         def map_f(x):
@@ -55,7 +56,7 @@ class Domain(fp.meta.Type):
     def ones(self, degree=None):
         """ Return the unit of * field 1. """
         return self.Field(degree).ones()
-
+    
     def randn(self, degree=None):
         """ Return a field with normally distributed values. """
         tgt = self if degree == None else self[degree]

@@ -61,6 +61,8 @@ class Sheaf (Domain):
         self.sizes = sizes
         self.begin = begin[:-1]
         self.end   = begin[1:]
+        #--- Sections type
+        self.Section = fp.TensorMod(self.sizes)
     
     def index(self,  key, output=None):
         """ Index of a key """
