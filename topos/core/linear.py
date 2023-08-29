@@ -1,4 +1,3 @@
-from .functional import Functional, GradedFunctional
 from .vect import Vect
 from .field import Field
 from .sparse import eye, zero, matmul, diag

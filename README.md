@@ -12,7 +12,7 @@
 
 # Topos
 
-This library implements natural topological and combinatorial operators on statistical networks described in [[1]](#ref1) and [[2]](#ref2) 
+This library implements natural topological and combinatorial operators on statistical networks described in [[1]](#ref1) and [[2]](#ref2).  
 They for instance yield message-passing algorithms on graph neural networks, the belief propagation (BP) or sum-product algorithm for efficient marginal estimation (generalised to hypergraphs in [[3]](#ref3)), and the belief diffusions that regularise BP [[2]](#ref2).
 
 The main data structure consists of _fields_ of tensors, each having possibly different shapes, and stored internally as 1D Pytorch vectors. 
@@ -20,7 +20,7 @@ They can be for instance indexed by the hyperedges of a [hypergraph] $K \subsete
 field $(f_{\mathrm{a}})$ maps 
 each vertex $i$ to a tensor $f_i$ of shape `[2]` 
 (a function on $\lbrace{-1, +1 \rbrace}$) and each edge 
-$ij$ to tensor $f_{ij}$ of shape `[2, 2]` (a function on 
+$ij$ to a tensor $f_{ij}$ of shape `[2, 2]` (a function on 
 $\lbrace -1, +1 \rbrace^2$). 
 
 This kind of structure may be called a spin glass in physics, 
